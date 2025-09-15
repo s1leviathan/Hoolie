@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ράτσα Γάτας - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.3rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Γνωρίζετε οποιαδήποτε από τις ράτσες της γάτας σας;
+                </span>
+            </h1>
+            
+            <!-- Pet Info Reminder -->
+            <div class="pet-info-reminder" style="margin-bottom: 3rem;">
+                <div class="pet-info-card">
+                    <div class="pet-icon-small" id="pet-reminder-icon">🐱</div>
+                    <span class="pet-reminder-text" id="pet-reminder-text">Γάτα</span>
+                    <span class="gender-indicator" id="gender-indicator">
+                        <!-- Will be filled by JavaScript -->
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Breed Knowledge Options -->
+            <div class="breed-knowledge-options">
+                <div class="knowledge-buttons">
+                    <button class="knowledge-btn active" id="yes-btn" onclick="toggleKnowledge('yes')">
+                        <i class="fas fa-check-circle"></i>
+                        ΝΑΙ
+                    </button>
+                    <button class="knowledge-btn" id="no-btn" onclick="toggleKnowledge('no')">
+                        <i class="fas fa-times-circle"></i>
+                        ΟΧΙ
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Breed Selection Section (shown when YES) -->
+            <div class="breed-selection-section" id="breed-section">
+                <div class="breed-options">
+                    <!-- Dropdown Selection -->
+                    <div class="breed-option-card active" id="dropdown-card">
+                        <div class="option-header">
+                            <div class="option-icon">📋</div>
+                            <h3 class="option-title">Επιλέξτε από τη λίστα</h3>
+                        </div>
+                        
+                        <div class="breed-dropdown-container">
+                            <select id="breed-dropdown" class="form-select breed-select">
+                                <option value="">Επιλέξτε ράτσα...</option>
+                                {% for breed in breeds %}
+                                <option value="{{ breed }}">{{ breed }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Input -->
+                    <div class="breed-option-card" id="custom-card">
+                        <div class="option-header" onclick="toggleBreedOption('custom')">
+                            <div class="option-icon">✏️</div>
+                            <h3 class="option-title">Αν δεν βρίσκετε τη ράτσα στην λίστα μας</h3>
+                        </div>
+                        
+                        <div class="custom-breed-inputs" style="display: none;">
+                            <p class="instruction-text">Αρχίστε να πληκτρολογείτε τη ράτσα</p>
+                            <input type="text" id="custom-breed" class="form-control breed-input" placeholder="Πληκτρολογήστε τη ράτσα...">
+                            
+                            <div class="mixed-breed-section" style="margin-top: 1.5rem;">
+                                <div class="mixed-breed-question">
+                                    <label class="form-check-label">
+                                        <input type="checkbox" id="is-mixed" class="form-check-input">
+                                        Είναι το κατοικίδιό σας μικτής ράτσας;
+                                    </label>
+                                </div>
+                                
+                                <div class="additional-breed" id="additional-breed-section" style="display: none;">
+                                    <p class="instruction-text">Εάν ναι, προσθέστε άλλη ράτσα:</p>
+                                    <input type="text" id="additional-breed-input" class="form-control breed-input" placeholder="Προσθέστε άλλη ράτσα">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Weight Selection Section -->
+            <div class="weight-selection-section" id="weight-section">
+                <h2 class="weight-title" style="margin-top: 3rem;">
+                    <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        Ποιο είναι το περίπου βάρος της γάτας σας;
+                    </span>
+                </h2>
+                
+                <div class="cat-weight-options">
+                    <div class="weight-card" data-weight="up-to-10" onclick="selectWeight('up-to-10')">
+                        <div class="weight-icon">🐱</div>
+                        <h3 class="weight-range">έως 10 κιλά</h3>
+                        <p class="weight-description">Κανονικό μέγεθος</p>
+                    </div>
+                    
+                    <div class="weight-card" data-weight="11-20" onclick="selectWeight('11-20')">
+                        <div class="weight-icon">🐱</div>
+                        <h3 class="weight-range">11-20 κιλά</h3>
+                        <p class="weight-description">Μεγάλο μέγεθος</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" onclick="submitBreed()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft);">
+                    Επόμενο
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">🐾</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">📋</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">⚖️</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">🏷️</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">✨</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">💝</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const gender = urlParams.get('gender');
+    
+    // Set gender indicator
+    if (gender === 'male') {
+        document.getElementById('gender-indicator').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('gender-indicator').innerHTML = '<span style="color: #E24A90;">♀️ Θηλυκό</span>';
+    }
+    
+    // Add entrance animations
+    const cards = document.querySelectorAll('.breed-option-card, .weight-card');
+    cards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 1s ease-out ${0.3 + index * 0.1}s both`;
+    });
+    
+    // Mixed breed checkbox handler
+    document.getElementById('is-mixed').addEventListener('change', function() {
+        const additionalSection = document.getElementById('additional-breed-section');
+        if (this.checked) {
+            additionalSection.style.display = 'block';
+            additionalSection.style.animation = 'fadeInUp 0.5s ease-out';
+        } else {
+            additionalSection.style.display = 'none';
+        }
+    });
+});
+
+function toggleKnowledge(option) {
+    const yesBtn = document.getElementById('yes-btn');
+    const noBtn = document.getElementById('no-btn');
+    const breedSection = document.getElementById('breed-section');
+    const catDefaultSection = document.getElementById('cat-default-section');
+    
+    if (option === 'yes') {
+        yesBtn.classList.add('active');
+        noBtn.classList.remove('active');
+        breedSection.style.display = 'block';
+        catDefaultSection.style.display = 'none';
+        breedSection.style.animation = 'fadeInUp 0.5s ease-out';
+    } else {
+        noBtn.classList.add('active');
+        yesBtn.classList.remove('active');
+        breedSection.style.display = 'none';
+        catDefaultSection.style.display = 'block';
+        catDefaultSection.style.animation = 'fadeInUp 0.5s ease-out';
+    }
+}
+
+function toggleBreedOption(option) {
+    const dropdownCard = document.getElementById('dropdown-card');
+    const customCard = document.getElementById('custom-card');
+    const customInputs = document.querySelector('.custom-breed-inputs');
+    
+    if (option === 'custom') {
+        dropdownCard.classList.remove('active');
+        customCard.classList.add('active');
+        customInputs.style.display = 'block';
+        customInputs.style.animation = 'fadeInUp 0.5s ease-out';
+    } else {
+        customCard.classList.remove('active');
+        dropdownCard.classList.add('active');
+        customInputs.style.display = 'none';
+    }
+}
+
+function selectWeight(weightRange) {
+    // Remove active class from all weight cards
+    document.querySelectorAll('.weight-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    const selectedCard = document.querySelector(`[data-weight="${weightRange}"]`);
+    selectedCard.classList.add('selected');
+    
+    // Add selection animation
+    selectedCard.style.transform = 'scale(1.05)';
+    selectedCard.style.boxShadow = '0 20px 50px rgba(90, 200, 189, 0.4)';
+    
+    setTimeout(() => {
+        selectedCard.style.transform = '';
+    }, 300);
+}
+
+function submitBreed() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    
+    let breedInfo = '';
+    
+    // Always check weight selection first
+    const selectedWeight = document.querySelector('.weight-card.selected');
+    if (!selectedWeight) {
+        alert('Παρακαλώ επιλέξτε μια κατηγορία βάρους.');
+        return;
+    }
+    const weightInfo = selectedWeight.querySelector('.weight-range').textContent;
+    
+    // Check if user knows breed or not
+    if (document.getElementById('yes-btn').classList.contains('active')) {
+        // User knows breed
+        if (document.getElementById('dropdown-card').classList.contains('active')) {
+            const selectedBreed = document.getElementById('breed-dropdown').value;
+            if (!selectedBreed) {
+                alert('Παρακαλώ επιλέξτε μια ράτσα από τη λίστα.');
+                return;
+            }
+            breedInfo = `${selectedBreed} (${weightInfo})`;
+        } else {
+            const customBreed = document.getElementById('custom-breed').value.trim();
+            if (!customBreed) {
+                alert('Παρακαλώ εισαγάγετε τη ράτσα.');
+                return;
+            }
+            breedInfo = customBreed;
+            
+            if (document.getElementById('is-mixed').checked) {
+                const additionalBreed = document.getElementById('additional-breed-input').value.trim();
+                if (additionalBreed) {
+                    breedInfo += ` + ${additionalBreed}`;
+                }
+            }
+            breedInfo += ` (${weightInfo})`;
+        }
+    } else {
+        // User doesn't know breed - use "Κοινό ευρωπαϊκό κοντότριχο"
+        breedInfo = `Κοινό ευρωπαϊκό κοντότριχο (${weightInfo})`;
+    }
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+    setTimeout(() => {
+        // Navigate to pet name page
+        window.location.href = `{% url 'main:pet_name' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breedInfo)}`;
+    }, 1000);
+}
+
+function goBack() {
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const gender = urlParams.get('gender');
+        window.location.href = `{% url "main:pet_birthdate" %}?type=${petType}&gender=${gender}`;
+    }, 500);
+}
+
+// Add click handler to dropdown card
+document.getElementById('dropdown-card').addEventListener('click', function() {
+    if (!this.classList.contains('active')) {
+        toggleBreedOption('dropdown');
+    }
+});
+</script>
+{% endblock %}

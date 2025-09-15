@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Προβλήματα Υγείας Γάτας - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.3rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Επιλέξτε τα προβλήματα υγείας <span id="pet-name-in-title">της γάτας σας</span>
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1rem; margin-bottom: 2rem; opacity: 0.9;">
+                Μπορείτε να επιλέξετε περισσότερες από μία επιλογές
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 2rem;">
+                <div class="pet-icon-small">🐱</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Health Conditions Grid -->
+            <div class="conditions-grid">
+                {% for condition in conditions %}
+                <div class="condition-item" data-condition="{{ condition }}" onclick="toggleCondition('{{ condition }}')">
+                    <div class="condition-checkbox">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <span class="condition-text">{{ condition }}</span>
+                </div>
+                {% endfor %}
+                
+                <!-- Other option -->
+                <div class="condition-item other-condition" data-condition="other" onclick="toggleOtherCondition()">
+                    <div class="condition-checkbox">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <span class="condition-text">Άλλο</span>
+                </div>
+            </div>
+            
+            <!-- Other condition input -->
+            <div class="other-input-section" id="other-input-section" style="display: none;">
+                <div class="other-input-card">
+                    <h4 class="other-input-title">Περιγράψτε το πρόβλημα υγείας:</h4>
+                    <textarea id="other-condition-text" class="other-condition-textarea" placeholder="Πληκτρολογήστε εδώ το πρόβλημα υγείας που δεν βρίσκεται στη λίστα..." maxlength="500"></textarea>
+                    <div class="char-counter">
+                        <span id="char-count">0</span>/500 χαρακτήρες
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected conditions summary -->
+            <div class="selected-conditions" id="selected-conditions" style="display: none;">
+                <h4 class="selected-title">Επιλεγμένα προβλήματα υγείας:</h4>
+                <div class="selected-list" id="selected-list">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" id="continue-btn" onclick="submitConditions()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft); opacity: 0.5;" disabled>
+                    Επόμενο
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">🐱</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">🏥</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">💊</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">🩺</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">❤️</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">🌡️</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+let selectedConditions = new Set();
+let otherConditionSelected = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update title to include pet name
+        document.getElementById('pet-name-in-title').textContent = `της ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Add entrance animations
+    const items = document.querySelectorAll('.condition-item');
+    items.forEach((item, index) => {
+        item.style.animation = `fadeInUp 0.8s ease-out ${0.1 + index * 0.05}s both`;
+    });
+    
+    // Add character counter for other condition
+    const textarea = document.getElementById('other-condition-text');
+    const charCount = document.getElementById('char-count');
+    
+    textarea.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = count;
+        
+        if (count > 450) {
+            charCount.style.color = '#e74c3c';
+        } else if (count > 350) {
+            charCount.style.color = '#f39c12';
+        } else {
+            charCount.style.color = '#666';
+        }
+    });
+});
+
+function toggleCondition(condition) {
+    const item = document.querySelector(`[data-condition="${condition}"]`);
+    
+    if (selectedConditions.has(condition)) {
+        selectedConditions.delete(condition);
+        item.classList.remove('selected');
+    } else {
+        selectedConditions.add(condition);
+        item.classList.add('selected');
+    }
+    
+    updateSelectedSummary();
+    updateContinueButton();
+}
+
+function toggleOtherCondition() {
+    const item = document.querySelector('.other-condition');
+    const otherSection = document.getElementById('other-input-section');
+    
+    if (otherConditionSelected) {
+        otherConditionSelected = false;
+        item.classList.remove('selected');
+        otherSection.style.display = 'none';
+    } else {
+        otherConditionSelected = true;
+        item.classList.add('selected');
+        otherSection.style.display = 'block';
+        otherSection.style.animation = 'fadeInUp 0.5s ease-out';
+        
+        // Focus on textarea
+        setTimeout(() => {
+            document.getElementById('other-condition-text').focus();
+        }, 100);
+    }
+    
+    updateSelectedSummary();
+    updateContinueButton();
+}
+
+function updateSelectedSummary() {
+    const selectedSection = document.getElementById('selected-conditions');
+    const selectedList = document.getElementById('selected-list');
+    
+    if (selectedConditions.size > 0 || otherConditionSelected) {
+        selectedSection.style.display = 'block';
+        selectedSection.style.animation = 'fadeInUp 0.5s ease-out';
+        
+        selectedList.innerHTML = '';
+        
+        // Add selected conditions
+        selectedConditions.forEach(condition => {
+            const tag = document.createElement('span');
+            tag.className = 'selected-tag';
+            tag.textContent = condition;
+            selectedList.appendChild(tag);
+        });
+        
+        // Add other condition if selected
+        if (otherConditionSelected) {
+            const tag = document.createElement('span');
+            tag.className = 'selected-tag other-tag';
+            tag.textContent = 'Άλλο';
+            selectedList.appendChild(tag);
+        }
+    } else {
+        selectedSection.style.display = 'none';
+    }
+}
+
+function updateContinueButton() {
+    const continueBtn = document.getElementById('continue-btn');
+    const hasSelections = selectedConditions.size > 0 || otherConditionSelected;
+    
+    if (hasSelections) {
+        continueBtn.disabled = false;
+        continueBtn.style.opacity = '1';
+    } else {
+        continueBtn.disabled = true;
+        continueBtn.style.opacity = '0.5';
+    }
+}
+
+function submitConditions() {
+    if (selectedConditions.size === 0 && !otherConditionSelected) {
+        alert('Παρακαλώ επιλέξτε τουλάχιστον ένα πρόβλημα υγείας.');
+        return;
+    }
+    
+    if (otherConditionSelected) {
+        const otherText = document.getElementById('other-condition-text').value.trim();
+        if (!otherText) {
+            alert('Παρακαλώ περιγράψτε το άλλο πρόβλημα υγείας.');
+            document.getElementById('other-condition-text').focus();
+            return;
+        }
+    }
+    
+    // Get all parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    
+    // Prepare conditions list
+    let conditionsList = Array.from(selectedConditions);
+    if (otherConditionSelected) {
+        const otherText = document.getElementById('other-condition-text').value.trim();
+        conditionsList.push(`Άλλο: ${otherText}`);
+    }
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+    setTimeout(() => {
+        // Navigate to contact info page with all data including conditions
+        const params = new URLSearchParams({
+            type: petType || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            breed: breed || '',
+            name: name || '',
+            health_status: 'problems',
+            conditions: conditionsList.join(', ')
+        });
+        
+        window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+    }, 1000);
+}
+
+function goBack() {
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const gender = urlParams.get('gender');
+        const birthdate = urlParams.get('birthdate');
+        const breed = urlParams.get('breed');
+        const name = urlParams.get('name');
+        
+        window.location.href = `{% url "main:health_status" %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(name)}`;
+    }, 500);
+}
+</script>
+{% endblock %}

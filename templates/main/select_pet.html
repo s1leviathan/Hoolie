@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Επιλογή Κατοικιδίου - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 3rem;">
+                Επιλέξατε: 
+                <span id="selected-pet-name" style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    <!-- Will be filled by JavaScript -->
+                </span>
+            </h1>
+            
+            <div class="selected-pet-display">
+                <div class="pet-card selected" style="transform: scale(1.1); box-shadow: 0 20px 50px rgba(90, 200, 189, 0.4);">
+                    <div class="pet-icon" id="selected-pet-icon" style="font-size: 6rem;">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+                    <h3 class="pet-name" id="selected-pet-title">
+                        <!-- Will be filled by JavaScript -->
+                    </h3>
+                    <p class="pet-description">
+                        Εξαιρετική επιλογή! Ας προχωρήσουμε στην ασφαλιστική κάλυψη.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="action-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Επιστροφή
+                </button>
+                <button class="btn btn-lg" onclick="continueToForm()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft);">
+                    Συνέχεια
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get pet type from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    
+    // Set pet information based on selection
+    if (petType === 'dog') {
+        document.getElementById('selected-pet-name').textContent = 'Σκύλος';
+        document.getElementById('selected-pet-icon').textContent = '🐕';
+        document.getElementById('selected-pet-title').textContent = 'Σκύλος';
+    } else if (petType === 'cat') {
+        document.getElementById('selected-pet-name').textContent = 'Γάτα';
+        document.getElementById('selected-pet-icon').textContent = '🐱';
+        document.getElementById('selected-pet-title').textContent = 'Γάτα';
+    } else {
+        // Default or redirect back if no valid selection
+        window.location.href = '{% url "main:index" %}';
+    }
+    
+    // Add entrance animation
+    const petCard = document.querySelector('.pet-card.selected');
+    petCard.style.animation = 'fadeInUp 1s ease-out, petCelebration 2s ease-in-out 1s infinite';
+});
+
+function goBack() {
+    // Add exit animation
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        window.location.href = '{% url "main:index" %}';
+    }, 500);
+}
+
+function continueToForm() {
+    // Get pet type from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+    setTimeout(() => {
+        // Navigate to gender selection page
+        window.location.href = `{% url 'main:pet_gender' %}?type=${petType}`;
+    }, 1000);
+}
+
+// Add celebration animation
+const celebrationStyle = document.createElement('style');
+celebrationStyle.textContent = `
+    @keyframes petCelebration {
+        0%, 100% { transform: scale(1.1) rotate(0deg); }
+        25% { transform: scale(1.15) rotate(2deg); }
+        75% { transform: scale(1.15) rotate(-2deg); }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-30px); }
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px) !important;
+        transition: all 0.3s ease;
+    }
+`;
+document.head.appendChild(celebrationStyle);
+</script>
+{% endblock %}

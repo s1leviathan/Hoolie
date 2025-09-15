@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Στοιχεία Επικοινωνίας - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Σχεδόν τελειώσαμε! 🎉
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">
+                Η ομάδα της Hoolie θα επικοινωνήσει μαζί σας για ένα εξατομικευμένο πακέτο ασφάλισης <span id="pet-name-in-subtitle">για το κατοικίδιό σας</span>
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Email Input Form -->
+            <div class="email-form-container">
+                <div class="form-card">
+                    <div class="form-header">
+                        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+                            📧 Πώς μπορούμε να επικοινωνήσουμε μαζί σας;
+                        </h3>
+                        <p style="margin-bottom: 2rem;">
+                            Εισαγάγετε το email σας για να λάβετε την προσφορά σας
+                        </p>
+                    </div>
+                    
+                    <div class="email-input-group">
+                        <label for="email-input" class="form-label">Email Address *</label>
+                        <input 
+                            type="email" 
+                            id="email-input" 
+                            class="form-control email-input" 
+                            placeholder="π.χ. yourname@example.com"
+                            required
+                        >
+                        <div class="input-feedback" id="email-feedback"></div>
+                    </div>
+                    
+                    <div class="privacy-notice" style="margin: 1.5rem 0;">
+                        <small style="font-size: 0.9rem;">
+                            🔒 Τα στοιχεία σας είναι ασφαλή και δεν θα μοιραστούν με τρίτους
+                        </small>
+                    </div>
+                    
+                    <button 
+                        class="btn btn-primary btn-lg submit-email-btn" 
+                        onclick="submitEmail()"
+                        style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 15px;"
+                    >
+                        Λήψη Προσφοράς 🚀
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    ← Πίσω
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    const breed = urlParams.get('breed');
+    
+    // Set pet avatar and name
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update subtitle to include pet name
+        document.getElementById('pet-name-in-subtitle').textContent = `για ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Email validation
+    const emailInput = document.getElementById('email-input');
+    const emailFeedback = document.getElementById('email-feedback');
+    
+    emailInput.addEventListener('input', function() {
+        const email = this.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email === '') {
+            emailFeedback.textContent = '';
+            emailFeedback.className = 'input-feedback';
+        } else if (emailRegex.test(email)) {
+            emailFeedback.textContent = '✅ Έγκυρο email';
+            emailFeedback.className = 'input-feedback valid';
+        } else {
+            emailFeedback.textContent = '❌ Παρακαλώ εισαγάγετε έγκυρο email';
+            emailFeedback.className = 'input-feedback invalid';
+        }
+    });
+});
+
+function submitEmail() {
+    const emailInput = document.getElementById('email-input');
+    const email = emailInput.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!email) {
+        alert('Παρακαλώ εισαγάγετε το email σας');
+        emailInput.focus();
+        return;
+    }
+    
+    if (!emailRegex.test(email)) {
+        alert('Παρακαλώ εισαγάγετε έγκυρο email');
+        emailInput.focus();
+        return;
+    }
+    
+    // Get all parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    const healthStatus = urlParams.get('health_status');
+    const conditions = urlParams.get('conditions');
+    
+    // Navigate to thank you page with all data including email
+    const params = new URLSearchParams({
+        type: petType || '',
+        gender: gender || '',
+        birthdate: birthdate || '',
+        breed: breed || '',
+        name: name || '',
+        health_status: healthStatus || '',
+        conditions: conditions || '',
+        email: email
+    });
+    
+    window.location.href = `{% url 'main:thank_you' %}?${params.toString()}`;
+}
+
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}

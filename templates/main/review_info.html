@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Επισκόπηση Στοιχείων - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Επισκόπηση Στοιχείων 📋
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-bottom: 3rem; opacity: 0.9;">
+                Παρακαλώ ελέγξτε τα στοιχεία <span id="pet-name-in-subtitle">του κατοικιδιού σας</span> πριν προχωρήσουμε
+            </p>
+            
+            <!-- Review Cards -->
+            <div class="review-section">
+                <!-- Pet Basic Info -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <h3>🐾 Βασικά Στοιχεία</h3>
+                        <button class="edit-btn" id="basic-edit-btn" onclick="toggleEditMode('basic')">Επεξεργασία</button>
+                    </div>
+                    <div class="review-content" id="basic-content">
+                        <!-- View Mode -->
+                        <div class="view-mode" id="basic-view">
+                            <div class="review-item">
+                                <strong>Όνομα:</strong>
+                                <span id="review-name">-</span>
+                            </div>
+                            <div class="review-item">
+                                <strong>Τύπος:</strong>
+                                <span id="review-type">-</span>
+                            </div>
+                            <div class="review-item">
+                                <strong>Φύλο:</strong>
+                                <span id="review-gender">-</span>
+                            </div>
+                            <div class="review-item">
+                                <strong>Ημερομηνία Γέννησης:</strong>
+                                <span id="review-birthdate">-</span>
+                            </div>
+                            <div class="review-item">
+                                <strong>Ράτσα & Βάρος:</strong>
+                                <span id="review-breed">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Mode -->
+                        <div class="edit-mode" id="basic-edit" style="display: none;">
+                            <div class="edit-item">
+                                <label><strong>Όνομα:</strong></label>
+                                <input type="text" id="edit-name" class="edit-input" placeholder="Εισαγάγετε όνομα">
+                            </div>
+                            <div class="edit-item">
+                                <label><strong>Τύπος:</strong></label>
+                                <div class="readonly-field" id="edit-type-display">
+                                    <span id="type-readonly-text">Σκύλος 🐕</span>
+                                    <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">Δεν μπορεί να αλλάξει</small>
+                                </div>
+                            </div>
+                            <div class="edit-item">
+                                <label><strong>Φύλο:</strong></label>
+                                <select id="edit-gender" class="edit-select">
+                                    <option value="male">Αρσενικό ♂️</option>
+                                    <option value="female">Θηλυκό ♀️</option>
+                                </select>
+                            </div>
+                            <div class="edit-item">
+                                <label><strong>Ημερομηνία Γέννησης:</strong></label>
+                                <input type="text" id="edit-birthdate" class="edit-input" placeholder="π.χ. 15/03/2020">
+                            </div>
+                            <div class="edit-item">
+                                <label><strong>Ράτσα:</strong></label>
+                                <input type="text" id="edit-breed" class="edit-input" placeholder="π.χ. Λαμπραντόρ">
+                            </div>
+                            <div class="edit-item">
+                                <label><strong>Βάρος:</strong></label>
+                                <select id="edit-weight" class="edit-select">
+                                    <!-- Options will be populated by JavaScript based on pet type -->
+                                </select>
+                            </div>
+                            
+                            <div class="edit-actions">
+                                <button class="save-btn" onclick="saveBasicInfo()">💾 Αποθήκευση</button>
+                                <button class="cancel-btn" onclick="cancelEdit('basic')">❌ Ακύρωση</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health Status -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <h3>🏥 Κατάσταση Υγείας</h3>
+                        <button class="edit-btn" onclick="editSection('health')">Επεξεργασία</button>
+                    </div>
+                    <div class="review-content">
+                        <div class="review-item">
+                            <strong>Κατάσταση:</strong>
+                            <span id="review-health-status">Υγιές - Όλα καλά ✅</span>
+                        </div>
+                        <div class="review-item" id="conditions-item" style="display: none;">
+                            <strong>Προβλήματα Υγείας:</strong>
+                            <span id="review-conditions">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-success" onclick="proceedToInsurance()" style="padding: 1rem 3rem; border-radius: 15px; font-weight: 600; font-size: 1.1rem;">
+                    🚀 Προχωρήστε στην Ασφάλιση
+                </button>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 2rem;">
+                <button class="btn btn-lg btn-light" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    ← Πίσω
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+let currentData = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    currentData = {
+        type: urlParams.get('type') || '',
+        gender: urlParams.get('gender') || '',
+        birthdate: urlParams.get('birthdate') || '',
+        breed: urlParams.get('breed') || '',
+        name: urlParams.get('name') || '',
+        health_status: urlParams.get('health_status') || '',
+        conditions: urlParams.get('conditions') || ''
+    };
+    
+    populateReviewData();
+});
+
+function populateReviewData() {
+    // Pet name
+    if (currentData.name) {
+        const petName = decodeURIComponent(currentData.name);
+        document.getElementById('review-name').textContent = petName;
+        document.getElementById('pet-name-in-subtitle').textContent = `του ${petName}`;
+    }
+    
+    // Pet type
+    if (currentData.type === 'dog') {
+        document.getElementById('review-type').textContent = 'Σκύλος 🐕';
+    } else if (currentData.type === 'cat') {
+        document.getElementById('review-type').textContent = 'Γάτα 🐱';
+    }
+    
+    // Gender
+    if (currentData.gender === 'male') {
+        document.getElementById('review-gender').textContent = 'Αρσενικό ♂️';
+    } else if (currentData.gender === 'female') {
+        document.getElementById('review-gender').textContent = 'Θηλυκό ♀️';
+    }
+    
+    // Birthdate
+    if (currentData.birthdate) {
+        document.getElementById('review-birthdate').textContent = decodeURIComponent(currentData.birthdate);
+    }
+    
+    // Breed
+    if (currentData.breed) {
+        document.getElementById('review-breed').textContent = decodeURIComponent(currentData.breed);
+    }
+    
+    // Health status
+    if (currentData.health_status === 'healthy') {
+        document.getElementById('review-health-status').textContent = 'Υγιές - Όλα καλά ✅';
+        document.getElementById('conditions-item').style.display = 'none';
+    } else if (currentData.health_status === 'problems') {
+        document.getElementById('review-health-status').textContent = 'Έχει προβλήματα υγείας 🏥';
+        if (currentData.conditions) {
+            document.getElementById('conditions-item').style.display = 'block';
+            document.getElementById('review-conditions').textContent = decodeURIComponent(currentData.conditions);
+        }
+    }
+}
+
+function toggleEditMode(section) {
+    if (section === 'basic') {
+        const viewMode = document.getElementById('basic-view');
+        const editMode = document.getElementById('basic-edit');
+        const editBtn = document.getElementById('basic-edit-btn');
+        
+        if (editMode.style.display === 'none') {
+            // Switch to edit mode
+            populateEditFields();
+            viewMode.style.display = 'none';
+            editMode.style.display = 'block';
+            editBtn.textContent = 'Ακύρωση';
+            editBtn.onclick = () => cancelEdit('basic');
+        } else {
+            // Switch back to view mode
+            cancelEdit('basic');
+        }
+    }
+}
+
+function populateEditFields() {
+    // Populate edit fields with current data
+    document.getElementById('edit-name').value = decodeURIComponent(currentData.name || '');
+    
+    // Set pet type as readonly
+    const petType = currentData.type || 'dog';
+    if (petType === 'dog') {
+        document.getElementById('type-readonly-text').textContent = 'Σκύλος 🐕';
+    } else {
+        document.getElementById('type-readonly-text').textContent = 'Γάτα 🐱';
+    }
+    
+    document.getElementById('edit-gender').value = currentData.gender || 'male';
+    document.getElementById('edit-birthdate').value = decodeURIComponent(currentData.birthdate || '');
+    
+    // Parse breed and weight from combined field
+    const breedInfo = decodeURIComponent(currentData.breed || '');
+    const breedMatch = breedInfo.match(/^(.*?)\s*\((.*?)\)$/);
+    
+    if (breedMatch) {
+        document.getElementById('edit-breed').value = breedMatch[1].trim();
+        const weightInfo = breedMatch[2].trim();
+        populateWeightOptions(petType, weightInfo);
+    } else {
+        document.getElementById('edit-breed').value = breedInfo;
+        populateWeightOptions(petType, '');
+    }
+}
+
+function populateWeightOptions(petType, currentWeight) {
+    const weightSelect = document.getElementById('edit-weight');
+    weightSelect.innerHTML = '';
+    
+    let weightOptions = [];
+    
+    if (petType === 'dog') {
+        weightOptions = [
+            { value: 'έως 10 κιλά', text: 'έως 10 κιλά (Μικρά κατοικίδια)' },
+            { value: '11-20 κιλά', text: '11-20 κιλά (Μεσαία κατοικίδια)' },
+            { value: '21-40 κιλά', text: '21-40 κιλά (Μεγάλα κατοικίδια)' },
+            { value: '>40 κιλά', text: '>40 κιλά (Πολύ μεγάλα κατοικίδια)' }
+        ];
+    } else if (petType === 'cat') {
+        weightOptions = [
+            { value: 'έως 10 κιλά', text: 'έως 10 κιλά (Κανονικό μέγεθος)' },
+            { value: '11-20 κιλά', text: '11-20 κιλά (Μεγάλο μέγεθος)' }
+        ];
+    }
+    
+    // Add options to select
+    weightOptions.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.text;
+        
+        // Select current weight if it matches
+        if (currentWeight === option.value) {
+            optionElement.selected = true;
+        }
+        
+        weightSelect.appendChild(optionElement);
+    });
+    
+    // If no match found, select first option
+    if (!currentWeight || !weightOptions.find(opt => opt.value === currentWeight)) {
+        if (weightSelect.options.length > 0) {
+            weightSelect.selectedIndex = 0;
+        }
+    }
+}
+
+function saveBasicInfo() {
+    // Get values from edit fields
+    const newName = document.getElementById('edit-name').value.trim();
+    const newGender = document.getElementById('edit-gender').value;
+    const newBirthdate = document.getElementById('edit-birthdate').value.trim();
+    const newBreed = document.getElementById('edit-breed').value.trim();
+    const newWeight = document.getElementById('edit-weight').value;
+    
+    // Validate required fields
+    if (!newName) {
+        alert('Παρακαλώ εισαγάγετε το όνομα του κατοικιδιού.');
+        document.getElementById('edit-name').focus();
+        return;
+    }
+    
+    if (!newBirthdate) {
+        alert('Παρακαλώ εισαγάγετε την ημερομηνία γέννησης.');
+        document.getElementById('edit-birthdate').focus();
+        return;
+    }
+    
+    if (!newBreed) {
+        alert('Παρακαλώ εισαγάγετε τη ράτσα.');
+        document.getElementById('edit-breed').focus();
+        return;
+    }
+    
+    if (!newWeight) {
+        alert('Παρακαλώ επιλέξτε κατηγορία βάρους.');
+        document.getElementById('edit-weight').focus();
+        return;
+    }
+    
+    // Combine breed and weight info
+    const combinedBreedInfo = `${newBreed} (${newWeight})`;
+    
+    // Update current data (pet type remains unchanged)
+    currentData.name = encodeURIComponent(newName);
+    currentData.gender = newGender;
+    currentData.birthdate = encodeURIComponent(newBirthdate);
+    currentData.breed = encodeURIComponent(combinedBreedInfo);
+    
+    // Update the display
+    populateReviewData();
+    
+    // Switch back to view mode
+    cancelEdit('basic');
+    
+    // Show success message
+    showSuccessMessage('Τα στοιχεία ενημερώθηκαν επιτυχώς! ✅');
+}
+
+function cancelEdit(section) {
+    if (section === 'basic') {
+        const viewMode = document.getElementById('basic-view');
+        const editMode = document.getElementById('basic-edit');
+        const editBtn = document.getElementById('basic-edit-btn');
+        
+        viewMode.style.display = 'block';
+        editMode.style.display = 'none';
+        editBtn.textContent = 'Επεξεργασία';
+        editBtn.onclick = () => toggleEditMode('basic');
+    }
+}
+
+function showSuccessMessage(message) {
+    // Create and show a temporary success message
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    successDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
+        z-index: 1000;
+        font-weight: 600;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(successDiv);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        successDiv.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            document.body.removeChild(successDiv);
+        }, 300);
+    }, 3000);
+}
+
+function editSection(section) {
+    if (section === 'health') {
+        // Go back to health status page
+        window.location.href = `{% url 'main:health_status' %}?type=${currentData.type}&gender=${currentData.gender}&birthdate=${encodeURIComponent(currentData.birthdate)}&breed=${encodeURIComponent(currentData.breed)}&name=${encodeURIComponent(currentData.name)}`;
+    }
+}
+
+function proceedToInsurance() {
+    // Navigate to insurance programs page to select a plan
+    const params = new URLSearchParams({
+        type: currentData.type,
+        gender: currentData.gender,
+        birthdate: currentData.birthdate,
+        breed: currentData.breed,
+        name: currentData.name,
+        health_status: currentData.health_status,
+        conditions: currentData.conditions
+    });
+    
+    window.location.href = `{% url 'main:insurance_programs' %}?${params.toString()}`;
+}
+
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}

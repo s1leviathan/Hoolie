@@ -1,0 +1,1011 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Στοιχεία Ασφαλισμένου - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Στοιχεία Ασφαλισμένου 📋
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                Παρακαλούμε συμπληρώστε τα στοιχεία σας για την ολοκλήρωση της ασφάλισης
+            </p>
+            
+            <!-- Second Pet Health Issue Message -->
+            {% if second_pet_health_issue %}
+            <div class="health-issue-message">
+                <div class="message-card">
+                    <div class="message-icon">⚠️</div>
+                    <div class="message-content">
+                        <h4>Σχετικά με το δεύτερο κατοικίδιο</h4>
+                        <p>Λόγω των προβλημάτων υγείας του δεύτερου κατοικιδίου, μπορούμε να προχωρήσουμε μόνο με την ασφάλιση του πρώτου κατοικιδίου. Η ομάδα μας θα επικοινωνήσει μαζί σας για το δεύτερο κατοικίδιο.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Pet & Program Summary -->
+            <div class="summary-section">
+                <!-- First Pet Info Card -->
+                <div class="pet-info-card" style="margin-bottom: 1.5rem;">
+                    <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                    <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                    <span class="gender-indicator" id="pet-gender-display">
+                        <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                    </span>
+                </div>
+                
+                <!-- Second Pet Info Card (if exists) -->
+                {% if second_pet_name %}
+                <div class="pet-info-card" style="margin-bottom: 1.5rem;" id="second-pet-card">
+                    <div class="pet-icon-small" id="second-pet-avatar">🐕</div>
+                    <span class="pet-reminder-text" id="second-pet-name-display">{{ second_pet_name }}</span>
+                    <span class="gender-indicator" id="second-pet-gender-display">
+                        <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                    </span>
+                </div>
+                {% endif %}
+                
+                <!-- Selected Program Display -->
+                <div class="selected-program-card" id="selected-program-display" style="margin-bottom: 2rem;">
+                    <div class="program-info">
+                        <span class="program-label">Επιλεγμένο Πρόγραμμα:</span>
+                        <span class="program-name" id="program-name-display">Gold</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Data Form -->
+            <div class="user-data-container">
+                <div class="user-data-card">
+                    <div class="form-header">
+                        <h2>👤 Στοιχεία Ασφαλισμένου</h2>
+                        <p>Συμπληρώστε τα παρακάτω στοιχεία για την έκδοση του ασφαλιστηρίου</p>
+                    </div>
+                    
+                    <form id="userDataForm" class="user-form">
+                        <div class="form-grid">
+                            <!-- Personal Information -->
+                            <div class="form-group full-width">
+                                <label for="fullName">Ονοματεπώνυμο: <span class="required">*</span></label>
+                                <input type="text" id="fullName" name="fullName" value="{{ user_full_name }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="afm">Α.Φ.Μ.: <span class="required">*</span></label>
+                                <input type="text" id="afm" name="afm" value="{{ user_afm }}" required maxlength="9" pattern="[0-9]{9}">
+                                <small class="form-hint">9 ψηφία</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="phone">Τηλέφωνο: <span class="required">*</span></label>
+                                <input type="tel" id="phone" name="phone" value="{{ user_phone }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="address">Διεύθυνση: <span class="required">*</span></label>
+                                <input type="text" id="address" name="address" value="{{ user_address }}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="postalCode">Τ.Κ.: <span class="required">*</span></label>
+                                <input type="text" id="postalCode" name="postalCode" value="{{ user_postal_code }}" required maxlength="5" pattern="[0-9]{5}">
+                                <small class="form-hint">5 ψηφία</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email: <span class="required">*</span></label>
+                                <input type="email" id="email" name="email" value="{{ user_email }}" required>
+                            </div>
+                            
+                            <div class="form-group full-width">
+                                <label for="microchip">Αρ. Microchip:</label>
+                                <input type="text" id="microchip" name="microchip" value="{{ user_microchip }}" placeholder="Προαιρετικό">
+                                <small class="form-hint">Προαιρετικό πεδίο - εάν το κατοικίδιό σας έχει microchip</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing Section -->
+                        <div class="pricing-section" id="pricingSection">
+                            <h3>💰 Τιμολόγηση Ασφάλισης</h3>
+                            
+                            <div class="pricing-card">
+                                <div class="pricing-header">
+                                    <div class="pet-program-info">
+                                        <span class="pet-type" id="pricing-pet-type">🐕 Σκύλος</span>
+                                        <span class="program-badge" id="pricing-program">Gold</span>
+                                        <span class="weight-info" id="pricing-weight">έως 10 κιλά</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="pricing-options" id="pricingOptions">
+                                    <!-- Pricing options will be populated by JavaScript -->
+                                </div>
+                                
+                                <div class="second-pet-info">
+                                    <div class="discount-badge">
+                                        <span class="discount-icon">🎉</span>
+                                        <div class="discount-text">
+                                            <strong>Έκπτωση 2ου Κατοικιδίου</strong>
+                                            <small>30% έκπτωση για επιπλέον κατοικίδια</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Second Pet Form -->
+                        <div class="second-pet-section" id="secondPetSection">
+                            <div class="second-pet-card">
+                                <div class="second-pet-header">
+                                    <h4>🐾 Έχετε δεύτερο κατοικίδιο;</h4>
+                                    <p>Προσθέστε ένα δεύτερο κατοικίδιο και εξοικονομήστε 30%!</p>
+                                </div>
+                                
+                                <!-- Add Second Pet Button -->
+                                <div class="second-pet-actions" id="addPetActions">
+                                    <button type="button" class="add-pet-btn" onclick="showSecondPetForm()">
+                                        <span class="btn-icon">➕</span>
+                                        Προσθήκη 2ου Κατοικιδίου
+                                    </button>
+                                    <small class="second-pet-note">Συμπληρώστε τα στοιχεία του δεύτερου κατοικιδίου</small>
+                                </div>
+                                
+                                <!-- Second Pet Form (Initially Hidden) -->
+                                <div class="second-pet-form" id="secondPetForm" style="display: none;">
+                                    <div class="form-header">
+                                        <h5>📝 Στοιχεία 2ου Κατοικιδίου</h5>
+                                        <p>Το δεύτερο κατοικίδιο θα έχει το ίδιο πρόγραμμα με το πρώτο</p>
+                                    </div>
+                                    
+                                    <div class="second-pet-grid">
+                                        <!-- Pet Type (Same as First Pet) -->
+                                        <div class="form-group">
+                                            <label>Τύπος Κατοικιδίου:</label>
+                                            <div class="pet-type-display">
+                                                <div class="same-pet-type" id="samePetTypeDisplay">
+                                                    <span class="pet-icon" id="samePetIcon">🐕</span>
+                                                    <span class="pet-label" id="samePetLabel">Σκύλος</span>
+                                                    <small class="pet-type-note">(Ίδιος τύπος με το 1ο κατοικίδιο)</small>
+                                                </div>
+                                                <input type="hidden" name="secondPetType" id="secondPetTypeHidden" value="">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Pet Name -->
+                                        <div class="form-group">
+                                            <label for="secondPetName">Όνομα: <span class="required">*</span></label>
+                                            <input type="text" id="secondPetName" name="secondPetName" onchange="updateSecondPetPricing()">
+                                        </div>
+                                        
+                                        <!-- Pet Gender -->
+                                        <div class="form-group">
+                                            <label>Φύλο: <span class="required">*</span></label>
+                                            <div class="gender-options">
+                                                <label class="gender-option">
+                                                    <input type="radio" name="secondPetGender" value="male" onchange="updateSecondPetPricing()">
+                                                    <span class="gender-content">♂️ Αρσενικό</span>
+                                                </label>
+                                                <label class="gender-option">
+                                                    <input type="radio" name="secondPetGender" value="female" onchange="updateSecondPetPricing()">
+                                                    <span class="gender-content">♀️ Θηλυκό</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Pet Weight -->
+                                        <div class="form-group">
+                                            <label for="secondPetWeight">Βάρος: <span class="required">*</span></label>
+                                            <select id="secondPetWeight" name="secondPetWeight" onchange="updateSecondPetPricing()">
+                                                <option value="">Επιλέξτε βάρος</option>
+                                                <!-- Options will be populated by JavaScript based on pet type -->
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Health Status -->
+                                        <div class="form-group full-width">
+                                            <label>Κατάσταση Υγείας: <span class="required">*</span></label>
+                                            <div class="health-options">
+                                                <label class="health-option healthy">
+                                                    <input type="radio" name="secondPetHealth" value="healthy" onchange="updateSecondPetPricing()">
+                                                    <span class="health-content">
+                                                        <span class="health-icon">✅</span>
+                                                        <span class="health-text">Υγιές - Όλα καλά</span>
+                                                    </span>
+                                                </label>
+                                                <label class="health-option problems">
+                                                    <input type="radio" name="secondPetHealth" value="problems" onchange="updateSecondPetPricing()">
+                                                    <span class="health-content">
+                                                        <span class="health-icon">⚠️</span>
+                                                        <span class="health-text">Έχει προβλήματα υγείας</span>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="health-warning" id="healthWarning" style="display: none;">
+                                                <p>⚠️ Για κατοικίδια με προβλήματα υγείας, η ομάδα μας θα επικοινωνήσει μαζί σας για ειδική αξιολόγηση.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Form Actions -->
+                                    <div class="second-pet-actions">
+                                        <button type="button" class="save-second-pet-btn" onclick="saveSecondPet()">
+                                            <span class="btn-icon">💾</span>
+                                            Αποθήκευση 2ου Κατοικιδίου
+                                        </button>
+                                        <button type="button" class="cancel-second-pet-btn" onclick="cancelSecondPet()">
+                                            <span class="btn-icon">❌</span>
+                                            Ακύρωση
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Second Pet Summary (After Saving) -->
+                                <div class="second-pet-summary" id="secondPetSummary" style="display: none;">
+                                    <div class="pet-summary-header">
+                                        <h5>🐾 2ο Κατοικίδιο Προστέθηκε!</h5>
+                                        <button type="button" class="edit-second-pet-btn" onclick="editSecondPet()">
+                                            <span class="btn-icon">✏️</span>
+                                            Επεξεργασία
+                                        </button>
+                                    </div>
+                                    <div class="pet-summary-content">
+                                        <div class="pet-info-display">
+                                            <span class="pet-avatar" id="secondPetAvatar">🐕</span>
+                                            <div class="pet-details">
+                                                <span class="pet-name" id="secondPetNameDisplay">Όνομα</span>
+                                                <span class="pet-info" id="secondPetInfoDisplay">Σκύλος, Αρσενικό, έως 10 κιλά</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="submit-btn">
+                                <span class="btn-icon">✅</span>
+                                Ολοκλήρωση Ασφάλισης
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 2rem;">
+                <button class="btn btn-lg btn-light" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    ← Πίσω
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    const program = urlParams.get('program');
+    const breed = urlParams.get('breed');
+    
+    // Set pet avatar
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+        document.getElementById('pricing-pet-type').textContent = '🐕 Σκύλος';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+        document.getElementById('pricing-pet-type').textContent = '🐱 Γάτα';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Set selected program
+    if (program) {
+        const programNames = {
+            'silver': 'Silver (2.000€)',
+            'gold': 'Gold (3.000€)',
+            'platinum': 'Platinum Dynasty (5.000€)'
+        };
+        
+        const programDisplay = document.getElementById('program-name-display');
+        const pricingProgram = document.getElementById('pricing-program');
+        
+        programDisplay.textContent = programNames[program] || program;
+        pricingProgram.textContent = program.charAt(0).toUpperCase() + program.slice(1);
+        
+        // Add program-specific styling
+        const programCard = document.getElementById('selected-program-display');
+        const pricingProgramElement = document.getElementById('pricing-program');
+        programCard.classList.add(`program-${program}`);
+        pricingProgramElement.classList.add(`${program}-badge`);
+    }
+    
+    // Extract and display weight info
+    if (breed) {
+        let weightInfo = '';
+        if (breed.includes('έως 10 κιλά')) {
+            weightInfo = 'έως 10 κιλά';
+        } else if (breed.includes('11-20 κιλά')) {
+            weightInfo = '11-20 κιλά';
+        } else if (breed.includes('21-40 κιλά')) {
+            weightInfo = '21-40 κιλά';
+        } else if (breed.includes('>40 κιλά')) {
+            weightInfo = '>40 κιλά';
+        }
+        
+        if (weightInfo) {
+            document.getElementById('pricing-weight').textContent = weightInfo;
+        }
+    }
+    
+    // Set second pet data if exists
+    {% if second_pet_name %}
+    // Set second pet avatar
+    if ('{{ second_pet_type }}' === 'dog') {
+        document.getElementById('second-pet-avatar').textContent = '🐕';
+    } else if ('{{ second_pet_type }}' === 'cat') {
+        document.getElementById('second-pet-avatar').textContent = '🐱';
+    }
+    
+    // Set second pet gender
+    if ('{{ second_pet_gender }}' === 'male') {
+        document.getElementById('second-pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if ('{{ second_pet_gender }}' === 'female') {
+        document.getElementById('second-pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    {% endif %}
+
+    // Load pricing data from Django context
+    {% if pricing_data %}
+    const pricingData = {{ pricing_data|safe }};
+    firstPetPricingData = pricingData; // Store for later use
+    
+    {% if second_pet_pricing_data %}
+    const secondPetPricingData = {{ second_pet_pricing_data|safe }};
+    displayBothPetsPricing(pricingData, secondPetPricingData);
+    {% else %}
+    displayPricing(pricingData);
+    {% endif %}
+    {% endif %}
+    
+    // Form validation
+    setupFormValidation();
+});
+
+function displayPricing(pricing) {
+    const pricingOptions = document.getElementById('pricingOptions');
+    
+    const pricingHTML = `
+        <div class="pricing-option main-option">
+            <div class="option-header">
+                <span class="option-title">Ετήσια Πληρωμή</span>
+                <span class="option-badge recommended">Συνιστάται</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${pricing.final}€</span>
+                <span class="period">/έτος</span>
+            </div>
+            <div class="option-benefits">
+                <span class="benefit">✓ Καλύτερη τιμή</span>
+                <span class="benefit">✓ Χωρίς επιπλέον χρεώσεις</span>
+            </div>
+        </div>
+        
+        <div class="pricing-option">
+            <div class="option-header">
+                <span class="option-title">Εξαμηνιαία Πληρωμή</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${pricing.six_month}€</span>
+                <span class="period">/6μηνο</span>
+            </div>
+            <div class="option-total">
+                <small>Συνολικά: ${(pricing.six_month * 2).toFixed(2)}€/έτος</small>
+            </div>
+        </div>
+        
+        <div class="pricing-option">
+            <div class="option-header">
+                <span class="option-title">Τριμηνιαία Πληρωμή</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${pricing.three_month}€</span>
+                <span class="period">/3μηνο</span>
+            </div>
+            <div class="option-total">
+                <small>Συνολικά: ${(pricing.three_month * 4).toFixed(2)}€/έτος</small>
+            </div>
+        </div>
+    `;
+    
+    pricingOptions.innerHTML = pricingHTML;
+}
+
+function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
+    const pricingOptions = document.getElementById('pricingOptions');
+    
+    // Check if both pets have same weight category
+    const urlParams = new URLSearchParams(window.location.search);
+    const firstPetWeight = getWeightFromBreed(urlParams.get('breed'));
+    const secondPetWeight = secondPetData ? secondPetData.weight : null;
+    
+    let combinedAnnual, combinedSixMonth, combinedThreeMonth;
+    let secondPetAnnualPrice, secondPetOriginalPrice;
+    
+    if (firstPetWeight === secondPetWeight) {
+        // Same weight: use fixed combined price from second_pet field
+        combinedAnnual = secondPetPricing.second_pet;
+        combinedSixMonth = secondPetPricing.second_pet_6m;
+        combinedThreeMonth = secondPetPricing.second_pet_3m;
+        
+        // For display: show breakdown
+        secondPetAnnualPrice = secondPetPricing.second_pet - firstPetPricing.final;
+        secondPetOriginalPrice = secondPetPricing.final;
+    } else {
+        // Different weights: apply 30% discount to second pet
+        const secondPetDiscounted = secondPetPricing.final * 0.7;
+        const secondPetSixMonthDiscounted = secondPetPricing.six_month * 0.7;
+        const secondPetThreeMonthDiscounted = secondPetPricing.three_month * 0.7;
+        
+        combinedAnnual = firstPetPricing.final + secondPetDiscounted;
+        combinedSixMonth = firstPetPricing.six_month + secondPetSixMonthDiscounted;
+        combinedThreeMonth = firstPetPricing.three_month + secondPetThreeMonthDiscounted;
+        
+        // For display
+        secondPetAnnualPrice = secondPetDiscounted;
+        secondPetOriginalPrice = secondPetPricing.final;
+    }
+    
+    const pricingHTML = `
+        <div class="two-pets-header">
+            <h4>🐾 Τιμολόγηση για 2 Κατοικίδια</h4>
+            <div class="discount-highlight">
+                <span class="discount-text">30% Έκπτωση στο 2ο κατοικίδιο!</span>
+            </div>
+        </div>
+        
+        <div class="pricing-breakdown">
+            <div class="pet-pricing-row">
+                <span class="pet-label">1ο Κατοικίδιο:</span>
+                <span class="pet-price">${firstPetPricing.final.toFixed(2)}€/έτος</span>
+            </div>
+            <div class="pet-pricing-row discount-row">
+                <span class="pet-label">2ο Κατοικίδιο (με έκπτωση):</span>
+                <span class="pet-price">${secondPetAnnualPrice.toFixed(2)}€/έτος</span>
+                <span class="original-price">Αρχική: ${secondPetOriginalPrice.toFixed(2)}€</span>
+            </div>
+        </div>
+        
+        <div class="pricing-option main-option">
+            <div class="option-header">
+                <span class="option-title">Ετήσια Πληρωμή - Συνολικά</span>
+                <span class="option-badge recommended">Συνιστάται</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${combinedAnnual.toFixed(2)}€</span>
+                <span class="period">/έτος</span>
+            </div>
+            <div class="option-benefits">
+                <span class="benefit">✓ Καλύτερη τιμή</span>
+                <span class="benefit">✓ 30% έκπτωση 2ου κατοικιδίου</span>
+            </div>
+        </div>
+        
+        <div class="pricing-option">
+            <div class="option-header">
+                <span class="option-title">Εξαμηνιαία Πληρωμή - Συνολικά</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${combinedSixMonth.toFixed(2)}€</span>
+                <span class="period">/6μηνο</span>
+            </div>
+            <div class="option-total">
+                <small>Συνολικά: ${(combinedSixMonth * 2).toFixed(2)}€/έτος</small>
+            </div>
+        </div>
+        
+        <div class="pricing-option">
+            <div class="option-header">
+                <span class="option-title">Τριμηνιαία Πληρωμή - Συνολικά</span>
+            </div>
+            <div class="option-price">
+                <span class="price">${combinedThreeMonth.toFixed(2)}€</span>
+                <span class="period">/3μηνο</span>
+            </div>
+            <div class="option-total">
+                <small>Συνολικά: ${(combinedThreeMonth * 4).toFixed(2)}€/έτος</small>
+            </div>
+        </div>
+    `;
+    
+    pricingOptions.innerHTML = pricingHTML;
+}
+
+function setupFormValidation() {
+    const form = document.getElementById('userDataForm');
+    const afmInput = document.getElementById('afm');
+    const postalCodeInput = document.getElementById('postalCode');
+    const phoneInput = document.getElementById('phone');
+    const emailInput = document.getElementById('email');
+    
+    // AFM validation
+    afmInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 9) {
+            this.value = this.value.slice(0, 9);
+        }
+    });
+    
+    // Postal code validation
+    postalCodeInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 5) {
+            this.value = this.value.slice(0, 5);
+        }
+    });
+    
+    // Phone validation
+    phoneInput.addEventListener('input', function() {
+        // Allow numbers, spaces, dashes, parentheses, and plus sign
+        this.value = this.value.replace(/[^0-9\s\-\(\)\+]/g, '');
+    });
+    
+    // Real-time email validation
+    emailInput.addEventListener('input', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (this.value && !emailRegex.test(this.value)) {
+            this.setCustomValidity('Παρακαλούμε εισάγετε έγκυρη διεύθυνση email');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate all required fields
+        const requiredFields = form.querySelectorAll('input[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('error');
+                isValid = false;
+            } else {
+                field.classList.remove('error');
+            }
+        });
+        
+        if (isValid) {
+            // Collect form data
+            const formData = new FormData(form);
+            const userData = {};
+            for (let [key, value] of formData.entries()) {
+                userData[key] = value;
+            }
+            
+            // Get all parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Navigate to contact info page with all data
+            const params = new URLSearchParams({
+                type: urlParams.get('type') || '',
+                gender: urlParams.get('gender') || '',
+                birthdate: urlParams.get('birthdate') || '',
+                breed: urlParams.get('breed') || '',
+                name: urlParams.get('name') || '',
+                health_status: urlParams.get('health_status') || '',
+                conditions: urlParams.get('conditions') || '',
+                program: urlParams.get('program') || '',
+                fullName: userData.fullName || '',
+                afm: userData.afm || '',
+                phone: userData.phone || '',
+                address: userData.address || '',
+                postalCode: userData.postalCode || '',
+                email: userData.email || '',
+                microchip: userData.microchip || ''
+            });
+            
+            // Show success message and redirect
+            showSuccessMessage('Τα στοιχεία σας καταχωρήθηκαν επιτυχώς!');
+            
+            setTimeout(() => {
+                window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+            }, 1500);
+        } else {
+            // Show error message
+            showErrorMessage('Παρακαλούμε συμπληρώστε όλα τα υποχρεωτικά πεδία');
+        }
+    });
+}
+
+function showSuccessMessage(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.innerHTML = `
+        <div class="success-content">
+            <span class="success-icon">✅</span>
+            <span class="success-text">${message}</span>
+        </div>
+    `;
+    document.body.appendChild(successDiv);
+    
+    setTimeout(() => {
+        successDiv.remove();
+    }, 3000);
+}
+
+function showErrorMessage(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `
+        <div class="error-content">
+            <span class="error-icon">❌</span>
+            <span class="error-text">${message}</span>
+        </div>
+    `;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 3000);
+}
+
+// Global variables for second pet data and pricing
+let secondPetData = null;
+let firstPetPricingData = null;
+let secondPetPricingData = null;
+
+function showSecondPetForm() {
+    // Hide add button and show form
+    document.getElementById('addPetActions').style.display = 'none';
+    document.getElementById('secondPetForm').style.display = 'block';
+    
+    // Set second pet type to match first pet
+    const urlParams = new URLSearchParams(window.location.search);
+    const firstPetType = urlParams.get('type');
+    
+    if (firstPetType) {
+        // Set hidden input value
+        document.getElementById('secondPetTypeHidden').value = firstPetType;
+        
+        // Update display
+        const icon = document.getElementById('samePetIcon');
+        const label = document.getElementById('samePetLabel');
+        
+        if (firstPetType === 'dog') {
+            icon.textContent = '🐕';
+            label.textContent = 'Σκύλος';
+        } else if (firstPetType === 'cat') {
+            icon.textContent = '🐱';
+            label.textContent = 'Γάτα';
+        }
+        
+        // Populate weight options for the pet type
+        updateWeightOptions(firstPetType);
+    }
+    
+    // Add slide-in animation
+    const form = document.getElementById('secondPetForm');
+    form.style.animation = 'slideInUp 0.5s ease-out';
+}
+
+function cancelSecondPet() {
+    // Hide form and show add button
+    document.getElementById('secondPetForm').style.display = 'none';
+    document.getElementById('addPetActions').style.display = 'block';
+    
+    // Clear form data
+    clearSecondPetForm();
+    
+    // Reset pricing to single pet
+    if (firstPetPricingData) {
+        displayPricing(firstPetPricingData);
+    }
+}
+
+function clearSecondPetForm() {
+    // Clear all form inputs
+    document.querySelectorAll('#secondPetForm input').forEach(input => {
+        if (input.type === 'radio' || input.type === 'checkbox') {
+            input.checked = false;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Clear select
+    document.getElementById('secondPetWeight').innerHTML = '<option value="">Επιλέξτε βάρος</option>';
+    
+    // Hide health warning
+    document.getElementById('healthWarning').style.display = 'none';
+    
+    // Reset global data
+    secondPetData = null;
+    secondPetPricingData = null;
+}
+
+function updateSecondPetPricing() {
+    const petType = document.getElementById('secondPetTypeHidden').value;
+    const petName = document.getElementById('secondPetName').value;
+    const petGender = document.querySelector('input[name="secondPetGender"]:checked')?.value;
+    const petWeight = document.getElementById('secondPetWeight').value;
+    const petHealth = document.querySelector('input[name="secondPetHealth"]:checked')?.value;
+    
+    // Show/hide health warning
+    const healthWarning = document.getElementById('healthWarning');
+    if (petHealth === 'problems') {
+        healthWarning.style.display = 'block';
+    } else {
+        healthWarning.style.display = 'none';
+    }
+    
+    // Calculate pricing if all required fields are filled
+    if (petType && petWeight && petHealth === 'healthy') {
+        calculateSecondPetPricing(petType, petWeight);
+    }
+}
+
+function updateWeightOptions(petType) {
+    const weightSelect = document.getElementById('secondPetWeight');
+    const currentValue = weightSelect.value;
+    
+    // Clear existing options
+    weightSelect.innerHTML = '<option value="">Επιλέξτε βάρος</option>';
+    
+    if (petType === 'dog') {
+        weightSelect.innerHTML += `
+            <option value="10" ${currentValue === '10' ? 'selected' : ''}>έως 10 κιλά</option>
+            <option value="11-20" ${currentValue === '11-20' ? 'selected' : ''}>11-20 κιλά</option>
+            <option value="21-40" ${currentValue === '21-40' ? 'selected' : ''}>21-40 κιλά</option>
+            <option value=">40" ${currentValue === '>40' ? 'selected' : ''}>>40 κιλά</option>
+        `;
+    } else if (petType === 'cat') {
+        weightSelect.innerHTML += `
+            <option value="10" ${currentValue === '10' ? 'selected' : ''}>έως 10 κιλά</option>
+            <option value="11-20" ${currentValue === '11-20' ? 'selected' : ''}>11-20 κιλά</option>
+        `;
+    }
+}
+
+function calculateSecondPetPricing(petType, weightCategory) {
+    // Get first pet program from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const program = urlParams.get('program');
+    const firstPetWeight = getWeightFromBreed(urlParams.get('breed'));
+    
+    if (!program || !firstPetPricingData) return;
+    
+    // Get pricing data for second pet (same program as first pet)
+    const pricingTables = getPricingTables();
+    
+    if (petType === 'dog' && pricingTables.DOG_PRICING[program] && pricingTables.DOG_PRICING[program][weightCategory]) {
+        secondPetPricingData = pricingTables.DOG_PRICING[program][weightCategory];
+    } else if (petType === 'cat' && pricingTables.CAT_PRICING[program] && pricingTables.CAT_PRICING[program][weightCategory]) {
+        secondPetPricingData = pricingTables.CAT_PRICING[program][weightCategory];
+    }
+    
+    // Update pricing display with animation
+    if (secondPetPricingData) {
+        // Use the correct pricing logic based on weight match
+        if (firstPetWeight === weightCategory) {
+            // Same weight: use the pre-calculated combined pricing from first pet's weight category
+            const firstPetPricingForSameWeight = pricingTables[petType.toUpperCase() + '_PRICING'][program][firstPetWeight];
+            displayBothPetsPricing(firstPetPricingData, firstPetPricingForSameWeight);
+        } else {
+            // Different weights: calculate 30% discount
+            displayBothPetsPricing(firstPetPricingData, secondPetPricingData);
+        }
+        animatePricingUpdate();
+    }
+}
+
+function saveSecondPet() {
+    // Validate all required fields
+    const petType = document.getElementById('secondPetTypeHidden').value;
+    const petName = document.getElementById('secondPetName').value.trim();
+    const petGender = document.querySelector('input[name="secondPetGender"]:checked')?.value;
+    const petWeight = document.getElementById('secondPetWeight').value;
+    const petHealth = document.querySelector('input[name="secondPetHealth"]:checked')?.value;
+    
+    if (!petType || !petName || !petGender || !petWeight || !petHealth) {
+        showErrorMessage('Παρακαλούμε συμπληρώστε όλα τα υποχρεωτικά πεδία');
+        return;
+    }
+    
+    if (petHealth === 'problems') {
+        showErrorMessage('Για κατοικίδια με προβλήματα υγείας, η ομάδα μας θα επικοινωνήσει μαζί σας');
+        return;
+    }
+    
+    // Store second pet data
+    secondPetData = {
+        type: petType,
+        name: petName,
+        gender: petGender,
+        weight: petWeight,
+        health: petHealth
+    };
+    
+    // Update display
+    updateSecondPetSummary();
+    
+    // Hide form and show summary
+    document.getElementById('secondPetForm').style.display = 'none';
+    document.getElementById('secondPetSummary').style.display = 'block';
+    
+    // Calculate and display combined pricing
+    if (secondPetPricingData) {
+        displayBothPetsPricing(firstPetPricingData, secondPetPricingData);
+    }
+    
+    // Show success message
+    showSuccessMessage('Το δεύτερο κατοικίδιο προστέθηκε επιτυχώς!');
+}
+
+function updateSecondPetSummary() {
+    if (!secondPetData) return;
+    
+    // Update avatar
+    const avatar = document.getElementById('secondPetAvatar');
+    avatar.textContent = secondPetData.type === 'dog' ? '🐕' : '🐱';
+    
+    // Update name
+    document.getElementById('secondPetNameDisplay').textContent = secondPetData.name;
+    
+    // Update info
+    const genderText = secondPetData.gender === 'male' ? 'Αρσενικό' : 'Θηλυκό';
+    const typeText = secondPetData.type === 'dog' ? 'Σκύλος' : 'Γάτα';
+    const weightText = getWeightText(secondPetData.weight);
+    
+    document.getElementById('secondPetInfoDisplay').textContent = `${typeText}, ${genderText}, ${weightText}`;
+}
+
+function getWeightText(weightValue) {
+    const weightMap = {
+        '10': 'έως 10 κιλά',
+        '11-20': '11-20 κιλά',
+        '21-40': '21-40 κιλά',
+        '>40': '>40 κιλά'
+    };
+    return weightMap[weightValue] || weightValue;
+}
+
+function getWeightFromBreed(breed) {
+    if (!breed) return null;
+    
+    if (breed.includes('έως 10 κιλά')) return '10';
+    if (breed.includes('11-20 κιλά')) return '11-20';
+    if (breed.includes('21-40 κιλά')) return '21-40';
+    if (breed.includes('>40 κιλά')) return '>40';
+    
+    return null;
+}
+
+function editSecondPet() {
+    // Hide summary and show form
+    document.getElementById('secondPetSummary').style.display = 'none';
+    document.getElementById('secondPetForm').style.display = 'block';
+    
+    // Populate form with existing data
+    if (secondPetData) {
+        // Pet type is already set and cannot be changed
+        document.getElementById('secondPetTypeHidden').value = secondPetData.type;
+        document.getElementById('secondPetName').value = secondPetData.name;
+        document.querySelector(`input[name="secondPetGender"][value="${secondPetData.gender}"]`).checked = true;
+        updateWeightOptions(secondPetData.type);
+        document.getElementById('secondPetWeight').value = secondPetData.weight;
+        document.querySelector(`input[name="secondPetHealth"][value="${secondPetData.health}"]`).checked = true;
+    }
+}
+
+function animatePricingUpdate() {
+    const pricingSection = document.getElementById('pricingSection');
+    
+    // Add loading animation
+    pricingSection.style.opacity = '0.5';
+    pricingSection.style.transform = 'scale(0.95)';
+    
+    // Show loading message
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'pricing-loading';
+    loadingDiv.innerHTML = `
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <span>Υπολογισμός νέας τιμής...</span>
+        </div>
+    `;
+    pricingSection.appendChild(loadingDiv);
+    
+    // Simulate calculation time and update
+    setTimeout(() => {
+        // Remove loading
+        loadingDiv.remove();
+        
+        // Update pricing
+        if (firstPetPricingData && secondPetPricingData) {
+            displayBothPetsPricing(firstPetPricingData, secondPetPricingData);
+        }
+        
+        // Restore animation
+        pricingSection.style.opacity = '1';
+        pricingSection.style.transform = 'scale(1)';
+        pricingSection.style.transition = 'all 0.5s ease';
+        
+        // Add success glow effect
+        pricingSection.style.boxShadow = '0 0 30px rgba(46, 204, 113, 0.3)';
+        setTimeout(() => {
+            pricingSection.style.boxShadow = '';
+            pricingSection.style.transition = '';
+        }, 1000);
+    }, 1500);
+}
+
+function getPricingTables() {
+    // Return the EXACT pricing tables from original data
+    return {
+        DOG_PRICING: {
+            'silver': {
+                '10': {'final': 166.75, 'six_month': 87.54, 'three_month': 45.86, 'second_pet': 300.15, 'second_pet_6m': 157.58, 'second_pet_3m': 82.54},
+                '11-20': {'final': 207.20, 'six_month': 108.78, 'three_month': 56.98, 'second_pet': 372.96, 'second_pet_6m': 195.80, 'second_pet_3m': 102.56},
+                '21-40': {'final': 234.14, 'six_month': 122.92, 'three_month': 64.39, 'second_pet': 421.45, 'second_pet_6m': 221.26, 'second_pet_3m': 115.90},
+                '>40': {'final': 254.36, 'six_month': 133.54, 'three_month': 69.95, 'second_pet': 457.84, 'second_pet_6m': 240.37, 'second_pet_3m': 125.91}
+            },
+            'gold': {
+                '10': {'final': 234.14, 'six_month': 122.92, 'three_month': 64.39, 'second_pet': 421.45, 'second_pet_6m': 221.26, 'second_pet_3m': 115.90},
+                '11-20': {'final': 261.09, 'six_month': 137.07, 'three_month': 71.80, 'second_pet': 469.96, 'second_pet_6m': 246.73, 'second_pet_3m': 129.24},
+                '21-40': {'final': 288.05, 'six_month': 151.23, 'three_month': 79.21, 'second_pet': 518.50, 'second_pet_6m': 272.21, 'second_pet_3m': 142.59},
+                '>40': {'final': 308.26, 'six_month': 161.84, 'three_month': 84.77, 'second_pet': 554.88, 'second_pet_6m': 291.31, 'second_pet_3m': 152.59}
+            },
+            'platinum': {
+                '10': {'final': 368.92, 'six_month': 193.69, 'three_month': 101.45, 'second_pet': 664.06, 'second_pet_6m': 348.63, 'second_pet_3m': 182.62},
+                '11-20': {'final': 389.15, 'six_month': 204.30, 'three_month': 107.02, 'second_pet': 700.47, 'second_pet_6m': 367.75, 'second_pet_3m': 192.63},
+                '21-40': {'final': 409.36, 'six_month': 214.91, 'three_month': 112.57, 'second_pet': 736.85, 'second_pet_6m': 386.85, 'second_pet_3m': 202.63},
+                '>40': {'final': 436.32, 'six_month': 229.07, 'three_month': 119.99, 'second_pet': 785.38, 'second_pet_6m': 412.33, 'second_pet_3m': 215.98}
+            }
+        },
+        CAT_PRICING: {
+            'silver': {
+                '10': {'final': 113.81, 'six_month': 59.75, 'three_month': 31.30, 'second_pet': 204.85, 'second_pet_6m': 107.55, 'second_pet_3m': 56.33},
+                '11-20': {'final': 141.02, 'six_month': 74.03, 'three_month': 38.78, 'second_pet': 253.83, 'second_pet_6m': 133.26, 'second_pet_3m': 69.80}
+            },
+            'gold': {
+                '10': {'final': 168.22, 'six_month': 88.32, 'three_month': 46.26, 'second_pet': 302.80, 'second_pet_6m': 158.97, 'second_pet_3m': 83.27},
+                '11-20': {'final': 188.61, 'six_month': 99.02, 'three_month': 51.87, 'second_pet': 339.50, 'second_pet_6m': 178.24, 'second_pet_3m': 93.36}
+            },
+            'platinum': {
+                '10': {'final': 277.02, 'six_month': 145.44, 'three_month': 76.18, 'second_pet': 498.64, 'second_pet_6m': 261.79, 'second_pet_3m': 137.13},
+                '11-20': {'final': 311.02, 'six_month': 163.28, 'three_month': 85.53, 'second_pet': 559.83, 'second_pet_6m': 293.91, 'second_pet_3m': 153.95}
+            }
+        }
+    };
+}
+
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}

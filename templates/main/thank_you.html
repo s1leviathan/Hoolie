@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ευχαριστούμε - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content text-center">
+            <!-- Success Animation -->
+            <div class="success-animation" style="margin-bottom: 2rem;">
+                <div class="success-checkmark">
+                    <div class="check-icon">
+                        <span class="icon-line line-tip"></span>
+                        <span class="icon-line line-long"></span>
+                        <div class="icon-circle"></div>
+                        <div class="icon-fix"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <h1 class="hero-title" style="font-size: 3rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ευχαριστούμε! 🎉
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9;">
+                Η αίτησή σας για ασφάλιση <span id="pet-name-in-subtitle">του κατοικιδιού σας</span> ολοκληρώθηκε με επιτυχία!
+            </p>
+            
+            <!-- Confirmation Details -->
+            <div class="confirmation-card">
+                <div class="confirmation-header">
+                    <h3 style="color: #2c3e50; margin-bottom: 1.5rem; font-weight: 600;">
+                        📋 Τι συμβαίνει τώρα;
+                    </h3>
+                </div>
+                
+                <div class="confirmation-steps">
+                    <div class="step-item">
+                        <div class="step-icon">📧</div>
+                        <div class="step-content">
+                            <h4>Επιβεβαίωση Email</h4>
+                            <p>Θα λάβετε ένα email επιβεβαίωσης στο <strong id="user-email">email σας</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">📞</div>
+                        <div class="step-content">
+                            <h4>Επικοινωνία από την ομάδα μας</h4>
+                            <p>Ένας ειδικός της Hoolie θα επικοινωνήσει μαζί σας εντός 24 ωρών</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">📋</div>
+                        <div class="step-content">
+                            <h4>Εξατομικευμένη προσφορά</h4>
+                            <p>Θα λάβετε μια προσφορά ειδικά σχεδιασμένη για <span id="pet-name-in-steps">το κατοικίδιό σας</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">🎯</div>
+                        <div class="step-content">
+                            <h4>Άμεση κάλυψη</h4>
+                            <p>Μετά την έγκριση, η ασφάλιση ενεργοποιείται άμεσα</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pet Info Summary -->
+            <div class="final-pet-summary" style="margin: 3rem 0;">
+                <h4 style="color: #ffffff; margin-bottom: 1rem; opacity: 0.9;">Στοιχεία Αίτησης</h4>
+                <div class="pet-info-card">
+                    <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                    <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                    <span class="gender-indicator" id="pet-gender-display">
+                        <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                    </span>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <span style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">
+                        📧 Email: <strong id="contact-email" style="color: #ffffff;">email@example.com</strong>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Call to Action -->
+            <div class="cta-section" style="margin-top: 3rem;">
+                <p style="font-size: 1.1rem; color: #7f8c8d; margin-bottom: 2rem;">
+                    Έχετε άλλο κατοικίδιο; Λάβετε 10% έκπτωση για κάθε επιπλέον ασφάλιση!
+                </p>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-lg me-3" onclick="startNewApplication()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                        🐾 Ασφάλιση άλλου κατοικιδιού
+                    </button>
+                    
+                    <button class="btn btn-outline-light btn-lg" onclick="goHome()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                        🏠 Αρχική σελίδα
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="contact-info" style="margin-top: 4rem; padding: 2rem; background: rgba(255,255,255,0.1); border-radius: 20px;">
+                <h5 style="color: #ffffff; margin-bottom: 1rem;">Χρειάζεστε βοήθεια;</h5>
+                <p style="color: #e8f4f8; margin-bottom: 0;">
+                    📞 Τηλέφωνο: 210-1234567 | 📧 Email: info@hoolie.gr
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    const email = urlParams.get('email');
+    
+    // Set pet avatar
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update subtitle and steps to include pet name
+        document.getElementById('pet-name-in-subtitle').textContent = `του ${petName}`;
+        document.getElementById('pet-name-in-steps').textContent = `τον/την ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Set email
+    if (email) {
+        const userEmail = decodeURIComponent(email);
+        document.getElementById('user-email').textContent = userEmail;
+        document.getElementById('contact-email').textContent = userEmail;
+    }
+    
+    // Trigger success animation
+    setTimeout(() => {
+        document.querySelector('.success-checkmark').classList.add('animate');
+    }, 500);
+});
+
+function startNewApplication() {
+    window.location.href = '{% url "main:index" %}';
+}
+
+function goHome() {
+    window.location.href = '{% url "main:index" %}';
+}
+</script>
+{% endblock %}

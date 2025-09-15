@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Όνομα Κατοικιδίου - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.8rem; margin-bottom: 2rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ποιο είναι το όνομα του κατοικιδιού σας;
+                </span>
+            </h1>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-type-display">Σκύλος</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Name Input Section -->
+            <div class="name-input-section">
+                <div class="name-input-card">
+                    <div class="input-header">
+                        <div class="input-icon">✨</div>
+                        <h3 class="input-title">Πρέπει να ξέρουμε πως θα αποκαλούμε τον τετράποδο σύντροφό σας</h3>
+                    </div>
+                    
+                    <div class="name-input-container">
+                        <div class="name-field">
+                            <input type="text" id="pet-name-input" class="pet-name-input" placeholder="Εισαγάγετε το όνομα..." maxlength="50">
+                            <div class="input-underline"></div>
+                        </div>
+                        <div class="name-suggestions" id="name-suggestions">
+                            <p class="suggestions-title">Συχνά ονόματα:</p>
+                            <div class="suggestions-list" id="suggestions-list">
+                                <!-- Will be filled by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" onclick="submitName()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft);">
+                    Επόμενο
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">💫</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">🌟</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">✨</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">💖</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">🎭</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">🎪</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    
+    // Set pet summary information
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+        document.getElementById('pet-type-display').textContent = 'Σκύλος';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+        document.getElementById('pet-type-display').textContent = 'Γάτα';
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Generate name suggestions based on pet type and gender
+    generateNameSuggestions(petType, gender);
+    
+    // Add entrance animations
+    const cards = document.querySelectorAll('.pet-summary-card, .name-input-card');
+    cards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 1s ease-out ${0.3 + index * 0.2}s both`;
+    });
+    
+    // Add input focus effects
+    const nameInput = document.getElementById('pet-name-input');
+    nameInput.addEventListener('focus', function() {
+        this.parentElement.style.transform = 'scale(1.02)';
+        document.querySelector('.input-underline').style.width = '100%';
+    });
+    
+    nameInput.addEventListener('blur', function() {
+        this.parentElement.style.transform = 'scale(1)';
+        if (!this.value) {
+            document.querySelector('.input-underline').style.width = '0%';
+        }
+    });
+    
+    // Add real-time validation
+    nameInput.addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value.length > 0) {
+            this.style.color = 'var(--brand-primary)';
+            this.style.fontWeight = '600';
+        } else {
+            this.style.color = '';
+            this.style.fontWeight = '';
+        }
+    });
+});
+
+function generateNameSuggestions(petType, gender) {
+    let suggestions = [];
+    
+    if (petType === 'dog') {
+        if (gender === 'male') {
+            suggestions = ['Μάξ', 'Ρέξ', 'Μπάντι', 'Τσάρλι', 'Ρόκι', 'Λούκας'];
+        } else {
+            suggestions = ['Μπέλλα', 'Λούνα', 'Μόλι', 'Σόφι', 'Ντέιζι', 'Ρούμπι'];
+        }
+    } else if (petType === 'cat') {
+        if (gender === 'male') {
+            suggestions = ['Μίλο', 'Φέλιξ', 'Όσκαρ', 'Τίγκερ', 'Σίμπα', 'Λέο'];
+        } else {
+            suggestions = ['Λούνα', 'Κλόε', 'Νάλα', 'Μία', 'Κίτι', 'Ζόε'];
+        }
+    }
+    
+    const suggestionsList = document.getElementById('suggestions-list');
+    suggestions.forEach((name, index) => {
+        const suggestion = document.createElement('span');
+        suggestion.className = 'name-suggestion';
+        suggestion.textContent = name;
+        suggestion.onclick = () => selectSuggestion(name);
+        suggestion.style.animationDelay = `${0.1 * index}s`;
+        suggestionsList.appendChild(suggestion);
+    });
+}
+
+function selectSuggestion(name) {
+    const input = document.getElementById('pet-name-input');
+    input.value = name;
+    input.style.color = 'var(--brand-primary)';
+    input.style.fontWeight = '600';
+    
+    // Add selection animation
+    const suggestions = document.querySelectorAll('.name-suggestion');
+    suggestions.forEach(s => s.classList.remove('selected'));
+    event.target.classList.add('selected');
+    
+    // Trigger input animation
+    document.querySelector('.input-underline').style.width = '100%';
+}
+
+function submitName() {
+    const petName = document.getElementById('pet-name-input').value.trim();
+    
+    if (!petName) {
+        alert('Παρακαλώ εισαγάγετε ένα όνομα για το κατοικίδιό σας.');
+        document.getElementById('pet-name-input').focus();
+        return;
+    }
+    
+    if (petName.length < 2) {
+        alert('Το όνομα πρέπει να έχει τουλάχιστον 2 χαρακτήρες.');
+        document.getElementById('pet-name-input').focus();
+        return;
+    }
+    
+    // Get all parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+     setTimeout(() => {
+         // Navigate to health status page
+         window.location.href = `{% url 'main:health_status' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(petName)}`;
+     }, 1000);
+}
+
+function goBack() {
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const gender = urlParams.get('gender');
+        const birthdate = urlParams.get('birthdate');
+        
+        // Navigate back to appropriate breed page
+        if (petType === 'dog') {
+            window.location.href = `{% url "main:pet_breed" %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}`;
+        } else if (petType === 'cat') {
+            window.location.href = `{% url "main:cat_breed" %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}`;
+        }
+    }, 500);
+}
+</script>
+{% endblock %}

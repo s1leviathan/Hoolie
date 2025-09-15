@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Τι δεν Καλύπτει - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Τι δεν Καλύπτει το πρόγραμμα; 🔍
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto;">
+                Στο πρόγραμμα Hoolie Insurance δεν έχουμε τίποτα να κρύψουμε. Πιστεύουμε ότι είναι εξίσου σημαντικό να σας δείξουμε τι δεν καλύπτεται.
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Selected Program Display -->
+            <div class="selected-program-card" id="selected-program-display" style="margin-bottom: 3rem;">
+                <div class="program-info">
+                    <span class="program-label">Επιλεγμένο Πρόγραμμα:</span>
+                    <span class="program-name" id="program-name-display">Gold</span>
+                </div>
+            </div>
+            
+            <!-- Non-Covered Conditions -->
+            <div class="non-covered-container">
+                <div class="non-covered-card">
+                    <div class="non-covered-header">
+                        <h2>🚫 Τι δεν καλύπτεται</h2>
+                        <p>Για πλήρη διαφάνεια, ακολουθούν οι εξαιρέσεις του προγράμματος:</p>
+                    </div>
+                    
+                    <div class="non-covered-list">
+                        <div class="non-covered-item">
+                            <div class="item-icon">🏥</div>
+                            <div class="item-content">
+                                <h4>Προϋπάρχουσες ή Χρόνιες Ασθένειες</h4>
+                                <p>Παθήσεις που υπήρχαν πριν την έναρξη της ασφάλισης</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🌍</div>
+                            <div class="item-content">
+                                <h4>Κατοικίδια εκτός της Ελλάδας</h4>
+                                <p>Κάλυψη ισχύει μόνο εντός ελληνικού εδάφους</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🍼</div>
+                            <div class="item-content">
+                                <h4>Κόστη εκτροφής, εγκυμοσύνης και τοκετού</h4>
+                                <p>Εξαιρούνται τα έξοδα αναπαραγωγής και γέννας</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🦴</div>
+                            <div class="item-content">
+                                <h4>Μεταμοσχεύσεις, προσθετικά και εμφυτεύματα αρθρώσεων</h4>
+                                <p>Εξειδικευμένες χειρουργικές επεμβάσεις υψηλού κόστους</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🧬</div>
+                            <div class="item-content">
+                                <h4>Δυσπλασίες</h4>
+                                <p>Αναπτυξιακές διαταραχές οστών και αρθρώσεων</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🌿</div>
+                            <div class="item-content">
+                                <h4>Εναλλακτικές θεραπείες</h4>
+                                <p>Ομοιοπαθητική, βελονισμός και άλλες μη συμβατικές θεραπείες</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">😤</div>
+                            <div class="item-content">
+                                <h4>Διαταραχές συμπεριφοράς ή επιθετικότητας</h4>
+                                <p>Ψυχολογικά και συμπεριφορικά προβλήματα</p>
+                            </div>
+                        </div>
+                        
+                        <div class="non-covered-item">
+                            <div class="item-icon">🧪</div>
+                            <div class="item-content">
+                                <h4>Κληρονομικές & Συγγενείς παθήσεις</h4>
+                                <p>Γενετικές διαταραχές και εκ γενετής ανωμαλίες</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Declaration Section -->
+            <div class="declaration-section">
+                <h3 class="declaration-title">
+                    Δήλωση για <span id="pet-name-in-question">το κατοικίδιό σας</span>
+                </h3>
+                <p class="declaration-subtitle">
+                    Παρακαλούμε δηλώστε εάν <span id="pet-name-in-subtitle">το κατοικίδιό σας</span> έχει κάποια από τις παραπάνω καταστάσεις:
+                </p>
+                
+                <div class="declaration-options">
+                    <div class="declaration-card has-conditions" onclick="selectDeclaration('has_conditions')">
+                        <div class="declaration-icon">⚠️</div>
+                        <div class="declaration-content">
+                            <h4><span id="pet-name-has">Το κατοικίδιό μου</span> έχει μία από αυτές τις καταστάσεις</h4>
+                            <p>Θα σας καθοδηγήσουμε για την καλύτερη λύση</p>
+                        </div>
+                    </div>
+                    
+                    <div class="declaration-card no-conditions" onclick="selectDeclaration('no_conditions')">
+                        <div class="declaration-icon">✅</div>
+                        <div class="declaration-content">
+                            <h4><span id="pet-name-none">Το κατοικίδιό μου</span> δεν έχει καμία από αυτές</h4>
+                            <p>Μπορούμε να συνεχίσουμε με την ασφάλιση</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    ← Πίσω στα Προγράμματα
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    const program = urlParams.get('program');
+    
+    // Set pet avatar
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name in all places
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update all name references
+        const genderArticle = gender === 'male' ? 'ο' : 'η';
+        document.getElementById('pet-name-in-question').textContent = `${genderArticle} ${petName}`;
+        document.getElementById('pet-name-in-subtitle').textContent = `${genderArticle} ${petName}`;
+        document.getElementById('pet-name-has').textContent = `${genderArticle} ${petName}`;
+        document.getElementById('pet-name-none').textContent = `${genderArticle} ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Set selected program
+    if (program) {
+        const programNames = {
+            'silver': 'Silver (2.000€)',
+            'gold': 'Gold (3.000€)',
+            'platinum': 'Platinum Dynasty (5.000€)'
+        };
+        
+        const programDisplay = document.getElementById('program-name-display');
+        programDisplay.textContent = programNames[program] || program;
+        
+        // Add program-specific styling
+        const programCard = document.getElementById('selected-program-display');
+        programCard.classList.add(`program-${program}`);
+    }
+});
+
+function selectDeclaration(choice) {
+    // Get all parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    const program = urlParams.get('program');
+    
+    if (choice === 'has_conditions') {
+        // Redirect to health conditions page based on pet type
+        const params = new URLSearchParams({
+            type: petType || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            breed: breed || '',
+            name: name || '',
+            health_status: 'problems',
+            program: program || ''
+        });
+        
+        if (petType === 'dog') {
+            window.location.href = `{% url 'main:dog_health_conditions' %}?${params.toString()}`;
+        } else if (petType === 'cat') {
+            window.location.href = `{% url 'main:cat_health_conditions' %}?${params.toString()}`;
+        }
+    } else if (choice === 'no_conditions') {
+        // Continue to contact info page
+        const params = new URLSearchParams({
+            type: petType || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            breed: breed || '',
+            name: name || '',
+            health_status: 'healthy',
+            conditions: '',
+            program: program || ''
+        });
+        
+        window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
+    }
+}
+
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}

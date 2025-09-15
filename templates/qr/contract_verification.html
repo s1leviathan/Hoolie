@@ -1,0 +1,180 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}
+{% if verification_success %}
+Επαλήθευση Συμβολαίου - {{ application.contract_number }}
+{% else %}
+Σφάλμα Επαλήθευσης
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verification-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .verification-success {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+    
+    .verification-error {
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+    
+    .contract-details {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: left;
+        margin-bottom: 20px;
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .detail-value {
+        color: #666;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .status-active {
+        background: #4CAF50;
+        color: white;
+    }
+    
+    .status-pending {
+        background: #FF9800;
+        color: white;
+    }
+    
+    .back-button {
+        background: #5ac8bd;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 20px;
+        transition: background 0.3s;
+    }
+    
+    .back-button:hover {
+        background: #4a9d94;
+        text-decoration: none;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-container">
+    {% if verification_success %}
+        <div class="verification-success">
+            <h1>✅ Επαλήθευση Επιτυχής</h1>
+            <p>Το συμβόλαιο είναι έγκυρο και ενεργό</p>
+        </div>
+        
+        <div class="contract-details">
+            <h3>📄 Στοιχεία Συμβολαίου</h3>
+            
+            <div class="detail-row">
+                <span class="detail-label">Αριθμός Συμβολαίου:</span>
+                <span class="detail-value">{{ application.contract_number }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Ασφαλιζόμενος:</span>
+                <span class="detail-value">{{ application.full_name }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Κατοικίδιο:</span>
+                <span class="detail-value">{{ application.pet_name }} ({{ application.get_pet_type_display }})</span>
+            </div>
+            
+            <div class="detail-row">
+                <span class="detail-label">Πρόγραμμα:</span>
+                <span class="detail-value">{{ application.get_program_display }}</span>
+            </div>
+            
+            {% if application.contract_start_date %}
+            <div class="detail-row">
+                <span class="detail-label">Ημερομηνία Έναρξης:</span>
+                <span class="detail-value">{{ application.contract_start_date|date:"d/m/Y" }}</span>
+            </div>
+            {% endif %}
+            
+            {% if application.contract_end_date %}
+            <div class="detail-row">
+                <span class="detail-label">Ημερομηνία Λήξης:</span>
+                <span class="detail-value">{{ application.contract_end_date|date:"d/m/Y" }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <span class="detail-label">Κατάσταση:</span>
+                <span class="detail-value">
+                    <span class="status-badge {% if application.status == 'active' %}status-active{% else %}status-pending{% endif %}">
+                        {{ application.get_status_display }}
+                    </span>
+                </span>
+            </div>
+        </div>
+        
+        <p><strong>🔒 Αυτό το συμβόλαιο είναι επαληθευμένο και έγκυρο.</strong></p>
+        
+    {% else %}
+        <div class="verification-error">
+            <h1>❌ Σφάλμα Επαλήθευσης</h1>
+            <p>{{ error_message }}</p>
+            {% if contract_number %}
+            <p><strong>Συμβόλαιο:</strong> {{ contract_number }}</p>
+            {% endif %}
+        </div>
+        
+        <p>Παρακαλούμε επικοινωνήστε μαζί μας για περισσότερες πληροφορίες.</p>
+    {% endif %}
+    
+    <a href="{% url 'main:index' %}" class="back-button">
+        🏠 Επιστροφή στην Αρχική
+    </a>
+</div>
+{% endblock %}
+
+
+

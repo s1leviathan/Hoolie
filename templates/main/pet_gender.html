@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Φύλο Κατοικιδίου - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.8rem; margin-bottom: 2rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Η αγάπη δεν γνωρίζει φύλο,
+                </span>
+                <br>
+                <span style="font-size: 2.2rem; opacity: 0.9;">
+                    αλλά το κατοικίδιό σας είναι αρσενικό ή θηλυκό;
+                </span>
+            </h1>
+            
+            <!-- Pet Type Display -->
+            <div class="selected-pet-reminder" style="margin-bottom: 3rem;">
+                <div class="pet-reminder-card">
+                    <div class="pet-icon-small" id="pet-reminder-icon">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+                    <span class="pet-reminder-text" id="pet-reminder-text">
+                        <!-- Will be filled by JavaScript -->
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Gender Selection -->
+            <div class="gender-selection">
+                <div class="gender-card" data-gender="male" onclick="selectGender('male')">
+                    <div class="gender-icon">
+                        ♂️
+                    </div>
+                    <h3 class="gender-name">Αρσενικό</h3>
+                    <p class="gender-description">
+                        Επιλέξτε αν το κατοικίδιό σας είναι αρσενικό
+                    </p>
+                </div>
+                
+                <div class="gender-card" data-gender="female" onclick="selectGender('female')">
+                    <div class="gender-icon">
+                        ♀️
+                    </div>
+                    <h3 class="gender-name">Θηλυκό</h3>
+                    <p class="gender-description">
+                        Επιλέξτε αν το κατοικίδιό σας είναι θηλυκό
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">💕</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">💙</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">💖</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">🌟</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">✨</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">💜</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get pet type from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    
+    // Set pet reminder based on selection
+    if (petType === 'dog') {
+        document.getElementById('pet-reminder-icon').textContent = '🐕';
+        document.getElementById('pet-reminder-text').textContent = 'Σκύλος';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-reminder-icon').textContent = '🐱';
+        document.getElementById('pet-reminder-text').textContent = 'Γάτα';
+    } else {
+        // Default or redirect back if no valid selection
+        window.location.href = '{% url "main:index" %}';
+    }
+    
+    // Add entrance animation
+    const genderCards = document.querySelectorAll('.gender-card');
+    genderCards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 1s ease-out ${0.3 + index * 0.2}s both`;
+    });
+});
+
+function selectGender(gender) {
+    // Get current pet type
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    
+    // Add selection animation
+    const selectedCard = document.querySelector(`[data-gender="${gender}"]`);
+    selectedCard.style.transform = 'scale(1.1)';
+    selectedCard.style.boxShadow = '0 20px 50px rgba(90, 200, 189, 0.4)';
+    
+    // Create success animation
+    const successIcon = document.createElement('div');
+    successIcon.innerHTML = '✓';
+    successIcon.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3rem;
+        color: #ffffff;
+        background: rgba(90, 200, 189, 0.9);
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: successPop 0.6s ease-out;
+        z-index: 1000;
+    `;
+    
+    selectedCard.style.position = 'relative';
+    selectedCard.appendChild(successIcon);
+    
+    // Navigate after animation
+    setTimeout(() => {
+        // Navigate to birth date page
+        window.location.href = `{% url 'main:pet_birthdate' %}?type=${petType}&gender=${gender}`;
+    }, 800);
+}
+
+function goBack() {
+    // Add exit animation
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        window.location.href = `{% url "main:select_pet" %}?type=${petType}`;
+    }, 500);
+}
+
+// Add success animation keyframes
+const successStyle = document.createElement('style');
+successStyle.textContent = `
+    @keyframes successPop {
+        0% {
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-30px); }
+    }
+`;
+document.head.appendChild(successStyle);
+</script>
+{% endblock %}

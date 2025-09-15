@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Κατάσταση Υγείας - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ποια είναι η τρέχουσα κατάσταση υγείας <span id="pet-name-in-title">του κατοικιδιού σας</span>;
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-bottom: 3rem; opacity: 0.9;">
+                Οι απαντήσεις σας δεν θα επηρεάσουν την τιμή της ασφάλισής σας
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Health Status Options -->
+            <div class="health-status-options">
+                <div class="health-card healthy-card" data-status="healthy" onclick="selectHealthStatus('healthy')">
+                    <div class="health-icon">✅</div>
+                    <h3 class="health-title">Υγιές - Όλα καλά</h3>
+                    <p class="health-description" id="healthy-description">
+                        Το κατοικίδιό μου είναι υγιές και δεν έχει κάποιο πρόβλημα υγείας
+                    </p>
+                </div>
+                
+                <div class="health-card problems-card" data-status="problems" onclick="selectHealthStatus('problems')">
+                    <div class="health-icon">🏥</div>
+                    <h3 class="health-title">Έχει προβλήματα υγείας ή παλαιούς τραυματισμούς</h3>
+                    <p class="health-description" id="problems-description">
+                        Το κατοικίδιό μου έχει κάποια προβλήματα υγείας ή έχει υποστεί τραυματισμούς
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" id="continue-btn" onclick="continueToNext()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft); opacity: 0.5;" disabled>
+                    Επόμενο
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">🏥</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">💊</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">🩺</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">❤️</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">🌡️</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">💉</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+let selectedStatus = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    
+    // Set pet summary information
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update title to include pet name
+        document.getElementById('pet-name-in-title').textContent = `του ${petName}`;
+        
+        // Update health card descriptions to include pet name
+        document.getElementById('healthy-description').textContent = `Ο/Η ${petName} είναι υγιής και δεν έχει κάποιο πρόβλημα υγείας`;
+        document.getElementById('problems-description').textContent = `Ο/Η ${petName} έχει κάποια προβλήματα υγείας ή έχει υποστεί τραυματισμούς`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Add entrance animations
+    const cards = document.querySelectorAll('.pet-summary-card, .health-card');
+    cards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 1s ease-out ${0.3 + index * 0.2}s both`;
+    });
+});
+
+function selectHealthStatus(status) {
+    selectedStatus = status;
+    
+    // Remove selected class from all cards
+    document.querySelectorAll('.health-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    const selectedCard = document.querySelector(`[data-status="${status}"]`);
+    selectedCard.classList.add('selected');
+    
+    // Enable continue button
+    const continueBtn = document.getElementById('continue-btn');
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = '1';
+    
+    // Add selection animation
+    selectedCard.style.transform = 'scale(1.05)';
+    selectedCard.style.boxShadow = '0 20px 50px rgba(90, 200, 189, 0.4)';
+    
+    setTimeout(() => {
+        selectedCard.style.transform = '';
+    }, 300);
+}
+
+function continueToNext() {
+    if (!selectedStatus) {
+        alert('Παρακαλώ επιλέξτε την κατάσταση υγείας του κατοικιδιού σας.');
+        return;
+    }
+    
+    // Get all parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    const secondPetFlow = urlParams.get('second_pet_flow');
+    
+    // Check if this is second pet flow and has health problems
+    if (secondPetFlow === 'true' && selectedStatus === 'problems') {
+        // For second pet with health issues, redirect back to user data with message
+        const params = new URLSearchParams({
+            // First pet data
+            type: urlParams.get('first_pet_type') || '',
+            gender: urlParams.get('first_pet_gender') || '',
+            birthdate: urlParams.get('first_pet_birthdate') || '',
+            breed: urlParams.get('first_pet_breed') || '',
+            name: urlParams.get('first_pet_name') || '',
+            health_status: urlParams.get('first_pet_health_status') || '',
+            conditions: urlParams.get('first_pet_conditions') || '',
+            program: urlParams.get('first_pet_program') || '',
+            
+            // User data
+            fullName: urlParams.get('fullName') || '',
+            afm: urlParams.get('afm') || '',
+            phone: urlParams.get('phone') || '',
+            address: urlParams.get('address') || '',
+            postalCode: urlParams.get('postalCode') || '',
+            email: urlParams.get('email') || '',
+            microchip: urlParams.get('microchip') || '',
+            
+            // Message flag
+            second_pet_health_issue: 'true'
+        });
+        
+        window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
+        return;
+    }
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+    setTimeout(() => {
+        if (selectedStatus === 'healthy') {
+            // If healthy, go to insurance choice page
+            const params = new URLSearchParams({
+                type: petType || '',
+                gender: gender || '',
+                birthdate: birthdate || '',
+                breed: breed || '',
+                name: name || '',
+                health_status: 'healthy',
+                conditions: ''
+            });
+            
+            // Add all first pet and user data if this is second pet flow
+            if (secondPetFlow === 'true') {
+                params.set('first_pet_type', urlParams.get('first_pet_type') || '');
+                params.set('first_pet_gender', urlParams.get('first_pet_gender') || '');
+                params.set('first_pet_birthdate', urlParams.get('first_pet_birthdate') || '');
+                params.set('first_pet_breed', urlParams.get('first_pet_breed') || '');
+                params.set('first_pet_name', urlParams.get('first_pet_name') || '');
+                params.set('first_pet_health_status', urlParams.get('first_pet_health_status') || '');
+                params.set('first_pet_conditions', urlParams.get('first_pet_conditions') || '');
+                params.set('first_pet_program', urlParams.get('first_pet_program') || '');
+                params.set('fullName', urlParams.get('fullName') || '');
+                params.set('afm', urlParams.get('afm') || '');
+                params.set('phone', urlParams.get('phone') || '');
+                params.set('address', urlParams.get('address') || '');
+                params.set('postalCode', urlParams.get('postalCode') || '');
+                params.set('email', urlParams.get('email') || '');
+                params.set('microchip', urlParams.get('microchip') || '');
+                params.set('second_pet_flow', 'true');
+            }
+            
+            window.location.href = `{% url 'main:insurance_choice' %}?${params.toString()}`;
+        } else {
+            // If has problems, go to appropriate health conditions page
+            if (petType === 'dog') {
+                window.location.href = `{% url 'main:dog_health_conditions' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(name)}`;
+            } else if (petType === 'cat') {
+                window.location.href = `{% url 'main:cat_health_conditions' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(name)}`;
+            }
+        }
+    }, 1000);
+}
+
+function goBack() {
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const gender = urlParams.get('gender');
+        const birthdate = urlParams.get('birthdate');
+        const breed = urlParams.get('breed');
+        
+        window.location.href = `{% url "main:pet_name" %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}`;
+    }, 500);
+}
+</script>
+{% endblock %}

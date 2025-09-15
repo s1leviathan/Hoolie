@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Επιλογή Ασφάλισης - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Τέλεια! <span id="pet-name-in-title">Το κατοικίδιό σας</span> είναι υγιές! 🎉
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.2rem; margin-bottom: 3rem; opacity: 0.9;">
+                Τι θα θέλατε να κάνουμε τώρα;
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Insurance Choice Options -->
+            <div class="insurance-choice-options">
+                <div class="choice-card insure-now-card" onclick="selectChoice('insure-now')">
+                    <div class="choice-icon">🚀</div>
+                    <h3 class="choice-title">Θέλω να ασφαλιστώ τώρα!</h3>
+                    <p class="choice-description">
+                        Δείτε όλες τις πληροφορίες σας και προχωρήστε άμεσα στην ασφάλιση
+                    </p>
+                    <div class="choice-benefits">
+                        <span class="benefit-item">✅ Άμεση κάλυψη</span>
+                        <span class="benefit-item">✅ Καλύτερες τιμές</span>
+                        <span class="benefit-item">✅ Γρήγορη διαδικασία</span>
+                    </div>
+                </div>
+                
+                <div class="choice-card contact-later-card" onclick="selectChoice('contact-later')">
+                    <div class="choice-icon">📞</div>
+                    <h3 class="choice-title">Επικοινωνήστε μαζί μου</h3>
+                    <p class="choice-description">
+                        Θα επικοινωνήσουμε μαζί σας για μια εξατομικευμένη προσφορά
+                    </p>
+                    <div class="choice-benefits">
+                        <span class="benefit-item">📋 Προσωπική συμβουλή</span>
+                        <span class="benefit-item">💰 Ειδικές προσφορές</span>
+                        <span class="benefit-item">⏰ Στον χρόνο σας</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    ← Πίσω
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    
+    // Set pet avatar
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        
+        // Update title to include pet name
+        document.getElementById('pet-name-in-title').textContent = `Ο/Η ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+});
+
+function selectChoice(choice) {
+    // Get all parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    const healthStatus = urlParams.get('health_status');
+    
+    if (choice === 'insure-now') {
+        // Navigate to review page
+        const params = new URLSearchParams({
+            type: petType || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            breed: breed || '',
+            name: name || '',
+            health_status: healthStatus || '',
+            conditions: ''
+        });
+        
+        window.location.href = `{% url 'main:review_info' %}?${params.toString()}`;
+    } else if (choice === 'contact-later') {
+        // Navigate to contact info page
+        const params = new URLSearchParams({
+            type: petType || '',
+            gender: gender || '',
+            birthdate: birthdate || '',
+            breed: breed || '',
+            name: name || '',
+            health_status: healthStatus || '',
+            conditions: ''
+        });
+        
+        window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+    }
+}
+
+function goBack() {
+    window.history.back();
+}
+</script>
+{% endblock %}
+
+
+

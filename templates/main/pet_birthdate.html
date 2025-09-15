@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ημερομηνία Γέννησης - Ασφάλιση Υγείας{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ποια είναι η ημερομηνία γέννησής του ή της;
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.2rem; margin-bottom: 2rem;">
+                Εισαγάγετε την ημερομηνία που εμφανίζεται στην κάρτα υγείας του κατοικιδιού σας
+            </p>
+            
+            <!-- Pet Info Reminder -->
+            <div class="pet-info-reminder" style="margin-bottom: 3rem;">
+                <div class="pet-info-card">
+                    <div class="pet-icon-small" id="pet-reminder-icon">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+                    <span class="pet-reminder-text" id="pet-reminder-text">
+                        <!-- Will be filled by JavaScript -->
+                    </span>
+                    <span class="gender-indicator" id="gender-indicator">
+                        <!-- Will be filled by JavaScript -->
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Birth Date Options -->
+            <div class="birthdate-options">
+                <!-- Exact Date Option -->
+                <div class="date-option-card active" id="exact-date-card">
+                    <div class="option-header">
+                        <div class="option-icon">📅</div>
+                        <h3 class="option-title">Ημερομηνία γέννησης</h3>
+                    </div>
+                    
+                    <div class="date-input-container">
+                        <div class="date-inputs">
+                            <div class="date-field">
+                                <input type="number" id="day" min="1" max="31" placeholder="ΗΗ" class="date-input">
+                                <label for="day">Ημέρα</label>
+                            </div>
+                            <span class="date-separator">/</span>
+                            <div class="date-field">
+                                <input type="number" id="month" min="1" max="12" placeholder="ΜΜ" class="date-input">
+                                <label for="month">Μήνας</label>
+                            </div>
+                            <span class="date-separator">/</span>
+                            <div class="date-field">
+                                <input type="number" id="year" min="2000" max="2025" placeholder="ΕΕΕΕ" class="date-input">
+                                <label for="year">Έτος</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Approximate Date Option -->
+                <div class="date-option-card" id="approximate-date-card">
+                    <div class="option-header" onclick="toggleDateOption('approximate')">
+                        <div class="option-icon">🤔</div>
+                        <h3 class="option-title">Δεν γνωρίζω την ακριβή ημερομηνία</h3>
+                    </div>
+                    
+                    <div class="approximate-inputs" style="display: none;">
+                        <div class="approximate-selects">
+                            <div class="select-field">
+                                <select id="approx-month" class="form-select">
+                                    <option value="">Επιλέξτε μήνα</option>
+                                    <option value="1">Ιανουάριος</option>
+                                    <option value="2">Φεβρουάριος</option>
+                                    <option value="3">Μάρτιος</option>
+                                    <option value="4">Απρίλιος</option>
+                                    <option value="5">Μάιος</option>
+                                    <option value="6">Ιούνιος</option>
+                                    <option value="7">Ιούλιος</option>
+                                    <option value="8">Αύγουστος</option>
+                                    <option value="9">Σεπτέμβριος</option>
+                                    <option value="10">Οκτώβριος</option>
+                                    <option value="11">Νοέμβριος</option>
+                                    <option value="12">Δεκέμβριος</option>
+                                </select>
+                                <label>Περίπου μήνας</label>
+                            </div>
+                            <div class="select-field">
+                                <select id="approx-year" class="form-select">
+                                    <option value="">Επιλέξτε έτος</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2021">2021</option>
+                                    <option value="2020">2020</option>
+                                    <option value="2019">2019</option>
+                                    <option value="2018">2018</option>
+                                    <option value="2017">2017</option>
+                                    <option value="2016">2016</option>
+                                    <option value="2015">2015</option>
+                                    <option value="2014">2014</option>
+                                    <option value="2013">2013</option>
+                                    <option value="2012">2012</option>
+                                    <option value="2011">2011</option>
+                                    <option value="2010">2010</option>
+                                </select>
+                                <label>Περίπου έτος</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" onclick="submitBirthDate()" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; box-shadow: var(--shadow-soft);">
+                    Συνέχεια
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+            
+            <!-- Decorative elements -->
+            <div class="floating-decorations">
+                <div class="floating-element" style="top: 15%; left: 10%; font-size: 2rem;">🎂</div>
+                <div class="floating-element" style="top: 25%; right: 15%; font-size: 1.5rem;">🎈</div>
+                <div class="floating-element" style="bottom: 30%; left: 20%; font-size: 2.5rem;">🎉</div>
+                <div class="floating-element" style="bottom: 20%; right: 10%; font-size: 1.8rem;">📅</div>
+                <div class="floating-element" style="top: 40%; left: 5%; font-size: 1.2rem;">🕐</div>
+                <div class="floating-element" style="top: 60%; right: 5%; font-size: 1.4rem;">⭐</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    
+    // Set pet reminder based on selection
+    if (petType === 'dog') {
+        document.getElementById('pet-reminder-icon').textContent = '🐕';
+        document.getElementById('pet-reminder-text').textContent = 'Σκύλος';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-reminder-icon').textContent = '🐱';
+        document.getElementById('pet-reminder-text').textContent = 'Γάτα';
+    }
+    
+    // Set gender indicator
+    if (gender === 'male') {
+        document.getElementById('gender-indicator').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('gender-indicator').innerHTML = '<span style="color: #E24A90;">♀️ Θηλυκό</span>';
+    }
+    
+    // Add entrance animations
+    const cards = document.querySelectorAll('.date-option-card');
+    cards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 1s ease-out ${0.3 + index * 0.2}s both`;
+    });
+    
+    // Add input focus animations
+    const inputs = document.querySelectorAll('.date-input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.05)';
+            this.parentElement.style.boxShadow = '0 5px 15px rgba(90, 200, 189, 0.3)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+            this.parentElement.style.boxShadow = 'none';
+        });
+    });
+});
+
+function toggleDateOption(option) {
+    const exactCard = document.getElementById('exact-date-card');
+    const approximateCard = document.getElementById('approximate-date-card');
+    const approximateInputs = document.querySelector('.approximate-inputs');
+    
+    if (option === 'approximate') {
+        exactCard.classList.remove('active');
+        approximateCard.classList.add('active');
+        approximateInputs.style.display = 'block';
+        
+        // Animate the appearance
+        approximateInputs.style.animation = 'fadeInUp 0.5s ease-out';
+    } else {
+        approximateCard.classList.remove('active');
+        exactCard.classList.add('active');
+        approximateInputs.style.display = 'none';
+    }
+}
+
+function submitBirthDate() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    
+    let birthDate = '';
+    
+    // Check which option is active
+    if (document.getElementById('exact-date-card').classList.contains('active')) {
+        const day = document.getElementById('day').value;
+        const month = document.getElementById('month').value;
+        const year = document.getElementById('year').value;
+        
+        if (!day || !month || !year) {
+            alert('Παρακαλώ συμπληρώστε όλα τα πεδία της ημερομηνίας.');
+            return;
+        }
+        
+        birthDate = `${day}/${month}/${year}`;
+    } else {
+        const month = document.getElementById('approx-month').value;
+        const year = document.getElementById('approx-year').value;
+        
+        if (!month || !year) {
+            alert('Παρακαλώ επιλέξτε τουλάχιστον μήνα και έτος.');
+            return;
+        }
+        
+        const monthNames = ['', 'Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος', 'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'];
+        birthDate = `${monthNames[month]} ${year} (περίπου)`;
+    }
+    
+    // Add success animation
+    const button = event.target;
+    button.style.transform = 'scale(0.95)';
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
+    
+    setTimeout(() => {
+        // Navigate to appropriate breed selection page based on pet type
+        if (petType === 'dog') {
+            window.location.href = `{% url 'main:pet_breed' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthDate)}`;
+        } else if (petType === 'cat') {
+            window.location.href = `{% url 'main:cat_breed' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthDate)}`;
+        }
+    }, 1000);
+}
+
+function goBack() {
+    const content = document.querySelector('.hero-content');
+    content.style.animation = 'fadeOut 0.5s ease-in';
+    
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const gender = urlParams.get('gender');
+        window.location.href = `{% url "main:pet_gender" %}?type=${petType}`;
+    }, 500);
+}
+
+// Add click handler to exact date card
+document.getElementById('exact-date-card').addEventListener('click', function() {
+    if (!this.classList.contains('active')) {
+        toggleDateOption('exact');
+    }
+});
+</script>
+{% endblock %}

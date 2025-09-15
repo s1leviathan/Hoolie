@@ -1,0 +1,181 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .terms-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        line-height: 1.6;
+    }
+    
+    .terms-header {
+        background: linear-gradient(135deg, #5ac8bd, #4a9d94);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .terms-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .terms-section h3 {
+        color: #5ac8bd;
+        border-bottom: 2px solid #5ac8bd;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .coverage-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .coverage-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .coverage-list li:before {
+        content: "✅ ";
+        color: #4CAF50;
+        font-weight: bold;
+    }
+    
+    .exclusion-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .exclusion-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .exclusion-list li:before {
+        content: "❌ ";
+        color: #f44336;
+        font-weight: bold;
+    }
+    
+    .contact-info {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .back-button {
+        background: #5ac8bd;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 20px;
+        transition: background 0.3s;
+    }
+    
+    .back-button:hover {
+        background: #4a9d94;
+        text-decoration: none;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="terms-container">
+    <div class="terms-header">
+        <h1>📋 {{ page_title }}</h1>
+        <p>{{ company_name }} - Hoolie Foundation IKE</p>
+    </div>
+    
+    <div class="terms-section">
+        <h3>🏥 Καλυπτόμενοι Κίνδυνοι</h3>
+        <ul class="coverage-list">
+            <li>Ιατροφαρμακευτική Περίθαλψη</li>
+            <li>Διάγνωση με Hoolie AI</li>
+            <li>Αποκατάσταση</li>
+            <li>Αστική Ευθύνη Ιδιοκτήτη Κατοικιδίου</li>
+            <li>Νομική Προστασία Ιδιοκτήτη Κατοικιδίου</li>
+            <li>Κάλυψη Αποχαιρετισμού</li>
+            <li>Επείγοντα / Νοσηλείες</li>
+            <li>Απώλεια / Κλοπή</li>
+            <li>Απώλεια Διαβατηρίου</li>
+        </ul>
+    </div>
+    
+    <div class="terms-section">
+        <h3>⚠️ Εξαιρέσεις Κάλυψης</h3>
+        <ul class="exclusion-list">
+            <li>Προϋπάρχουσες παθήσεις</li>
+            <li>Εμβολιασμοί και προληπτικές θεραπείες</li>
+            <li>Αναπαραγωγικές διαδικασίες</li>
+            <li>Συμπεριφορικά προβλήματα</li>
+            <li>Πολεμικές ενέργειες και τρομοκρατία</li>
+            <li>Ραδιενέργεια</li>
+            <li>Ζημιές από δόλο του ασφαλιζόμενου</li>
+        </ul>
+    </div>
+    
+    <div class="terms-section">
+        <h3>💰 Όρια Κάλυψης</h3>
+        <p><strong>Χρυσό Πρόγραμμα:</strong></p>
+        <ul>
+            <li>Ετήσιο όριο κάλυψης: €5,000</li>
+            <li>Αφαιρετέα απαλλαγή: €50 ανά περιστατικό</li>
+            <li>Αστική ευθύνη: €100,000</li>
+            <li>Νομική προστασία: €3,000</li>
+        </ul>
+    </div>
+    
+    <div class="terms-section">
+        <h3>📞 Διαδικασία Αξίωσης</h3>
+        <ol>
+            <li>Άμεση ειδοποίηση εντός 48 ωρών</li>
+            <li>Υποβολή απαραίτητων δικαιολογητικών</li>
+            <li>Εξέταση αξίωσης από ειδικούς</li>
+            <li>Καταβολή αποζημίωσης εντός 30 ημερών</li>
+        </ol>
+    </div>
+    
+    <div class="terms-section">
+        <h3>⚖️ Γενικές Διατάξεις</h3>
+        <p>Το παρόν ασφαλιστήριο διέπεται από τις διατάξεις του ισχύοντος νομικού πλαισίου (ελληνική και ευρωπαϊκή νομοθεσία). Ο ασφαλιζόμενος δηλώνει ότι έχει λάβει γνώση και αποδέχεται τους όρους του παρόντος συμβολαίου.</p>
+        
+        <p><strong>Δικαίωμα Εναντίωσης:</strong> Ο ασφαλιζόμενος έχει δικαίωμα εναντίωσης εντός ενός (1) μήνα από την παραλαβή του συμβολαίου.</p>
+        
+        <p><strong>Αρμόδια Δικαστήρια:</strong> Κάθε διαφορά επιλύεται από τα Δικαστήρια Αθηνών.</p>
+    </div>
+    
+    <div class="contact-info">
+        <h3>📧 Επικοινωνία</h3>
+        <p><strong>{{ company_name }}</strong></p>
+        <p>📍 Λ. Ηρακλείου 350 & Μελίνας Μερκούρη</p>
+        <p>Τ.Κ. 14231 Νέα Ιωνία, Αθήνα</p>
+        <p>📞 Τηλέφωνο: 210-1234567</p>
+        <p>📧 Email: info@hoolie.gr</p>
+    </div>
+    
+    <div style="text-align: center;">
+        <a href="{% url 'main:index' %}" class="back-button">
+            🏠 Επιστροφή στην Αρχική
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+
+
