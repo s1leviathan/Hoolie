@@ -255,9 +255,9 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(reverse('admin:main_insuranceapplication_changelist'))
     
     def view_contract_view(self, request, application_id):
-        """View generated contract(s)"""
+        """View generated contract(s) from S3 or local storage"""
         from django.http import FileResponse, Http404, HttpResponse
-        import os
+        from django.core.files.storage import default_storage
         import zipfile
         from io import BytesIO
         
@@ -267,26 +267,37 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             if not application.contract_pdf_path:
                 raise Http404("Το συμβόλαιο δεν βρέθηκε")
             
+            # Check if file exists in storage (S3 or local)
+            if not default_storage.exists(application.contract_pdf_path):
+                raise Http404("Το συμβόλαιο δεν βρέθηκε")
+            
             # Check if there are multiple contracts (two pets)
             if application.has_second_pet and application.second_pet_name:
-                # Look for both pet contracts
-                base_dir = os.path.dirname(application.contract_pdf_path)
+                # Look for both pet contracts in storage
                 contract_files = []
+                contract_number = application.contract_number
                 
-                # Find all contract files for this application
-                for filename in os.listdir(base_dir):
-                    if (filename.startswith(f'contract_{application.contract_number}_pet') and 
-                        filename.endswith('.pdf')):
-                        filepath = os.path.join(base_dir, filename)
-                        if os.path.exists(filepath):
-                            contract_files.append((filename, filepath))
+                # List files in contracts directory
+                try:
+                    # Get all files in contracts/ directory
+                    contracts_dir = 'contracts/'
+                    files = default_storage.listdir(contracts_dir)[1]  # Get files list
+                    
+                    for filename in files:
+                        if (filename.startswith(f'contract_{contract_number}_pet') and 
+                            filename.endswith('.pdf')):
+                            file_path = f'{contracts_dir}{filename}'
+                            if default_storage.exists(file_path):
+                                contract_files.append((filename, file_path))
+                except:
+                    pass
                 
                 if len(contract_files) > 1:
                     # Create ZIP file with both contracts
                     zip_buffer = BytesIO()
                     with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-                        for filename, filepath in contract_files:
-                            with open(filepath, 'rb') as pdf_file:
+                        for filename, file_path in contract_files:
+                            with default_storage.open(file_path, 'rb') as pdf_file:
                                 zip_file.writestr(filename, pdf_file.read())
                     
                     zip_buffer.seek(0)
@@ -294,12 +305,10 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                     response['Content-Disposition'] = f'attachment; filename="{application.contract_number}_contracts.zip"'
                     return response
             
-            # Single contract or fallback
-            if not os.path.exists(application.contract_pdf_path):
-                raise Http404("Το συμβόλαιο δεν βρέθηκε")
-            
+            # Single contract
+            pdf_file = default_storage.open(application.contract_pdf_path, 'rb')
             return FileResponse(
-                open(application.contract_pdf_path, 'rb'),
+                pdf_file,
                 as_attachment=False,
                 filename=f'contract_{application.contract_number}.pdf'
             )

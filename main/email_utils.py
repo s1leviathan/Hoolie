@@ -62,18 +62,17 @@ def send_company_notification_email(application):
         email.attach_alternative(html_message, "text/html")
         
         # Attach PDF if available (contract PDF contains all application data)
-        pdf_path = None
-        if application.contract_pdf_path and os.path.exists(application.contract_pdf_path):
-            pdf_path = application.contract_pdf_path
-        
-        if pdf_path:
+        # Works with both S3 and local storage
+        if application.contract_pdf_path:
             try:
-                with open(pdf_path, 'rb') as pdf:
-                    email.attach(
-                        f'application_{application.application_number}.pdf',
-                        pdf.read(),
-                        'application/pdf'
-                    )
+                from django.core.files.storage import default_storage
+                if default_storage.exists(application.contract_pdf_path):
+                    with default_storage.open(application.contract_pdf_path, 'rb') as pdf:
+                        email.attach(
+                            f'application_{application.application_number}.pdf',
+                            pdf.read(),
+                            'application/pdf'
+                        )
             except Exception as e:
                 logger.warning(f"Could not attach PDF to company email: {e}")
         

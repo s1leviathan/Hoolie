@@ -86,14 +86,7 @@ DATABASES = {
 
 # Use PostgreSQL on Heroku
 if 'DATABASE_URL' in os.environ:
-    db_config = dj_database_url.parse(os.environ['DATABASE_URL'])
-    # Force use of psycopg3 if available, otherwise fall back to psycopg2
-    try:
-        import psycopg
-        db_config['ENGINE'] = 'django.db.backends.postgresql'
-    except ImportError:
-        db_config['ENGINE'] = 'django.db.backends.postgresql'
-    DATABASES['default'] = db_config
+    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
 
 
 # Password validation
@@ -139,9 +132,31 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Whitenoise configuration for static files
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Media files - Use S3 (Bucketeer) on Heroku, local filesystem for development
+if 'BUCKETEER_BUCKET_NAME' in os.environ:
+    # Use S3 storage via Bucketeer for media files only
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    AWS_ACCESS_KEY_ID = os.environ.get('BUCKETEER_AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('BUCKETEER_AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('BUCKETEER_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.environ.get('BUCKETEER_AWS_REGION', 'us-east-1')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    AWS_LOCATION = 'media'  # Store all media files in 'media' folder in S3
+    
+    # Media files
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
+    MEDIA_ROOT = 'media/'
+else:
+    # Local development - use local filesystem
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # Viva Wallet Configuration
 # Environment variables for production security
