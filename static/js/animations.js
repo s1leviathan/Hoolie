@@ -302,21 +302,63 @@ function applyAffiliateCode() {
         return;
     }
     
-    // Simulate API call - for now just validate format
-    if (code.length < 4) {
-        showAffiliateStatus('error', 'Ο κωδικός πρέπει να έχει τουλάχιστον 4 χαρακτήρες.');
+    // Validate code format
+    if (code.length < 3) {
+        showAffiliateStatus('error', 'Ο κωδικός πρέπει να έχει τουλάχιστον 3 χαρακτήρες.');
         return;
     }
     
-    // Store affiliate code in localStorage for later use
-    localStorage.setItem('affiliateCode', code);
-    
-    // Show success message
-    showAffiliateStatus('success', `✓ Κωδικός "${code}" εφαρμόστηκε επιτυχώς! Θα λάβετε ειδικές εκπτώσεις.`);
-    
-    // Optional: Add visual feedback to the input
-    codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
-    codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
+    // Call API to validate code
+    fetch('/api/validate-affiliate-code/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Store affiliate code in localStorage for later use
+            localStorage.setItem('affiliateCode', code);
+            
+            // Show success message with discount info
+            let message = data.message;
+            if (data.discount && data.discount.description) {
+                message += ` ${data.discount.description}`;
+            }
+            showAffiliateStatus('success', message);
+            
+            // Add visual feedback to the input
+            codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
+            codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
+        } else {
+            showAffiliateStatus('error', data.error || 'Ο κωδικός δεν είναι έγκυρος.');
+            codeInput.style.borderColor = 'rgba(220, 53, 69, 0.6)';
+            codeInput.style.background = 'rgba(220, 53, 69, 0.1)';
+        }
+    })
+    .catch(error => {
+        console.error('Error validating code:', error);
+        showAffiliateStatus('error', 'Σφάλμα κατά την επικύρωση του κωδικού. Παρακαλώ δοκιμάστε ξανά.');
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function showAffiliateStatus(type, message) {

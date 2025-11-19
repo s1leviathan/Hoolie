@@ -258,18 +258,56 @@ function submitConditions() {
     button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
     
     setTimeout(() => {
-        // Navigate to contact info page with all data including conditions
-        const params = new URLSearchParams({
-            type: petType || '',
-            gender: gender || '',
-            birthdate: birthdate || '',
-            breed: breed || '',
-            name: name || '',
-            health_status: 'problems',
-            conditions: conditionsList.join(', ')
-        });
+        // Check if this is second pet flow
+        const secondPetFlow = urlParams.get('second_pet_flow');
         
-        window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+        if (secondPetFlow === 'true') {
+            // For second pet, go back to user_data with conditions
+            const params = new URLSearchParams({
+                // First pet data
+                type: urlParams.get('first_pet_type') || '',
+                gender: urlParams.get('first_pet_gender') || '',
+                birthdate: urlParams.get('first_pet_birthdate') || '',
+                breed: urlParams.get('first_pet_breed') || '',
+                name: urlParams.get('first_pet_name') || '',
+                health_status: urlParams.get('first_pet_health_status') || '',
+                conditions: urlParams.get('first_pet_conditions') || '',
+                program: urlParams.get('first_pet_program') || '',
+                
+                // Second pet data
+                second_pet_type: petType || '',
+                second_pet_gender: gender || '',
+                second_pet_birthdate: birthdate || '',
+                second_pet_breed: breed || '',
+                second_pet_name: name || '',
+                second_pet_health_status: 'problems',
+                second_pet_conditions: conditionsList.join(', '),
+                
+                // User data
+                fullName: urlParams.get('fullName') || '',
+                afm: urlParams.get('afm') || '',
+                phone: urlParams.get('phone') || '',
+                address: urlParams.get('address') || '',
+                postalCode: urlParams.get('postalCode') || '',
+                email: urlParams.get('email') || '',
+                microchip: urlParams.get('microchip') || ''
+            });
+            
+            window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
+        } else {
+            // For first pet, navigate to contact info page with all data including conditions
+            const params = new URLSearchParams({
+                type: petType || '',
+                gender: gender || '',
+                birthdate: birthdate || '',
+                breed: breed || '',
+                name: name || '',
+                health_status: 'problems',
+                conditions: conditionsList.join(', ')
+            });
+            
+            window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+        }
     }, 1000);
 }
 

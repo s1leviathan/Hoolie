@@ -14,7 +14,11 @@ import logging
 
 from .models import InsuranceApplication, PaymentTransaction
 from .viva_wallet import VivaWalletAPI, create_insurance_payment, verify_payment_webhook
-from .qr_utils import generate_payment_qr_for_application
+try:
+    from .qr_utils import generate_payment_qr_for_application
+except ImportError:
+    def generate_payment_qr_for_application(application):
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +91,7 @@ class PaymentSelectionView(View):
             payment = PaymentTransaction.objects.create(
                 application=application,
                 order_code=result['order_code'],
+                viva_order_code=result['order_code'],  # Store for webhook matching
                 amount=result['amount'],
                 payment_type=payment_type,
                 status='pending',
@@ -346,6 +351,7 @@ def create_payment_intent(request):
             payment = PaymentTransaction.objects.create(
                 application=application,
                 order_code=result['order_code'],
+                viva_order_code=result['order_code'],  # Store for webhook matching
                 amount=result['amount'],
                 payment_type=payment_type,
                 status='pending',

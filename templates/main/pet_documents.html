@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Έγγραφα Κατοικιδίου - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ανέβαστε τα έγγραφα <span id="pet-name-in-title">του κατοικιδιού σας</span> 📄
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-bottom: 3rem; opacity: 0.9;">
+                Χρειαζόμαστε τα έγγραφα του κατοικιδιού σας για να προχωρήσουμε
+            </p>
+            
+            <!-- Pet Info Card -->
+            <div class="pet-info-card" style="margin-bottom: 3rem;">
+                <div class="pet-icon-small" id="pet-avatar">🐕</div>
+                <span class="pet-reminder-text" id="pet-name-display">Το κατοικίδιό σας</span>
+                <span class="gender-indicator" id="pet-gender-display">
+                    <span style="color: #4A90E2;">♂️ Αρσενικό</span>
+                </span>
+            </div>
+            
+            <!-- Document Upload Section -->
+            <div class="document-upload-section">
+                <div class="document-upload-card">
+                    <div class="upload-header">
+                        <div class="upload-icon">📎</div>
+                        <h3>Ανέβασμα Εγγράφων</h3>
+                        <p>Σύρετε και αφήστε τα αρχεία εδώ ή κάντε κλικ για επιλογή</p>
+                    </div>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="documentInput" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;">
+                        <div class="upload-content">
+                            <div class="upload-icon-large">📄</div>
+                            <p class="upload-text">Σύρετε τα έγγραφα εδώ</p>
+                            <p class="upload-subtext">ή</p>
+                            <button type="button" class="btn-upload" onclick="document.getElementById('documentInput').click()">
+                                Επιλέξτε Αρχεία
+                            </button>
+                            <p class="upload-hint">Μέγιστο μέγεθος: 10MB ανά αρχείο<br>Αποδεκτά: PDF, JPG, PNG, DOC, DOCX</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Uploaded Files List -->
+                    <div class="uploaded-files" id="uploadedFiles" style="display: none;">
+                        <h4>Ανεβασμένα Αρχεία:</h4>
+                        <ul id="filesList"></ul>
+                    </div>
+                    
+                    <!-- Upload Status -->
+                    <div class="upload-status" id="uploadStatus" style="display: none;">
+                        <div class="status-message"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons" style="margin-top: 3rem;">
+                <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Πίσω
+                </button>
+                <button class="btn btn-lg" id="continueBtn" onclick="continueToHealth()" disabled style="background: #ccc; border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; cursor: not-allowed;">
+                    Επόμενο
+                    <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.document-upload-section {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+}
+
+.document-upload-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 40px rgba(90, 200, 189, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.upload-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.upload-header h3 {
+    font-size: 1.8rem;
+    color: var(--brand-primary);
+    margin-bottom: 0.5rem;
+}
+
+.upload-header p {
+    color: #666;
+    font-size: 1rem;
+}
+
+.upload-area {
+    border: 3px dashed #5ac8bd;
+    border-radius: 15px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: rgba(90, 200, 189, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-area:hover {
+    border-color: #4a9e94;
+    background: rgba(90, 200, 189, 0.1);
+}
+
+.upload-area.dragover {
+    border-color: #4a9e94;
+    background: rgba(90, 200, 189, 0.15);
+    transform: scale(1.02);
+}
+
+.upload-content {
+    width: 100%;
+}
+
+.upload-icon-large {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.upload-text {
+    font-size: 1.3rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.upload-subtext {
+    color: #999;
+    margin: 0.5rem 0;
+}
+
+.btn-upload {
+    background: var(--brand-gradient);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 1rem 0;
+    box-shadow: 0 5px 15px rgba(90, 200, 189, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-upload:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(90, 200, 189, 0.4);
+}
+
+.upload-hint {
+    color: #999;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.uploaded-files {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+}
+
+.uploaded-files h4 {
+    color: var(--brand-primary);
+    margin-bottom: 1rem;
+}
+
+.uploaded-files ul {
+    list-style: none;
+    padding: 0;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.file-icon {
+    font-size: 1.5rem;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.file-size {
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.remove-file {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.remove-file:hover {
+    background: #c82333;
+}
+
+.upload-status {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.upload-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.upload-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+#continueBtn:not(:disabled) {
+    background: var(--brand-gradient);
+    cursor: pointer;
+}
+
+#continueBtn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(90, 200, 189, 0.4);
+}
+</style>
+
+<script>
+let uploadedFiles = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const name = urlParams.get('name');
+    
+    // Set pet summary information
+    if (petType === 'dog') {
+        document.getElementById('pet-avatar').textContent = '🐕';
+    } else if (petType === 'cat') {
+        document.getElementById('pet-avatar').textContent = '🐱';
+    }
+    
+    // Set pet name
+    if (name) {
+        const petName = decodeURIComponent(name);
+        document.getElementById('pet-name-display').textContent = petName;
+        document.getElementById('pet-name-in-title').textContent = `του ${petName}`;
+    }
+    
+    // Set gender display
+    if (gender === 'male') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #4A90E2;">♂️ Αρσενικό</span>';
+    } else if (gender === 'female') {
+        document.getElementById('pet-gender-display').innerHTML = '<span style="color: #E91E63;">♀️ Θηλυκό</span>';
+    }
+    
+    // Setup file input
+    const fileInput = document.getElementById('documentInput');
+    const uploadArea = document.getElementById('uploadArea');
+    
+    // Click to upload
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // File selection
+    fileInput.addEventListener('change', handleFiles);
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handleFileSelection(files);
+    });
+});
+
+function handleFiles(e) {
+    const files = Array.from(e.target.files);
+    handleFileSelection(files);
+}
+
+function handleFileSelection(files) {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    files.forEach(file => {
+        // Validate file size
+        if (file.size > maxSize) {
+            showStatus('error', `Το αρχείο "${file.name}" υπερβαίνει το όριο 10MB`);
+            return;
+        }
+        
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+            showStatus('error', `Το αρχείο "${file.name}" δεν είναι αποδεκτού τύπου`);
+            return;
+        }
+        
+        // Add to uploaded files
+        uploadedFiles.push(file);
+        displayUploadedFiles();
+        updateContinueButton();
+    });
+}
+
+function displayUploadedFiles() {
+    const filesList = document.getElementById('filesList');
+    const uploadedFilesDiv = document.getElementById('uploadedFiles');
+    
+    filesList.innerHTML = '';
+    
+    if (uploadedFiles.length > 0) {
+        uploadedFilesDiv.style.display = 'block';
+        
+        uploadedFiles.forEach((file, index) => {
+            const li = document.createElement('li');
+            li.className = 'file-item';
+            
+            const fileIcon = getFileIcon(file.type);
+            const fileSize = formatFileSize(file.size);
+            
+            li.innerHTML = `
+                <div class="file-info">
+                    <span class="file-icon">${fileIcon}</span>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${fileSize}</div>
+                    </div>
+                </div>
+                <button type="button" class="remove-file" onclick="removeFile(${index})">Αφαίρεση</button>
+            `;
+            
+            filesList.appendChild(li);
+        });
+        
+        showStatus('success', `Επιτυχώς προστέθηκαν ${uploadedFiles.length} αρχεία`);
+    } else {
+        uploadedFilesDiv.style.display = 'none';
+    }
+}
+
+function getFileIcon(fileType) {
+    if (fileType.includes('pdf')) return '📄';
+    if (fileType.includes('image')) return '🖼️';
+    if (fileType.includes('word') || fileType.includes('document')) return '📝';
+    return '📎';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function removeFile(index) {
+    uploadedFiles.splice(index, 1);
+    displayUploadedFiles();
+    updateContinueButton();
+}
+
+function updateContinueButton() {
+    const continueBtn = document.getElementById('continueBtn');
+    if (uploadedFiles.length > 0) {
+        continueBtn.disabled = false;
+        continueBtn.style.background = 'var(--brand-gradient)';
+        continueBtn.style.cursor = 'pointer';
+    } else {
+        continueBtn.disabled = true;
+        continueBtn.style.background = '#ccc';
+        continueBtn.style.cursor = 'not-allowed';
+    }
+}
+
+function showStatus(type, message) {
+    const statusDiv = document.getElementById('uploadStatus');
+    statusDiv.className = `upload-status ${type}`;
+    statusDiv.style.display = 'block';
+    statusDiv.querySelector('.status-message').textContent = message;
+    
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 5000);
+}
+
+function continueToHealth() {
+    if (uploadedFiles.length === 0) {
+        alert('Παρακαλώ ανεβάστε τουλάχιστον ένα έγγραφο για να συνεχίσετε.');
+        return;
+    }
+    
+    // Store files in localStorage (in production, you'd upload to server)
+    const fileNames = uploadedFiles.map(f => f.name);
+    localStorage.setItem('petDocuments', JSON.stringify(fileNames));
+    
+    // Get all parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    
+    // Navigate to health status page
+    window.location.href = `{% url 'main:health_status' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(name)}`;
+}
+
+function goBack() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    
+    window.location.href = `{% url 'main:pet_name' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}`;
+}
+</script>
+{% endblock %}
+

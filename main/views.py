@@ -1,4 +1,7 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
     """Main introduction page with beautiful animations"""
@@ -86,6 +89,23 @@ def pet_name(request):
         'breed': breed
     }
     return render(request, 'main/pet_name.html', context)
+
+def pet_documents(request):
+    """Pet documents upload page"""
+    pet_type = request.GET.get('type', 'pet')
+    gender = request.GET.get('gender', '')
+    birthdate = request.GET.get('birthdate', '')
+    breed = request.GET.get('breed', '')
+    name = request.GET.get('name', '')
+    
+    context = {
+        'pet_type': pet_type,
+        'gender': gender,
+        'birthdate': birthdate,
+        'breed': breed,
+        'name': name
+    }
+    return render(request, 'main/pet_documents.html', context)
 
 def health_status(request):
     """Pet health status page"""
@@ -424,6 +444,28 @@ def handle_application_submission(request):
             except ValueError:
                 pass
         
+        # Calculate base premium
+        base_premium = calculate_total_premium(request.POST)
+        
+        # Check for affiliate code and apply discount
+        affiliate_code_str = request.POST.get('affiliateCode', '').strip().upper()
+        discount_applied = 0
+        affiliate_code_obj = None
+        
+        if affiliate_code_str:
+            from .models import AmbassadorCode
+            try:
+                affiliate_code_obj = AmbassadorCode.objects.get(code=affiliate_code_str)
+                if affiliate_code_obj.is_valid():
+                    # Apply discount
+                    final_amount, discount = affiliate_code_obj.apply_discount(float(base_premium))
+                    discount_applied = discount
+                    base_premium = final_amount
+                    # Increment usage counter
+                    affiliate_code_obj.increment_usage()
+            except AmbassadorCode.DoesNotExist:
+                pass  # Code not found, proceed without discount
+        
         # Create application
         application = InsuranceApplication.objects.create(
             # User information
@@ -458,19 +500,47 @@ def handle_application_submission(request):
             health_conditions=request.POST.get('conditions', ''),
             second_pet_health_status=request.POST.get('secondPetHealth', ''),
             
-            # Pricing (would be calculated based on the program and pets)
-            annual_premium=calculate_total_premium(request.POST),
+            # Pricing (with discount applied if code was used)
+            annual_premium=base_premium,
+            affiliate_code=affiliate_code_str if affiliate_code_str else None,
+            discount_applied=discount_applied,
             
             # Status
             status='submitted'
         )
         
-        # Return success response
+        # Generate and store contract PDF (contains all application data for admin access)
+        try:
+            from .utils import generate_contract_pdf
+            pdf_paths = generate_contract_pdf(application)
+            if pdf_paths:
+                # Store the first PDF (or the only one) - this contains all application data
+                application.contract_pdf_path = pdf_paths[0] if isinstance(pdf_paths, list) else pdf_paths
+                application.contract_generated = True
+                application.save()
+        except Exception as e:
+            # Log error but don't fail the submission
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating PDF for application {application.id}: {e}")
+        
+        # Send notification emails
+        try:
+            from .email_utils import send_application_notification_emails
+            send_application_notification_emails(application)
+        except Exception as e:
+            # Log error but don't fail the submission
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error sending emails for application {application.id}: {e}")
+        
+        # Redirect to thank you page for all applications
         return JsonResponse({
             'success': True,
             'message': 'Η αίτησή σας υποβλήθηκε επιτυχώς!',
-            'contract_number': application.contract_number,
-            'redirect_url': f'/contact/?application_id={application.id}'
+            'application_number': application.application_number,
+            'application_id': application.id,
+            'redirect_url': f'/thank-you/?application_id={application.id}'
         })
         
     except Exception as e:
@@ -501,6 +571,28 @@ def calculate_total_premium(post_data):
     # For now, return a placeholder
     return 389.15
 
+def application_processing(request):
+    """Application processing page for pets with health issues"""
+    application_id = request.GET.get('application_id')
+    
+    try:
+        from .models import InsuranceApplication
+        application = InsuranceApplication.objects.get(id=application_id)
+        
+        context = {
+            'application': application,
+            'application_number': application.application_number or f'HPI{10000 + application.id}',
+            'pet_name': application.pet_name,
+            'has_second_pet': application.has_second_pet,
+            'second_pet_name': application.second_pet_name if application.has_second_pet else None
+        }
+        
+        return render(request, 'main/application_processing.html', context)
+    except InsuranceApplication.DoesNotExist:
+        return render(request, 'main/application_processing.html', {
+            'error': 'Η αίτηση δεν βρέθηκε'
+        })
+
 def contact_info(request):
     """Contact information collection page"""
     pet_type = request.GET.get('type', '')
@@ -524,15 +616,100 @@ def contact_info(request):
     return render(request, 'main/contact_info.html', context)
 
 def thank_you(request):
-    """Final thank you page"""
-    pet_type = request.GET.get('type', '')
-    name = request.GET.get('name', '')
-    email = request.GET.get('email', '')
+    """Final thank you page with application details"""
+    application_id = request.GET.get('application_id')
+    application = None
+    
+    if application_id:
+        try:
+            from .models import InsuranceApplication
+            application = InsuranceApplication.objects.get(id=application_id)
+        except InsuranceApplication.DoesNotExist:
+            pass
     
     context = {
-        'pet_type': pet_type,
-        'name': name,
-        'email': email,
+        'application': application,
+        'application_number': application.application_number if application else None,
+        'pet_name': application.pet_name if application else '',
+        'pet_type': application.pet_type if application else '',
+        'email': application.email if application else '',
+        'full_name': application.full_name if application else '',
     }
     
     return render(request, 'main/thank_you.html', context)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def validate_affiliate_code(request):
+    """API endpoint to validate affiliate/ambassador/partner codes"""
+    from .models import AmbassadorCode
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        code = data.get('code', '').strip().upper()
+        
+        if not code:
+            return JsonResponse({
+                'success': False,
+                'error': 'Παρακαλώ εισάγετε έναν κωδικό.'
+            }, status=400)
+        
+        # Find the code
+        try:
+            ambassador_code = AmbassadorCode.objects.get(code=code)
+        except AmbassadorCode.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Ο κωδικός δεν βρέθηκε. Παρακαλώ ελέγξτε τον κωδικό και δοκιμάστε ξανά.'
+            }, status=404)
+        
+        # Validate the code
+        if not ambassador_code.is_valid():
+            if not ambassador_code.is_active:
+                error_msg = 'Ο κωδικός δεν είναι ενεργός.'
+            elif ambassador_code.max_uses and ambassador_code.current_uses >= ambassador_code.max_uses:
+                error_msg = 'Ο κωδικός έχει εξαντληθεί.'
+            else:
+                error_msg = 'Ο κωδικός δεν είναι έγκυρος για αυτή την περίοδο.'
+            
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=400)
+        
+        # Return success with code details
+        discount_info = {}
+        if ambassador_code.discount_percentage > 0:
+            discount_info['type'] = 'percentage'
+            discount_info['value'] = float(ambassador_code.discount_percentage)
+            discount_info['description'] = f'{ambassador_code.discount_percentage}% έκπτωση'
+        elif ambassador_code.discount_amount > 0:
+            discount_info['type'] = 'fixed'
+            discount_info['value'] = float(ambassador_code.discount_amount)
+            discount_info['description'] = f'{ambassador_code.discount_amount}€ έκπτωση'
+        
+        if ambassador_code.max_discount:
+            discount_info['max_discount'] = float(ambassador_code.max_discount)
+        
+        return JsonResponse({
+            'success': True,
+            'code': ambassador_code.code,
+            'code_type': ambassador_code.get_code_type_display(),
+            'name': ambassador_code.name,
+            'description': ambassador_code.description,
+            'discount': discount_info,
+            'message': f'✓ Κωδικός "{ambassador_code.code}" εφαρμόστηκε επιτυχώς!'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Μη έγκυρο αίτημα.'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Σφάλμα: {str(e)}'
+        }, status=500)

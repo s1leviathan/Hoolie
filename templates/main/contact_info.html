@@ -155,24 +155,118 @@ function submitEmail() {
     const name = urlParams.get('name');
     const healthStatus = urlParams.get('health_status');
     const conditions = urlParams.get('conditions');
+    const affiliateCode = urlParams.get('affiliateCode') || localStorage.getItem('affiliateCode') || '';
     
-    // Navigate to thank you page with all data including email
-    const params = new URLSearchParams({
-        type: petType || '',
-        gender: gender || '',
-        birthdate: birthdate || '',
-        breed: breed || '',
-        name: name || '',
-        health_status: healthStatus || '',
-        conditions: conditions || '',
-        email: email
+    // Get all user data from URL
+    const fullName = urlParams.get('fullName') || '';
+    const afm = urlParams.get('afm') || '';
+    const phone = urlParams.get('phone') || '';
+    const address = urlParams.get('address') || '';
+    const postalCode = urlParams.get('postalCode') || '';
+    const microchip = urlParams.get('microchip') || '';
+    const program = urlParams.get('program') || '';
+    
+    // Submit application via AJAX
+    const csrfToken = getCookie('csrftoken');
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    
+    // Add all form fields
+    const fields = {
+        'type': petType,
+        'gender': gender,
+        'birthdate': birthdate,
+        'breed': breed,
+        'name': name,
+        'health_status': healthStatus,
+        'conditions': conditions,
+        'program': program,
+        'fullName': fullName,
+        'afm': afm,
+        'phone': phone,
+        'address': address,
+        'postalCode': postalCode,
+        'email': email,
+        'microchip': microchip,
+        'affiliateCode': affiliateCode
+    };
+    
+    // Add second pet data if exists
+    const secondPetName = urlParams.get('secondPetName');
+    if (secondPetName) {
+        formData.append('secondPetName', secondPetName);
+        formData.append('secondPetType', urlParams.get('secondPetType') || '');
+        formData.append('secondPetGender', urlParams.get('secondPetGender') || '');
+        formData.append('secondPetBirthdate', urlParams.get('secondPetBirthdate') || '');
+        formData.append('secondPetBreed', urlParams.get('secondPetBreed') || '');
+        formData.append('secondPetWeight', urlParams.get('secondPetWeight') || '');
+        formData.append('secondPetHealth', urlParams.get('secondPetHealthStatus') || '');
+    }
+    
+    for (const [key, value] of Object.entries(fields)) {
+        if (value) {
+            formData.append(key, value);
+        }
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('button[onclick="submitEmail()"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Υποβολή...';
+    
+    // Submit via AJAX
+    fetch('{% url "main:user_data" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect based on response
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                // Fallback redirect
+                window.location.href = '{% url "main:thank_you" %}';
+            }
+        } else {
+            alert(data.message || 'Σφάλμα κατά την υποβολή της αίτησης');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Σφάλμα κατά την υποβολή της αίτησης. Παρακαλώ δοκιμάστε ξανά.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     });
-    
-    window.location.href = `{% url 'main:thank_you' %}?${params.toString()}`;
 }
 
 function goBack() {
     window.history.back();
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 </script>
 {% endblock %}

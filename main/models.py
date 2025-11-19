@@ -5,6 +5,7 @@ from django.utils import timezone
 
 class InsuranceApplication(models.Model):
     # Administrative fields
+    application_number = models.CharField(max_length=20, unique=True, blank=True, null=True, help_text="Application number like HPI10001")
     contract_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     receipt_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
     payment_code = models.CharField(max_length=50, unique=True, blank=True, null=True)
@@ -65,15 +66,27 @@ class InsuranceApplication(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
 
-    # Contract generation
+    # Contract generation (PDF contains all application data for admin access)
     contract_generated = models.BooleanField(default=False)
-    contract_pdf_path = models.CharField(max_length=500, blank=True, null=True)
+    contract_pdf_path = models.CharField(max_length=500, blank=True, null=True, help_text="Contract PDF with all application data")
+    
+    # Ambassador/Partner Code
+    affiliate_code = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    discount_applied = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Discount amount applied from affiliate code")
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        if not self.application_number:
+            # Generate application number like HPI10001
+            last_app = InsuranceApplication.objects.order_by('-id').first()
+            if last_app and last_app.id:
+                next_num = last_app.id + 1
+            else:
+                next_num = 1
+            self.application_number = f"HPI{10000 + next_num}"
         if not self.contract_number:
             self.contract_number = f"HOL-{timezone.now().year}-{str(uuid.uuid4())[:6].upper()}"
         if not self.receipt_number:
@@ -133,13 +146,13 @@ class PaymentTransaction(models.Model):
     
     # Viva Wallet transaction details
     transaction_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    order_code = models.CharField(max_length=100, unique=True)
+    order_code = models.CharField(max_length=100, unique=True, null=True, blank=True, db_index=True)
     
     # Payment details
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='annual')
     status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-    payment_method = models.CharField(max_length=50, default='viva_wallet')
+    payment_method = models.CharField(max_length=50, default='viva_wallet', blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -219,3 +232,97 @@ class PaymentPlan(models.Model):
         amount += float(self.additional_fee)
         
         return round(amount, 2)
+
+
+class AmbassadorCode(models.Model):
+    """Model for Ambassador and Partner discount codes"""
+    
+    CODE_TYPE_CHOICES = [
+        ('ambassador', 'Πρέσβης'),
+        ('partner', 'Συνεργάτης'),
+    ]
+    
+    code = models.CharField(max_length=50, unique=True, db_index=True, help_text="The discount code (e.g., PARTNER2024)")
+    code_type = models.CharField(max_length=20, choices=CODE_TYPE_CHOICES, default='partner')
+    name = models.CharField(max_length=200, help_text="Name of the ambassador/partner")
+    description = models.TextField(blank=True, help_text="Description of the code")
+    
+    # Discount settings
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Percentage discount (e.g., 10.00 for 10%)")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Fixed discount amount in euros (0 = use percentage)")
+    max_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Maximum discount amount (null = no limit)")
+    
+    # Usage limits
+    max_uses = models.IntegerField(null=True, blank=True, help_text="Maximum number of times this code can be used (null = unlimited)")
+    current_uses = models.IntegerField(default=0, help_text="Current number of times used")
+    
+    # Validity
+    is_active = models.BooleanField(default=True)
+    valid_from = models.DateTimeField(null=True, blank=True, help_text="Code valid from this date (null = no start date)")
+    valid_until = models.DateTimeField(null=True, blank=True, help_text="Code valid until this date (null = no expiry)")
+    
+    # Tracking
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.CharField(max_length=200, blank=True, help_text="Who created this code")
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Ambassador/Partner Code'
+        verbose_name_plural = 'Ambassador/Partner Codes'
+        indexes = [
+            models.Index(fields=['code', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.code} ({self.get_code_type_display()}) - {self.name}"
+    
+    def is_valid(self):
+        """Check if code is currently valid"""
+        if not self.is_active:
+            return False
+        
+        # Check usage limit
+        if self.max_uses and self.current_uses >= self.max_uses:
+            return False
+        
+        # Check date validity
+        now = timezone.now()
+        if self.valid_from and now < self.valid_from:
+            return False
+        if self.valid_until and now > self.valid_until:
+            return False
+        
+        return True
+    
+    def calculate_discount(self, base_amount):
+        """Calculate discount amount for a given base amount"""
+        if not self.is_valid():
+            return 0
+        
+        amount = float(base_amount)
+        discount = 0
+        
+        if self.discount_amount > 0:
+            # Fixed discount amount
+            discount = float(self.discount_amount)
+        elif self.discount_percentage > 0:
+            # Percentage discount
+            discount = amount * (float(self.discount_percentage) / 100)
+        
+        # Apply maximum discount limit if set
+        if self.max_discount and discount > float(self.max_discount):
+            discount = float(self.max_discount)
+        
+        return round(discount, 2)
+    
+    def apply_discount(self, base_amount):
+        """Apply discount and return final amount"""
+        discount = self.calculate_discount(base_amount)
+        final_amount = float(base_amount) - discount
+        return round(max(0, final_amount), 2), discount
+    
+    def increment_usage(self):
+        """Increment usage counter"""
+        self.current_uses += 1
+        self.save(update_fields=['current_uses', 'updated_at'])

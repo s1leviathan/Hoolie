@@ -9,6 +9,7 @@ import hmac
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -265,25 +266,51 @@ def process_payment_success(webhook_data):
     from .models import InsuranceApplication, PaymentTransaction
     
     try:
-        transaction_id = webhook_data.get('eventData', {}).get('transactionId')
-        order_code = webhook_data.get('eventData', {}).get('orderCode')
-        amount = webhook_data.get('eventData', {}).get('amount', 0) / 100  # Convert from cents
+        event_data = webhook_data.get('eventData', {})
+        transaction_id = event_data.get('transactionId')
+        order_code = event_data.get('orderCode')
+        amount = event_data.get('amount', 0) / 100  # Convert from cents
         
-        # Find the application by order code or transaction reference
-        # You'll need to store the order_code when creating the payment
-        
-        # Create payment transaction record
-        PaymentTransaction.objects.create(
-            transaction_id=transaction_id,
-            order_code=order_code,
-            amount=amount,
-            status='completed',
-            payment_method='viva_wallet',
-            webhook_data=webhook_data
-        )
-        
-        logger.info(f"Payment completed: {transaction_id}, Amount: {amount}€")
-        return {'success': True, 'message': 'Payment processed successfully'}
+        # Find existing payment transaction by order_code
+        try:
+            payment = PaymentTransaction.objects.get(order_code=order_code)
+            
+            # Update payment with transaction details
+            payment.viva_transaction_id = transaction_id
+            payment.transaction_id = transaction_id
+            payment.status = 'completed'
+            payment.completed_at = timezone.now()
+            payment.webhook_data = webhook_data
+            payment.save()
+            
+            # Update application status
+            application = payment.application
+            application.status = 'paid'
+            application.save()
+            
+            logger.info(f"Payment completed: {transaction_id}, Order: {order_code}, Amount: {amount}€")
+            return {'success': True, 'message': 'Payment processed successfully'}
+            
+        except PaymentTransaction.DoesNotExist:
+            # Try to find by viva_order_code if order_code doesn't match
+            try:
+                payment = PaymentTransaction.objects.get(viva_order_code=order_code)
+                payment.viva_transaction_id = transaction_id
+                payment.transaction_id = transaction_id
+                payment.status = 'completed'
+                payment.completed_at = timezone.now()
+                payment.webhook_data = webhook_data
+                payment.save()
+                
+                application = payment.application
+                application.status = 'paid'
+                application.save()
+                
+                logger.info(f"Payment completed (by viva_order_code): {transaction_id}, Order: {order_code}")
+                return {'success': True, 'message': 'Payment processed successfully'}
+            except PaymentTransaction.DoesNotExist:
+                logger.error(f"Payment transaction not found for order_code: {order_code}")
+                return {'success': False, 'error': f'Payment transaction not found for order: {order_code}'}
         
     except Exception as e:
         logger.error(f"Payment success processing error: {e}")
@@ -291,12 +318,71 @@ def process_payment_success(webhook_data):
 
 def process_payment_failure(webhook_data):
     """Process failed payment webhook"""
-    # Implement payment failure logic
-    logger.warning(f"Payment failed: {webhook_data}")
-    return {'success': True, 'message': 'Payment failure processed'}
+    from .models import InsuranceApplication, PaymentTransaction
+    
+    try:
+        event_data = webhook_data.get('eventData', {})
+        order_code = event_data.get('orderCode')
+        
+        if order_code:
+            try:
+                payment = PaymentTransaction.objects.get(order_code=order_code)
+                payment.status = 'failed'
+                payment.webhook_data = webhook_data
+                payment.save()
+                
+                application = payment.application
+                application.status = 'payment_failed'
+                application.save()
+                
+                logger.warning(f"Payment failed: Order {order_code}")
+                return {'success': True, 'message': 'Payment failure processed'}
+            except PaymentTransaction.DoesNotExist:
+                logger.warning(f"Payment transaction not found for failed order: {order_code}")
+        
+        logger.warning(f"Payment failed: {webhook_data}")
+        return {'success': True, 'message': 'Payment failure processed'}
+        
+    except Exception as e:
+        logger.error(f"Payment failure processing error: {e}")
+        return {'success': False, 'error': str(e)}
 
 def process_payment_refund(webhook_data):
     """Process refund webhook"""
-    # Implement refund logic
-    logger.info(f"Payment refunded: {webhook_data}")
-    return {'success': True, 'message': 'Refund processed'}
+    from .models import InsuranceApplication, PaymentTransaction
+    
+    try:
+        event_data = webhook_data.get('eventData', {})
+        transaction_id = event_data.get('transactionId')
+        refund_amount = event_data.get('amount', 0) / 100  # Convert from cents
+        
+        if transaction_id:
+            try:
+                payment = PaymentTransaction.objects.get(viva_transaction_id=transaction_id)
+                
+                # Update refund information
+                if payment.refund_amount:
+                    payment.refund_amount += refund_amount
+                else:
+                    payment.refund_amount = refund_amount
+                
+                if payment.refund_amount >= payment.amount:
+                    payment.status = 'refunded'
+                else:
+                    payment.status = 'partially_refunded'
+                
+                payment.refunded_at = timezone.now()
+                payment.webhook_data = webhook_data
+                payment.save()
+                
+                logger.info(f"Payment refunded: Transaction {transaction_id}, Amount: {refund_amount}€")
+                return {'success': True, 'message': 'Refund processed'}
+            except PaymentTransaction.DoesNotExist:
+                logger.warning(f"Payment transaction not found for refund: {transaction_id}")
+        
+        logger.info(f"Payment refunded: {webhook_data}")
+        return {'success': True, 'message': 'Refund processed'}
+        
+    except Exception as e:
+        logger.error(f"Refund processing error: {e}")
+        return {'success': False, 'error': str(e)}

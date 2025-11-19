@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Επεξεργασία Αίτησης - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <div class="processing-card">
+                <div class="processing-icon">
+                    <div class="icon-circle">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                </div>
+                
+                <h1 class="processing-title">
+                    Η αίτησή σας βρίσκεται σε επεξεργασία
+                </h1>
+                
+                {% if application_number %}
+                <div class="application-number-box">
+                    <p class="number-label">Αριθμός Αίτησης:</p>
+                    <p class="application-number">{{ application_number }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="processing-message">
+                    <p class="main-message">
+                        Η αίτησή σας έχει υποβληθεί επιτυχώς και βρίσκεται σε στάδιο επεξεργασίας.
+                    </p>
+                    
+                    <div class="info-box">
+                        <div class="info-item">
+                            <i class="fas fa-paw"></i>
+                            <div class="info-text">
+                                <strong>Κατοικίδιο:</strong>
+                                <span>{{ pet_name }}</span>
+                                {% if has_second_pet and second_pet_name %}
+                                <span> & {{ second_pet_name }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <i class="fas fa-file-medical"></i>
+                            <div class="info-text">
+                                <strong>Κατάσταση:</strong>
+                                <span>Η αίτηση ελέγχεται από το τμήμα Underwriting</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <i class="fas fa-phone"></i>
+                            <div class="info-text">
+                                <strong>Επικοινωνία:</strong>
+                                <span>Θα επικοινωνήσουμε άμεσα μαζί σας για την έκδοση του συμβολαίου</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="next-steps">
+                        <h3>Επόμενα Βήματα:</h3>
+                        <ul>
+                            <li>✓ Η ομάδα Underwriting θα εξετάσει την αίτησή σας</li>
+                            <li>✓ Θα λάβετε ένα email επιβεβαίωσης</li>
+                            <li>✓ Θα επικοινωνήσουμε μαζί σας εντός 24-48 ωρών</li>
+                            <li>✓ Θα συζητήσουμε τις λεπτομέρειες και θα προχωρήσουμε στην έκδοση του συμβολαίου</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="processing-actions">
+                    <a href="{% url 'main:index' %}" class="btn btn-lg" style="background: var(--brand-gradient); border: none; color: white; padding: 1rem 2rem; border-radius: 15px; font-weight: 600; text-decoration: none; display: inline-block;">
+                        <i class="fas fa-home me-2"></i>
+                        Επιστροφή στην Αρχική
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.processing-card {
+    max-width: 800px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 25px;
+    padding: 3rem;
+    box-shadow: 0 15px 50px rgba(90, 200, 189, 0.2);
+    text-align: center;
+}
+
+.processing-icon {
+    margin-bottom: 2rem;
+}
+
+.icon-circle {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #5ac8bd 0%, #4a9e94 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(90, 200, 189, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.icon-circle i {
+    font-size: 3rem;
+    color: white;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 30px rgba(90, 200, 189, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(90, 200, 189, 0.5);
+    }
+}
+
+.processing-title {
+    font-size: 2.5rem;
+    color: var(--brand-primary);
+    margin-bottom: 2rem;
+    font-weight: 700;
+}
+
+.application-number-box {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 2px solid var(--brand-primary);
+}
+
+.number-label {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.application-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    letter-spacing: 2px;
+}
+
+.processing-message {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.main-message {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 2rem;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.info-box {
+    background: #f9f9f9;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.info-item i {
+    font-size: 1.5rem;
+    color: var(--brand-primary);
+    margin-top: 0.2rem;
+}
+
+.info-text {
+    flex: 1;
+}
+
+.info-text strong {
+    display: block;
+    color: var(--brand-primary);
+    margin-bottom: 0.3rem;
+    font-size: 1rem;
+}
+
+.info-text span {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.next-steps {
+    background: rgba(90, 200, 189, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.next-steps h3 {
+    color: var(--brand-primary);
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.next-steps ul {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+}
+
+.next-steps li {
+    padding: 0.5rem 0;
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.processing-actions {
+    margin-top: 2rem;
+    text-align: center;
+}
+</style>
+{% endblock %}
+

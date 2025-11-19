@@ -162,11 +162,11 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     # Calculate discount for second pet (if applicable)
     discount_amount = ""
     if contract_suffix == "-PET2" and application.has_second_pet:
-        # SIMPLE: Take ΤΕΛΙΚΗ ΤΙΜΗ of second pet, apply -30% discount, show the difference
+        # SIMPLE: Take ΤΕΛΙΚΗ ΤΙΜΗ of second pet, apply -5% discount, show the difference
         
         # final_price = what the user actually pays (discounted price)
-        # original_price = full price before 30% discount
-        original_price = final_price / 0.7  # Reverse the 30% discount to get original
+        # original_price = full price before 5% discount
+        original_price = final_price / 0.95  # Reverse the 5% discount to get original
         discount = original_price - final_price  # The discount amount
         
         # Format the discount amount as requested
@@ -218,7 +218,6 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         "checkbox_20eqnd": "Yes_vfmt",  # Ιατροφαρμακευτική Περίθαλψη
         "checkbox_22jvbr": "Yes_zjqp",  # Διάγνωση με Hoolie AI
         "checkbox_23crbw": "Yes_zjqp",  # Αποκατάσταση
-        "checkbox_24uvne": "Yes_zjqp",  # Αστική Ευθύνη Ιδιοκτήτη Κατοικιδίου
         "checkbox_25vepz": "Yes_zjqp",  # Νομική Προστασία Ιδιοκτήτη Κατοικιδίου
         "checkbox_26erwv": "Yes_zjqp",  # Κάλυψη Αποχαιρετισμού
         "checkbox_27vlbh": "Yes_zjqp",  # Επείγοντα / Νοσηλείες

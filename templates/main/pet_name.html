@@ -202,8 +202,8 @@ function submitName() {
     button.innerHTML = '<i class="fas fa-check me-2"></i>Επεξεργασία...';
     
      setTimeout(() => {
-         // Navigate to health status page
-         window.location.href = `{% url 'main:health_status' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(petName)}`;
+         // Navigate to document upload page
+         window.location.href = `{% url 'main:pet_documents' %}?type=${petType}&gender=${gender}&birthdate=${encodeURIComponent(birthdate)}&breed=${encodeURIComponent(breed)}&name=${encodeURIComponent(petName)}`;
      }, 1000);
 }
 

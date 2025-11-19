@@ -133,7 +133,7 @@
                                         <span class="discount-icon">🎉</span>
                                         <div class="discount-text">
                                             <strong>Έκπτωση 2ου Κατοικιδίου</strong>
-                                            <small>30% έκπτωση για επιπλέον κατοικίδια</small>
+                                            <small>5% έκπτωση για επιπλέον κατοικίδια</small>
                                         </div>
                                     </div>
                                 </div>
@@ -145,7 +145,7 @@
                             <div class="second-pet-card">
                                 <div class="second-pet-header">
                                     <h4>🐾 Έχετε δεύτερο κατοικίδιο;</h4>
-                                    <p>Προσθέστε ένα δεύτερο κατοικίδιο και εξοικονομήστε 30%!</p>
+                                    <p>Προσθέστε ένα δεύτερο κατοικίδιο και εξοικονομήστε 5%!</p>
                                 </div>
                                 
                                 <!-- Add Second Pet Button -->
@@ -208,7 +208,7 @@
                                             </select>
                                         </div>
                                         
-                                        <!-- Health Status -->
+                                        <!-- Health Status - Note: Will redirect to separate questionnaire -->
                                         <div class="form-group full-width">
                                             <label>Κατάσταση Υγείας: <span class="required">*</span></label>
                                             <div class="health-options">
@@ -228,7 +228,7 @@
                                                 </label>
                                             </div>
                                             <div class="health-warning" id="healthWarning" style="display: none;">
-                                                <p>⚠️ Για κατοικίδια με προβλήματα υγείας, η ομάδα μας θα επικοινωνήσει μαζί σας για ειδική αξιολόγηση.</p>
+                                                <p>⚠️ Θα μεταφερθείτε σε ξεχωριστό ερωτηματολόγιο υγείας για το δεύτερο κατοικίδιο.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -464,10 +464,10 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
         secondPetAnnualPrice = secondPetPricing.second_pet - firstPetPricing.final;
         secondPetOriginalPrice = secondPetPricing.final;
     } else {
-        // Different weights: apply 30% discount to second pet
-        const secondPetDiscounted = secondPetPricing.final * 0.7;
-        const secondPetSixMonthDiscounted = secondPetPricing.six_month * 0.7;
-        const secondPetThreeMonthDiscounted = secondPetPricing.three_month * 0.7;
+        // Different weights: apply 5% discount to second pet
+        const secondPetDiscounted = secondPetPricing.final * 0.95;
+        const secondPetSixMonthDiscounted = secondPetPricing.six_month * 0.95;
+        const secondPetThreeMonthDiscounted = secondPetPricing.three_month * 0.95;
         
         combinedAnnual = firstPetPricing.final + secondPetDiscounted;
         combinedSixMonth = firstPetPricing.six_month + secondPetSixMonthDiscounted;
@@ -482,7 +482,7 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
         <div class="two-pets-header">
             <h4>🐾 Τιμολόγηση για 2 Κατοικίδια</h4>
             <div class="discount-highlight">
-                <span class="discount-text">30% Έκπτωση στο 2ο κατοικίδιο!</span>
+                <span class="discount-text">5% Έκπτωση στο 2ο κατοικίδιο!</span>
             </div>
         </div>
         
@@ -509,7 +509,7 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
             </div>
             <div class="option-benefits">
                 <span class="benefit">✓ Καλύτερη τιμή</span>
-                <span class="benefit">✓ 30% έκπτωση 2ου κατοικιδίου</span>
+                <span class="benefit">✓ 5% έκπτωση 2ου κατοικιδίου</span>
             </div>
         </div>
         
@@ -610,6 +610,9 @@ function setupFormValidation() {
             // Get all parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
             
+            // Get affiliate code from localStorage if exists
+            const affiliateCode = localStorage.getItem('affiliateCode') || '';
+            
             // Navigate to contact info page with all data
             const params = new URLSearchParams({
                 type: urlParams.get('type') || '',
@@ -626,7 +629,8 @@ function setupFormValidation() {
                 address: userData.address || '',
                 postalCode: userData.postalCode || '',
                 email: userData.email || '',
-                microchip: userData.microchip || ''
+                microchip: userData.microchip || '',
+                affiliateCode: affiliateCode
             });
             
             // Show success message and redirect
@@ -816,7 +820,7 @@ function calculateSecondPetPricing(petType, weightCategory) {
             const firstPetPricingForSameWeight = pricingTables[petType.toUpperCase() + '_PRICING'][program][firstPetWeight];
             displayBothPetsPricing(firstPetPricingData, firstPetPricingForSameWeight);
         } else {
-            // Different weights: calculate 30% discount
+            // Different weights: calculate 5% discount
             displayBothPetsPricing(firstPetPricingData, secondPetPricingData);
         }
         animatePricingUpdate();
@@ -836,8 +840,61 @@ function saveSecondPet() {
         return;
     }
     
+    // If second pet has health problems, redirect to separate health questionnaire
     if (petHealth === 'problems') {
-        showErrorMessage('Για κατοικίδια με προβλήματα υγείας, η ομάδα μας θα επικοινωνήσει μαζί σας');
+        // Get all current data
+        const urlParams = new URLSearchParams(window.location.search);
+        const firstPetType = urlParams.get('type');
+        const firstPetGender = urlParams.get('gender');
+        const firstPetBirthdate = urlParams.get('birthdate');
+        const firstPetBreed = urlParams.get('breed');
+        const firstPetName = urlParams.get('name');
+        const firstPetHealthStatus = urlParams.get('health_status');
+        const firstPetConditions = urlParams.get('conditions');
+        const firstPetProgram = urlParams.get('program');
+        
+        // Get user data
+        const fullName = urlParams.get('fullName') || '';
+        const afm = urlParams.get('afm') || '';
+        const phone = urlParams.get('phone') || '';
+        const address = urlParams.get('address') || '';
+        const postalCode = urlParams.get('postalCode') || '';
+        const email = urlParams.get('email') || '';
+        const microchip = urlParams.get('microchip') || '';
+        
+        // Get second pet birthdate (if entered)
+        const secondPetBirthdate = document.getElementById('secondPetBirthdate')?.value || '';
+        
+        // Redirect to health status page for second pet
+        const params = new URLSearchParams({
+            type: petType,
+            gender: petGender,
+            birthdate: secondPetBirthdate,
+            breed: '', // Will be set from weight
+            name: petName,
+            second_pet_flow: 'true',
+            
+            // First pet data
+            first_pet_type: firstPetType || '',
+            first_pet_gender: firstPetGender || '',
+            first_pet_birthdate: firstPetBirthdate || '',
+            first_pet_breed: firstPetBreed || '',
+            first_pet_name: firstPetName || '',
+            first_pet_health_status: firstPetHealthStatus || '',
+            first_pet_conditions: firstPetConditions || '',
+            first_pet_program: firstPetProgram || '',
+            
+            // User data
+            fullName: fullName,
+            afm: afm,
+            phone: phone,
+            address: address,
+            postalCode: postalCode,
+            email: email,
+            microchip: microchip
+        });
+        
+        window.location.href = `{% url 'main:health_status' %}?${params.toString()}`;
         return;
     }
     

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import InsuranceApplication
+from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
@@ -16,6 +16,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'program_display', 
         'status_display',
         'annual_premium',
+        'affiliate_code_display',
         'created_at',
         'contract_actions'
     ]
@@ -26,6 +27,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'program',
         'has_second_pet',
         'contract_generated',
+        'affiliate_code',
         'created_at',
         'contract_start_date'
     ]
@@ -39,7 +41,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'phone',
         'afm',
         'pet_name',
-        'second_pet_name'
+        'second_pet_name',
+        'affiliate_code'
     ]
     
     readonly_fields = [
@@ -115,6 +118,13 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'six_month_premium',
                 'three_month_premium'
             )
+        }),
+        ('🎁 Κωδικός Συνεργάτη', {
+            'fields': (
+                'affiliate_code',
+                'discount_applied'
+            ),
+            'classes': ('collapse',)
         })
     )
     
@@ -163,6 +173,19 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             color, obj.get_status_display()
         )
     status_display.short_description = 'Κατάσταση'
+    
+    def affiliate_code_display(self, obj):
+        """Display affiliate code with discount if applied"""
+        if obj.affiliate_code:
+            if obj.discount_applied > 0:
+                return format_html(
+                    '<span style="color: #28a745; font-weight: bold;">🎁 {}</span><br><small>-{}€</small>',
+                    obj.affiliate_code,
+                    obj.discount_applied
+                )
+            return format_html('<span style="color: #17a2b8;">🎁 {}</span>', obj.affiliate_code)
+        return '-'
+    affiliate_code_display.short_description = 'Κωδικός'
     
     def contract_actions(self, obj):
         """Display action buttons"""
@@ -287,3 +310,334 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         """Disable manual addition - only through the application flow"""
         return False
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    """Admin interface for Payment Transactions"""
+    
+    list_display = [
+        'order_code',
+        'application_link',
+        'amount',
+        'payment_type_display',
+        'status_display',
+        'payment_method',
+        'created_at',
+        'completed_at',
+        'refund_info'
+    ]
+    
+    list_filter = [
+        'status',
+        'payment_type',
+        'payment_method',
+        'created_at',
+        'completed_at'
+    ]
+    
+    search_fields = [
+        'order_code',
+        'transaction_id',
+        'viva_transaction_id',
+        'viva_order_code',
+        'application__contract_number',
+        'application__full_name',
+        'application__email'
+    ]
+    
+    readonly_fields = [
+        'transaction_id',
+        'order_code',
+        'viva_transaction_id',
+        'viva_order_code',
+        'created_at',
+        'updated_at',
+        'completed_at',
+        'refunded_at',
+        'webhook_data',
+        'response_data'
+    ]
+    
+    fieldsets = (
+        ('📋 Βασικές Πληροφορίες', {
+            'fields': (
+                'application',
+                'order_code',
+                'transaction_id',
+                'status',
+                'payment_type',
+                'payment_method'
+            )
+        }),
+        ('💰 Ποσά', {
+            'fields': (
+                'amount',
+                'refund_amount',
+                'refund_reason'
+            )
+        }),
+        ('🔗 Viva Wallet', {
+            'fields': (
+                'viva_transaction_id',
+                'viva_order_code',
+                'checkout_url'
+            )
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'created_at',
+                'updated_at',
+                'completed_at',
+                'refunded_at'
+            )
+        }),
+        ('📊 Δεδομένα', {
+            'fields': (
+                'webhook_data',
+                'response_data'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def application_link(self, obj):
+        """Link to the related application"""
+        if obj.application:
+            url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.application.contract_number)
+        return '-'
+    application_link.short_description = 'Αίτηση'
+    
+    def payment_type_display(self, obj):
+        """Display payment type in Greek"""
+        types = {
+            'annual': 'Ετήσια',
+            'six_month': '6μηνη',
+            'three_month': '3μηνη'
+        }
+        return types.get(obj.payment_type, obj.payment_type)
+    payment_type_display.short_description = 'Τύπος Πληρωμής'
+    
+    def status_display(self, obj):
+        """Display status with color coding"""
+        colors = {
+            'pending': '#ffc107',
+            'completed': '#28a745',
+            'failed': '#dc3545',
+            'cancelled': '#6c757d',
+            'refunded': '#17a2b8',
+            'partially_refunded': '#fd7e14'
+        }
+        color = colors.get(obj.status, '#000')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
+            color, obj.get_status_display()
+        )
+    status_display.short_description = 'Κατάσταση'
+    
+    def refund_info(self, obj):
+        """Display refund information"""
+        if obj.refund_amount:
+            return format_html(
+                '<span style="color: #dc3545;">💰 Επιστροφή: {}€</span><br><small>{}</small>',
+                obj.refund_amount,
+                obj.refund_reason or 'Χωρίς λόγο'
+            )
+        return '-'
+    refund_info.short_description = 'Επιστροφή'
+    
+    def has_add_permission(self, request):
+        """Disable manual addition - payments are created through the payment flow"""
+        return False
+
+
+@admin.register(PaymentPlan)
+class PaymentPlanAdmin(admin.ModelAdmin):
+    """Admin interface for Payment Plans"""
+    
+    list_display = [
+        'name',
+        'plan_type_display',
+        'discount_percentage',
+        'additional_fee',
+        'installments',
+        'is_active',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'plan_type',
+        'is_active',
+        'created_at'
+    ]
+    
+    search_fields = [
+        'name',
+        'description'
+    ]
+    
+    fieldsets = (
+        ('📋 Βασικές Πληροφορίες', {
+            'fields': (
+                'name',
+                'plan_type',
+                'description',
+                'is_active'
+            )
+        }),
+        ('💰 Τιμολόγηση', {
+            'fields': (
+                'discount_percentage',
+                'additional_fee',
+                'installments'
+            )
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'created_at',
+                'updated_at'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def plan_type_display(self, obj):
+        """Display plan type in Greek"""
+        types = {
+            'annual': 'Ετήσιο',
+            'six_month': '6μηνο',
+            'three_month': '3μηνο'
+        }
+        return types.get(obj.plan_type, obj.plan_type)
+    plan_type_display.short_description = 'Τύπος Σχεδίου'
+
+
+@admin.register(AmbassadorCode)
+class AmbassadorCodeAdmin(admin.ModelAdmin):
+    """Admin interface for Ambassador/Partner Codes"""
+    
+    list_display = [
+        'code',
+        'code_type_display',
+        'name',
+        'discount_display',
+        'usage_display',
+        'is_active',
+        'validity_display',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'code_type',
+        'is_active',
+        'created_at',
+        'valid_from',
+        'valid_until'
+    ]
+    
+    search_fields = [
+        'code',
+        'name',
+        'description',
+        'created_by'
+    ]
+    
+    readonly_fields = [
+        'created_at',
+        'updated_at',
+        'current_uses'
+    ]
+    
+    fieldsets = (
+        ('📋 Βασικές Πληροφορίες', {
+            'fields': (
+                'code',
+                'code_type',
+                'name',
+                'description',
+                'is_active',
+                'created_by'
+            )
+        }),
+        ('💰 Έκπτωση', {
+            'fields': (
+                'discount_percentage',
+                'discount_amount',
+                'max_discount'
+            ),
+            'description': 'Χρησιμοποιήστε είτε ποσοστό έκπτωσης είτε σταθερό ποσό. Αν και τα δύο είναι 0, δεν θα εφαρμοστεί έκπτωση.'
+        }),
+        ('📊 Όρια Χρήσης', {
+            'fields': (
+                'max_uses',
+                'current_uses'
+            )
+        }),
+        ('📅 Ισχύς', {
+            'fields': (
+                'valid_from',
+                'valid_until'
+            ),
+            'description': 'Αφήστε κενό για να μην υπάρχει περιορισμός ημερομηνίας.'
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'created_at',
+                'updated_at'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def code_type_display(self, obj):
+        """Display code type with emoji"""
+        types = {
+            'ambassador': '👤 Πρέσβης',
+            'partner': '🤝 Συνεργάτης'
+        }
+        return types.get(obj.code_type, obj.code_type)
+    code_type_display.short_description = 'Τύπος'
+    
+    def discount_display(self, obj):
+        """Display discount information"""
+        if obj.discount_percentage > 0:
+            max_info = f" (μέγιστο: {obj.max_discount}€)" if obj.max_discount else ""
+            return f"{obj.discount_percentage}%{max_info}"
+        elif obj.discount_amount > 0:
+            return f"{obj.discount_amount}€"
+        return "Χωρίς έκπτωση"
+    discount_display.short_description = 'Έκπτωση'
+    
+    def usage_display(self, obj):
+        """Display usage information"""
+        if obj.max_uses:
+            return f"{obj.current_uses} / {obj.max_uses}"
+        return f"{obj.current_uses} (απεριόριστα)"
+    usage_display.short_description = 'Χρήσεις'
+    
+    def validity_display(self, obj):
+        """Display validity period"""
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if obj.valid_from and obj.valid_until:
+            if obj.valid_from <= now <= obj.valid_until:
+                return format_html('<span style="color: #28a745;">✓ Ενεργό</span>')
+            elif now < obj.valid_from:
+                return format_html('<span style="color: #ffc107;">⏳ Επόμενο</span>')
+            else:
+                return format_html('<span style="color: #dc3545;">✗ Έληξε</span>')
+        elif obj.valid_from:
+            if now >= obj.valid_from:
+                return format_html('<span style="color: #28a745;">✓ Ενεργό</span>')
+            else:
+                return format_html('<span style="color: #ffc107;">⏳ Επόμενο</span>')
+        elif obj.valid_until:
+            if now <= obj.valid_until:
+                return format_html('<span style="color: #28a745;">✓ Ενεργό</span>')
+            else:
+                return format_html('<span style="color: #dc3545;">✗ Έληξε</span>')
+        else:
+            return format_html('<span style="color: #28a745;">✓ Ενεργό</span>')
+    validity_display.short_description = 'Ισχύς'
