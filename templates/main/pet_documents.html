@@ -391,9 +391,20 @@ function uploadFileToServer(file) {
             'X-CSRFToken': csrfToken
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            // Try to parse error response
+            return response.json().then(data => {
+                throw new Error(data.error || `Server error: ${response.status}`);
+            }).catch(() => {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
-        if (data.success) {
+        if (data.success === true || data.success === 'true') {
             // Add to uploaded files list with server response
             uploadedFiles.push({
                 ...file,
@@ -410,7 +421,7 @@ function uploadFileToServer(file) {
     })
     .catch(error => {
         console.error('Upload error:', error);
-        showStatus('error', 'Σφάλμα κατά το ανέβασμα του αρχείου');
+        showStatus('error', error.message || 'Σφάλμα κατά το ανέβασμα του αρχείου');
     });
 }
 
