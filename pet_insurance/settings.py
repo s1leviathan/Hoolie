@@ -154,11 +154,6 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'payments.log',
-        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -166,17 +161,39 @@ LOGGING = {
     },
     'loggers': {
         'main.viva_wallet': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'main.payment_views': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'main.email_utils': {
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
     },
 }
+
+# Add file handler only if logs directory exists (for local development)
+logs_dir = BASE_DIR / 'logs'
+if logs_dir.exists() or not os.environ.get('DYNO'):  # DYNO is set on Heroku
+    try:
+        logs_dir.mkdir(exist_ok=True)
+        LOGGING['handlers']['file'] = {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': logs_dir / 'payments.log',
+        }
+        # Add file handler to loggers
+        for logger_name in ['main.viva_wallet', 'main.payment_views', 'main.email_utils']:
+            if 'file' not in LOGGING['loggers'][logger_name]['handlers']:
+                LOGGING['loggers'][logger_name]['handlers'].append('file')
+    except (OSError, PermissionError):
+        pass  # Skip file logging if directory can't be created
 
 # Email Configuration
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
