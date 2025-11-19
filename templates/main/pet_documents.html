@@ -406,8 +406,11 @@ function uploadFileToServer(file) {
     .then(data => {
         if (data.success === true || data.success === 'true') {
             // Add to uploaded files list with server response
+            // Ensure file.type is preserved
             uploadedFiles.push({
-                ...file,
+                name: file.name,
+                size: file.size,
+                type: file.type || 'application/octet-stream',
                 document_id: data.document_id,
                 file_url: data.file_url,
                 uploaded: true
@@ -453,8 +456,8 @@ function displayUploadedFiles() {
             const li = document.createElement('li');
             li.className = 'file-item';
             
-            const fileIcon = getFileIcon(file.type);
-            const fileSize = formatFileSize(file.size);
+            const fileIcon = getFileIcon(file.type || '');
+            const fileSize = formatFileSize(file.size || 0);
             
             li.innerHTML = `
                 <div class="file-info">
