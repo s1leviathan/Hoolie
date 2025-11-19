@@ -167,6 +167,11 @@ def upload_pet_document(request):
         })
         
     except Exception as e:
+        import logging
+        import traceback
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error uploading pet document: {str(e)}")
+        logger.error(traceback.format_exc())
         return JsonResponse({
             'success': False,
             'error': f'Σφάλμα κατά το ανέβασμα: {str(e)}'

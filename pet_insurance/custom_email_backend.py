@@ -54,10 +54,14 @@ class CustomEmailBackend(EmailBackend):
         try:
             # Use the property to get the correct connection class
             conn_class = self.connection_class
+            # Get local_hostname safely
+            local_hostname = getattr(self, 'local_hostname', None)
+            timeout = getattr(self, 'timeout', None)
+            
             self.connection = conn_class(
                 self.host, self.port,
-                local_hostname=self.local_hostname,
-                timeout=self.timeout,
+                local_hostname=local_hostname,
+                timeout=timeout,
             )
             if not self.use_ssl and self.use_tls:
                 # For TLS (port 587), disable certificate verification
