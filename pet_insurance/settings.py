@@ -219,12 +219,13 @@ if logs_dir.exists() or not os.environ.get('DYNO'):  # DYNO is set on Heroku
 
 # Email Configuration
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mail.hoolie.gr')  # Plesk mail server
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))  # SSL port for Plesk
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True').lower() == 'true'  # Use SSL for port 465
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'  # Use TLS for port 587
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'pet@hoolie.gr')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'info@hoolie.gr')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'pet@hoolie.gr')
 COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'info@hoolie.gr')
 
 # Default primary key field type
