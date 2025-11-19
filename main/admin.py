@@ -52,17 +52,22 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at',
         'contract_start_date',
-        'contract_end_date'
+        'contract_end_date',
+        'application_number',
+        'contract_pdf_link',
+        'documents_list'
     ]
     
     fieldsets = (
         ('📋 Διοικητικά Στοιχεία', {
             'fields': (
+                'application_number',
                 'contract_number',
                 'receipt_number',
                 'payment_code',
                 'status',
                 'contract_generated',
+                'contract_pdf_link',
                 'contract_pdf_path'
             )
         }),
@@ -94,7 +99,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'pet_weight_category',
                 'microchip_number',
                 'health_status',
-                'health_conditions'
+                'health_conditions',
+                'documents_list'
             )
         }),
         ('🐕 Στοιχεία 2ου Κατοικιδίου', {
@@ -186,6 +192,52 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             return format_html('<span style="color: #17a2b8;">🎁 {}</span>', obj.affiliate_code)
         return '-'
     affiliate_code_display.short_description = 'Κωδικός'
+    
+    def contract_pdf_link(self, obj):
+        """Display link to view/download contract PDF from S3"""
+        if obj.contract_pdf_path:
+            from django.core.files.storage import default_storage
+            try:
+                if default_storage.exists(obj.contract_pdf_path):
+                    view_url = reverse('admin:view_contract', args=[obj.pk])
+                    return format_html(
+                        '<a href="{}" target="_blank" style="background: #007bff; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px;">📄 Προβολή PDF</a><br>'
+                        '<small style="color: #6c757d;">Path: {}</small>',
+                        view_url,
+                        obj.contract_pdf_path
+                    )
+                else:
+                    return format_html(
+                        '<span style="color: #dc3545;">⚠️ PDF not found in storage</span><br>'
+                        '<small style="color: #6c757d;">Path: {}</small>',
+                        obj.contract_pdf_path
+                    )
+            except Exception as e:
+                return format_html(
+                    '<span style="color: #dc3545;">⚠️ Error: {}</span>',
+                    str(e)
+                )
+        return format_html('<span style="color: #6c757d;">-</span>')
+    contract_pdf_link.short_description = 'Συμβόλαιο PDF'
+    
+    def documents_list(self, obj):
+        """Display list of uploaded documents with download links"""
+        documents = obj.documents.all()
+        if documents:
+            links_html = []
+            for doc in documents:
+                url = doc.get_file_url()
+                if url:
+                    links_html.append(
+                        f'<a href="{url}" target="_blank" style="display: inline-block; margin: 2px; padding: 3px 8px; background: #28a745; color: white; text-decoration: none; border-radius: 3px; font-size: 12px;">📎 {doc.original_filename}</a>'
+                    )
+                else:
+                    links_html.append(
+                        f'<span style="color: #dc3545; font-size: 12px;">⚠️ {doc.original_filename}</span>'
+                    )
+            return format_html('<div>{}</div>', mark_safe(' '.join(links_html)))
+        return format_html('<span style="color: #6c757d;">Δεν υπάρχουν ανεβασμένα έγγραφα</span>')
+    documents_list.short_description = 'Ανεβασμένα Έγγραφα'
     
     def contract_actions(self, obj):
         """Display action buttons"""
