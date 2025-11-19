@@ -4,6 +4,7 @@
 {% block title %}Στοιχεία Επικοινωνίας - Hoolie Pet Insurance{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <section class="hero-section">
     <div class="container">
         <div class="hero-content">
@@ -167,7 +168,26 @@ function submitEmail() {
     const program = urlParams.get('program') || '';
     
     // Submit application via AJAX
-    const csrfToken = getCookie('csrftoken');
+    // Get CSRF token from cookie or meta tag
+    let csrfToken = getCookie('csrftoken');
+    if (!csrfToken) {
+        // Try to get from meta tag if available
+        const metaToken = document.querySelector('meta[name=csrf-token]');
+        if (metaToken) {
+            csrfToken = metaToken.getAttribute('content');
+        } else {
+            // Try to get from hidden input
+            const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+            if (csrfInput) {
+                csrfToken = csrfInput.value;
+            }
+        }
+    }
+    
+    if (!csrfToken) {
+        alert('Σφάλμα: Δεν βρέθηκε CSRF token. Παρακαλώ ανανεώστε τη σελίδα.');
+        return;
+    }
     
     // Prepare form data
     const formData = new FormData();
