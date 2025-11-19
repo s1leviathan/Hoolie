@@ -295,7 +295,8 @@ function submitConditions() {
             
             window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
         } else {
-            // For first pet, navigate to contact info page with all data including conditions
+            // For first pet with health problems, navigate directly to user_data page
+            // (skip contact_info - user will enter all info and submit directly)
             const params = new URLSearchParams({
                 type: petType || '',
                 gender: gender || '',
@@ -306,7 +307,7 @@ function submitConditions() {
                 conditions: conditionsList.join(', ')
             });
             
-            window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
+            window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
         }
     }, 1000);
 }
