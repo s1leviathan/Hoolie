@@ -219,7 +219,12 @@ if logs_dir.exists() or not os.environ.get('DYNO'):  # DYNO is set on Heroku
 
 # Email Configuration
 # Use custom backend that disables SSL verification for self-signed certificates (common with Plesk)
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'pet_insurance.custom_email_backend.CustomEmailBackend')
+# For local development, use console backend to print emails to console
+if DEBUG and not os.environ.get('EMAIL_BACKEND'):
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'pet_insurance.custom_email_backend.CustomEmailBackend')
+
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'hoolie.gr')  # Plesk mail server (use domain directly)
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))  # SSL port for Plesk
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True').lower() == 'true'  # Use SSL for port 465

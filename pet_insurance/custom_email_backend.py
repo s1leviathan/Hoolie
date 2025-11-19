@@ -41,17 +41,20 @@ class CustomSMTP_SSL(smtplib.SMTP_SSL):
 class CustomEmailBackend(EmailBackend):
     """SMTP backend that doesn't verify SSL certificates"""
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Override the connection class for SSL
+    @property
+    def connection_class(self):
+        """Override connection class for SSL"""
         if self.use_ssl:
-            self.connection_class = CustomSMTP_SSL
+            return CustomSMTP_SSL
+        return super().connection_class
     
     def open(self):
         if self.connection:
             return False
         try:
-            self.connection = self.connection_class(
+            # Use the property to get the correct connection class
+            conn_class = self.connection_class
+            self.connection = conn_class(
                 self.host, self.port,
                 local_hostname=self.local_hostname,
                 timeout=self.timeout,
@@ -66,7 +69,11 @@ class CustomEmailBackend(EmailBackend):
             if self.username and self.password:
                 self.connection.login(self.username, self.password)
             return True
-        except Exception:
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Email connection error: {e}")
             if not self.fail_silently:
                 raise
+            return False
 

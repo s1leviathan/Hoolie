@@ -15,19 +15,25 @@ def send_application_notification_emails(application):
     Send notification emails after application submission:
     1. Email to company about new application
     2. Email to customer with confirmation
+    
+    Note: This function never raises exceptions - email failures are logged but don't prevent
+    the application from being saved. PDFs and documents are always generated regardless.
     """
     try:
         # Send email to company
         send_company_notification_email(application)
-        
+    except Exception as e:
+        logger.error(f"Error sending company notification email for application {application.id}: {e}")
+        # Don't raise - continue to try customer email
+    
+    try:
         # Send email to customer
         send_customer_confirmation_email(application)
-        
-        logger.info(f"Successfully sent notification emails for application {application.application_number}")
-        
     except Exception as e:
-        logger.error(f"Error sending notification emails for application {application.id}: {e}")
-        raise
+        logger.error(f"Error sending customer confirmation email for application {application.id}: {e}")
+        # Don't raise - email failure doesn't prevent application submission
+    
+    logger.info(f"Email sending attempt completed for application {application.application_number}")
 
 def send_company_notification_email(application):
     """Send email to company about new application submission"""
@@ -76,12 +82,12 @@ def send_company_notification_email(application):
             except Exception as e:
                 logger.warning(f"Could not attach PDF to company email: {e}")
         
-        email.send()
+        email.send(fail_silently=False)
         logger.info(f"Company notification email sent for application {application.application_number}")
         
     except Exception as e:
         logger.error(f"Error sending company notification email: {e}")
-        raise
+        # Don't raise - allow application to continue even if email fails
 
 def send_customer_confirmation_email(application):
     """Send confirmation email to customer"""
@@ -118,10 +124,10 @@ def send_customer_confirmation_email(application):
         )
         email.attach_alternative(html_message, "text/html")
         
-        email.send()
+        email.send(fail_silently=False)
         logger.info(f"Customer confirmation email sent to {application.email} for application {application.application_number}")
         
     except Exception as e:
         logger.error(f"Error sending customer confirmation email: {e}")
-        raise
+        # Don't raise - allow application to continue even if email fails
 
