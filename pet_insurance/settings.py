@@ -145,7 +145,8 @@ if 'BUCKETEER_BUCKET_NAME' in os.environ:
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
     }
-    AWS_DEFAULT_ACL = 'public-read'
+    # Bucketeer buckets don't support ACLs - remove this setting
+    # AWS_DEFAULT_ACL = 'public-read'  # Commented out - Bucketeer doesn't support ACLs
     AWS_S3_FILE_OVERWRITE = False
     AWS_QUERYSTRING_AUTH = False
     AWS_LOCATION = 'media'  # Store all media files in 'media' folder in S3
