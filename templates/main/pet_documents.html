@@ -260,6 +260,12 @@
     border: 1px solid #f5c6cb;
 }
 
+.upload-status.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
 #continueBtn:not(:disabled) {
     background: var(--brand-gradient);
     cursor: pointer;
@@ -354,11 +360,73 @@ function handleFileSelection(files) {
             return;
         }
         
-        // Add to uploaded files
-        uploadedFiles.push(file);
-        displayUploadedFiles();
-        updateContinueButton();
+        // Upload file to server
+        uploadFileToServer(file);
     });
+}
+
+function uploadFileToServer(file) {
+    // Get pet information from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petName = urlParams.get('name') || '';
+    const petType = urlParams.get('type') || '';
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('pet_name', petName);
+    formData.append('pet_type', petType);
+    
+    // Get CSRF token
+    const csrfToken = getCookie('csrftoken');
+    
+    // Show uploading status
+    showStatus('info', `Ανέβασμα ${file.name}...`);
+    
+    // Upload to server
+    fetch('{% url "main:upload_pet_document" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add to uploaded files list with server response
+            uploadedFiles.push({
+                ...file,
+                document_id: data.document_id,
+                file_url: data.file_url,
+                uploaded: true
+            });
+            displayUploadedFiles();
+            updateContinueButton();
+            showStatus('success', data.message || 'Το αρχείο ανέβηκε επιτυχώς');
+        } else {
+            showStatus('error', data.error || 'Σφάλμα κατά το ανέβασμα');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        showStatus('error', 'Σφάλμα κατά το ανέβασμα του αρχείου');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function displayUploadedFiles() {
@@ -441,14 +509,18 @@ function showStatus(type, message) {
 }
 
 function continueToHealth() {
+    // Check if all files have been uploaded
+    const allUploaded = uploadedFiles.every(f => f.uploaded === true);
+    
     if (uploadedFiles.length === 0) {
         alert('Παρακαλώ ανεβάστε τουλάχιστον ένα έγγραφο για να συνεχίσετε.');
         return;
     }
     
-    // Store files in localStorage (in production, you'd upload to server)
-    const fileNames = uploadedFiles.map(f => f.name);
-    localStorage.setItem('petDocuments', JSON.stringify(fileNames));
+    if (!allUploaded) {
+        alert('Παρακαλώ περιμένετε να ολοκληρωθεί το ανέβασμα όλων των αρχείων.');
+        return;
+    }
     
     // Get all parameters
     const urlParams = new URLSearchParams(window.location.search);

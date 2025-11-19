@@ -107,6 +107,71 @@ def pet_documents(request):
     }
     return render(request, 'main/pet_documents.html', context)
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_pet_document(request):
+    """API endpoint to handle pet document uploads"""
+    from .models import PetDocument
+    import json
+    
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({
+                'success': False,
+                'error': 'Δεν βρέθηκε αρχείο'
+            }, status=400)
+        
+        uploaded_file = request.FILES['file']
+        pet_name = request.POST.get('pet_name', '')
+        pet_type = request.POST.get('pet_type', '')
+        
+        # Validate file size (10MB max)
+        max_size = 10 * 1024 * 1024  # 10MB
+        if uploaded_file.size > max_size:
+            return JsonResponse({
+                'success': False,
+                'error': f'Το αρχείο υπερβαίνει το όριο 10MB'
+            }, status=400)
+        
+        # Validate file type
+        allowed_types = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ]
+        if uploaded_file.content_type not in allowed_types:
+            return JsonResponse({
+                'success': False,
+                'error': f'Ο τύπος αρχείου δεν είναι αποδεκτός'
+            }, status=400)
+        
+        # Save document to S3/local storage
+        document = PetDocument.objects.create(
+            file=uploaded_file,
+            original_filename=uploaded_file.name,
+            file_size=uploaded_file.size,
+            file_type=uploaded_file.content_type,
+            pet_name=pet_name,
+            pet_type=pet_type
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'document_id': document.id,
+            'filename': document.original_filename,
+            'file_url': document.get_file_url(),
+            'message': 'Το αρχείο ανέβηκε επιτυχώς'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Σφάλμα κατά το ανέβασμα: {str(e)}'
+        }, status=500)
+
 def health_status(request):
     """Pet health status page"""
     pet_type = request.GET.get('type', 'pet')
@@ -508,6 +573,23 @@ def handle_application_submission(request):
             # Status
             status='submitted'
         )
+        
+        # Link uploaded documents to this application
+        try:
+            from .models import PetDocument
+            pet_name = request.POST.get('name', '')
+            pet_type = request.POST.get('type', '')
+            
+            # Find documents uploaded for this pet (before application was created)
+            PetDocument.objects.filter(
+                application__isnull=True,
+                pet_name=pet_name,
+                pet_type=pet_type
+            ).update(application=application)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Could not link documents to application {application.id}: {e}")
         
         # Generate and store contract PDF (contains all application data for admin access)
         try:

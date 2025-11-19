@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode
+from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
@@ -650,3 +650,111 @@ class AmbassadorCodeAdmin(admin.ModelAdmin):
         else:
             return format_html('<span style="color: #28a745;">✓ Ενεργό</span>')
     validity_display.short_description = 'Ισχύς'
+
+
+@admin.register(PetDocument)
+class PetDocumentAdmin(admin.ModelAdmin):
+    """Admin interface for Pet Documents"""
+    
+    list_display = [
+        'original_filename',
+        'pet_name',
+        'pet_type_display',
+        'application_link',
+        'file_size_display',
+        'file_type',
+        'uploaded_at',
+        'file_download'
+    ]
+    
+    list_filter = [
+        'pet_type',
+        'file_type',
+        'uploaded_at',
+        'application'
+    ]
+    
+    search_fields = [
+        'original_filename',
+        'pet_name',
+        'application__contract_number',
+        'application__full_name',
+        'application__email'
+    ]
+    
+    readonly_fields = [
+        'uploaded_at',
+        'created_at',
+        'updated_at',
+        'file_size',
+        'file_type',
+        'original_filename'
+    ]
+    
+    fieldsets = (
+        ('📄 Αρχείο', {
+            'fields': (
+                'file',
+                'original_filename',
+                'file_size',
+                'file_type'
+            )
+        }),
+        ('🐾 Στοιχεία Κατοικιδίου', {
+            'fields': (
+                'pet_name',
+                'pet_type'
+            )
+        }),
+        ('📋 Σύνδεση με Αίτηση', {
+            'fields': (
+                'application',
+            )
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'uploaded_at',
+                'created_at',
+                'updated_at'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def pet_type_display(self, obj):
+        """Display pet type with emoji"""
+        if obj.pet_type == 'dog':
+            return "🐕 Σκύλος"
+        elif obj.pet_type == 'cat':
+            return "🐱 Γάτα"
+        return obj.pet_type or '-'
+    pet_type_display.short_description = 'Είδος'
+    
+    def application_link(self, obj):
+        """Link to the related application"""
+        if obj.application:
+            url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.application.contract_number or obj.application.application_number)
+        return '-'
+    application_link.short_description = 'Αίτηση'
+    
+    def file_size_display(self, obj):
+        """Display file size in human-readable format"""
+        if obj.file_size:
+            if obj.file_size < 1024:
+                return f"{obj.file_size} B"
+            elif obj.file_size < 1024 * 1024:
+                return f"{obj.file_size / 1024:.2f} KB"
+            else:
+                return f"{obj.file_size / (1024 * 1024):.2f} MB"
+        return '-'
+    file_size_display.short_description = 'Μέγεθος'
+    
+    def file_download(self, obj):
+        """Link to download/view file"""
+        if obj.file:
+            url = obj.get_file_url()
+            if url:
+                return format_html('<a href="{}" target="_blank">📥 Προβολή/Λήψη</a>', url)
+        return '-'
+    file_download.short_description = 'Αρχείο'

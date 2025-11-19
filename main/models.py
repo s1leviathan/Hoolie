@@ -326,3 +326,39 @@ class AmbassadorCode(models.Model):
         """Increment usage counter"""
         self.current_uses += 1
         self.save(update_fields=['current_uses', 'updated_at'])
+
+
+class PetDocument(models.Model):
+    """Model to store user-uploaded pet documents"""
+    
+    # Link to insurance application (optional - can be uploaded before application is created)
+    application = models.ForeignKey(InsuranceApplication, on_delete=models.CASCADE, related_name='documents', null=True, blank=True)
+    
+    # Document details
+    file = models.FileField(upload_to='pet_documents/%Y/%m/%d/', help_text="Uploaded pet document")
+    original_filename = models.CharField(max_length=255, help_text="Original filename")
+    file_size = models.IntegerField(help_text="File size in bytes")
+    file_type = models.CharField(max_length=50, help_text="MIME type of the file")
+    
+    # Pet information (for documents uploaded before application creation)
+    pet_name = models.CharField(max_length=100, blank=True, null=True)
+    pet_type = models.CharField(max_length=10, choices=[('dog', 'Σκύλος'), ('cat', 'Γάτα')], blank=True, null=True)
+    
+    # Metadata
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = 'Pet Document'
+        verbose_name_plural = 'Pet Documents'
+    
+    def __str__(self):
+        return f"Document: {self.original_filename} - {self.pet_name or 'Unknown'}"
+    
+    def get_file_url(self):
+        """Get the URL to access the file"""
+        if self.file:
+            return self.file.url
+        return None
