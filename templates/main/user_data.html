@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Extract and display weight info
-    if (breed) {
+    if (breed && typeof breed === 'string') {
         let weightInfo = '';
         if (breed.includes('έως 10 κιλά')) {
             weightInfo = 'έως 10 κιλά';
