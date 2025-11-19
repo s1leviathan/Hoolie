@@ -218,8 +218,9 @@ if logs_dir.exists() or not os.environ.get('DYNO'):  # DYNO is set on Heroku
         pass  # Skip file logging if directory can't be created
 
 # Email Configuration
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mail.hoolie.gr')  # Plesk mail server
+# Use custom backend that disables SSL verification for self-signed certificates (common with Plesk)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'pet_insurance.custom_email_backend.CustomEmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'hoolie.gr')  # Plesk mail server (use domain directly)
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))  # SSL port for Plesk
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True').lower() == 'true'  # Use SSL for port 465
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'  # Use TLS for port 587
