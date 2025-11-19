@@ -86,7 +86,14 @@ DATABASES = {
 
 # Use PostgreSQL on Heroku
 if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
+    db_config = dj_database_url.parse(os.environ['DATABASE_URL'])
+    # Force use of psycopg3 if available, otherwise fall back to psycopg2
+    try:
+        import psycopg
+        db_config['ENGINE'] = 'django.db.backends.postgresql'
+    except ImportError:
+        db_config['ENGINE'] = 'django.db.backends.postgresql'
+    DATABASES['default'] = db_config
 
 
 # Password validation
