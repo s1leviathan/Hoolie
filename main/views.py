@@ -607,21 +607,56 @@ def handle_application_submission(request):
     from .models import InsuranceApplication
     from datetime import datetime
     from django.http import JsonResponse
+    import logging
+    
+    logger = logging.getLogger(__name__)
     
     try:
-        # Parse birthdate
+        # Parse birthdate - try multiple formats
         pet_birthdate = None
-        if request.POST.get('birthdate'):
+        birthdate_str = request.POST.get('birthdate', '')
+        if birthdate_str:
+            # Try YYYY-MM-DD format first
             try:
-                pet_birthdate = datetime.strptime(request.POST.get('birthdate'), '%Y-%m-%d').date()
+                pet_birthdate = datetime.strptime(birthdate_str, '%Y-%m-%d').date()
             except ValueError:
-                pass
+                # Try MM/DD/YYYY format
+                try:
+                    pet_birthdate = datetime.strptime(birthdate_str, '%m/%d/%Y').date()
+                except ValueError:
+                    # Try DD/MM/YYYY format
+                    try:
+                        pet_birthdate = datetime.strptime(birthdate_str, '%d/%m/%Y').date()
+                    except ValueError:
+                        logger.error(f"Could not parse birthdate: {birthdate_str}")
+        
+        # Validate required fields
+        if not pet_birthdate:
+            return JsonResponse({
+                'success': False,
+                'message': 'Παρακαλώ εισάγετε έγκυρη ημερομηνία γέννησης.'
+            })
+        
+        pet_breed = request.POST.get('breed', '').strip()
+        if not pet_breed:
+            return JsonResponse({
+                'success': False,
+                'message': 'Παρακαλώ εισάγετε τη ράτσα του κατοικιδίου.'
+            })
         
         # Parse second pet birthdate
         second_pet_birthdate = None
         if request.POST.get('secondPetBirthdate'):
-            try:
-                second_pet_birthdate = datetime.strptime(request.POST.get('secondPetBirthdate'), '%Y-%m-%d').date()
+            second_birthdate_str = request.POST.get('secondPetBirthdate', '')
+            if second_birthdate_str:
+                try:
+                    second_pet_birthdate = datetime.strptime(second_birthdate_str, '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        second_pet_birthdate = datetime.strptime(second_birthdate_str, '%m/%d/%Y').date()
+                    except ValueError:
+                        try:
+                            second_pet_birthdate = datetime.strptime(second_birthdate_str, '%d/%m/%Y').date()
             except ValueError:
                 pass
         
@@ -661,9 +696,9 @@ def handle_application_submission(request):
             pet_name=request.POST.get('name', ''),
             pet_type=request.POST.get('type', ''),
             pet_gender=request.POST.get('gender', ''),
-            pet_breed=request.POST.get('breed', ''),
+            pet_breed=pet_breed,
             pet_birthdate=pet_birthdate,
-            pet_weight_category=extract_weight_from_breed(request.POST.get('breed', '')),
+            pet_weight_category=extract_weight_from_breed(pet_breed),
             microchip_number=request.POST.get('microchip', ''),
             
             # Second pet information
