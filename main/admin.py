@@ -191,17 +191,30 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     status_display.short_description = 'Κατάσταση'
     
     def affiliate_code_display(self, obj):
-        """Display affiliate code with discount if applied"""
+        """Display affiliate code with ambassador/partner name and discount if applied"""
         if obj.affiliate_code:
+            # Try to get the AmbassadorCode object to show the name
+            try:
+                ambassador_code = AmbassadorCode.objects.get(code=obj.affiliate_code)
+                code_name = ambassador_code.name
+                code_type = ambassador_code.get_code_type_display()
+            except AmbassadorCode.DoesNotExist:
+                code_name = None
+                code_type = None
+            
+            # Build display string
+            if code_name:
+                display_text = f'🎁 {obj.affiliate_code}<br><small style="color: #6c757d;">{code_name} ({code_type})</small>'
+            else:
+                display_text = f'🎁 {obj.affiliate_code}'
+            
+            # Add discount if applied
             if obj.discount_applied > 0:
-                return format_html(
-                    '<span style="color: #28a745; font-weight: bold;">🎁 {}</span><br><small>-{}€</small>',
-                    obj.affiliate_code,
-                    obj.discount_applied
-                )
-            return format_html('<span style="color: #17a2b8;">🎁 {}</span>', obj.affiliate_code)
+                display_text += f'<br><small style="color: #28a745; font-weight: bold;">Έκπτωση: -{obj.discount_applied}€</small>'
+            
+            return format_html(display_text)
         return '-'
-    affiliate_code_display.short_description = 'Κωδικός'
+    affiliate_code_display.short_description = 'Κωδικός Συνεργάτη'
     
     def contract_pdf_link(self, obj):
         """Display link to view/download contract PDF from S3"""
