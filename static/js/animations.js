@@ -323,15 +323,8 @@ function applyAffiliateCode() {
             // Store affiliate code in localStorage for later use
             localStorage.setItem('affiliateCode', code);
             
-            // Show success message with discount info
+            // Show success message (without discount amount)
             let message = data.message;
-            if (data.discount) {
-                if (data.discount.type === 'percentage') {
-                    message += `<br><strong style="color: #28a745; font-size: 1.1em;">Έκπτωση ${data.discount.value}%</strong>`;
-                } else {
-                    message += `<br><strong style="color: #28a745; font-size: 1.1em;">Έκπτωση ${data.discount.value}€</strong>`;
-                }
-            }
             showAffiliateStatus('success', message);
     
             // Add visual feedback to the input
