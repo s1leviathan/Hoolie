@@ -115,6 +115,17 @@
                         <div class="pricing-section" id="pricingSection">
                             <h3>💰 Τιμολόγηση Ασφάλισης</h3>
                             
+                            <!-- Program Selector -->
+                            <div class="program-selector-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f9f9f9; border-radius: 10px;">
+                                <label for="programSelector" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Αλλαγή Προγράμματος:</label>
+                                <select id="programSelector" name="program" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; background: white; color: #333;">
+                                    <option value="silver">Silver (2.000€)</option>
+                                    <option value="gold">Gold (3.000€)</option>
+                                    <option value="platinum">Platinum Dynasty (5.000€)</option>
+                                </select>
+                                <input type="hidden" id="selectedProgram" name="selectedProgram" value="{{ program }}">
+                            </div>
+                            
                             <div class="pricing-card">
                                 <div class="pricing-header">
                                     <div class="pet-program-info">
@@ -322,7 +333,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Set selected program
+    let currentProgram = program || 'gold'; // Default to gold if not set
     if (program) {
+        const programSelector = document.getElementById('programSelector');
+        if (programSelector) {
+            programSelector.value = program;
+        }
+        const selectedProgramInput = document.getElementById('selectedProgram');
+        if (selectedProgramInput) {
+            selectedProgramInput.value = program;
+        }
+        updateProgramDisplay(program);
+    }
+    
+    // Add event listener for program changes
+    const programSelector = document.getElementById('programSelector');
+    if (programSelector) {
+        programSelector.addEventListener('change', function() {
+            const newProgram = this.value;
+            currentProgram = newProgram;
+            const selectedProgramInput = document.getElementById('selectedProgram');
+            if (selectedProgramInput) {
+                selectedProgramInput.value = newProgram;
+            }
+            updateProgramDisplay(newProgram);
+            recalculatePricing(newProgram);
+        });
+    }
+    
+    function updateProgramDisplay(program) {
         const programNames = {
             'silver': 'Silver (2.000€)',
             'gold': 'Gold (3.000€)',
@@ -332,14 +371,75 @@ document.addEventListener('DOMContentLoaded', function() {
         const programDisplay = document.getElementById('program-name-display');
         const pricingProgram = document.getElementById('pricing-program');
         
-        programDisplay.textContent = programNames[program] || program;
-        pricingProgram.textContent = program.charAt(0).toUpperCase() + program.slice(1);
+        if (programDisplay) {
+            programDisplay.textContent = programNames[program] || program;
+        }
+        if (pricingProgram) {
+            pricingProgram.textContent = program.charAt(0).toUpperCase() + program.slice(1);
+            // Remove old badge classes
+            pricingProgram.classList.remove('silver-badge', 'gold-badge', 'platinum-badge');
+            // Add new badge class
+            pricingProgram.classList.add(`${program}-badge`);
+        }
         
-        // Add program-specific styling
+        // Update program card styling
         const programCard = document.getElementById('selected-program-display');
-        const pricingProgramElement = document.getElementById('pricing-program');
-        programCard.classList.add(`program-${program}`);
-        pricingProgramElement.classList.add(`${program}-badge`);
+        if (programCard) {
+            programCard.classList.remove('program-silver', 'program-gold', 'program-platinum');
+            programCard.classList.add(`program-${program}`);
+        }
+    }
+    
+    function recalculatePricing(newProgram) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const breed = urlParams.get('breed');
+        
+        // Get weight category from breed
+        let weightCategory = null;
+        if (breed && typeof breed === 'string') {
+            if (breed.includes('έως 10 κιλά')) {
+                weightCategory = '10';
+            } else if (breed.includes('11-20 κιλά')) {
+                weightCategory = '11-20';
+            } else if (breed.includes('21-40 κιλά')) {
+                weightCategory = '21-40';
+            } else if (breed.includes('>40 κιλά')) {
+                weightCategory = '>40';
+            }
+        }
+        
+        if (!petType || !newProgram || !weightCategory) {
+            return;
+        }
+        
+        const pricingTables = getPricingTables();
+        let newPricing = null;
+        
+        if (petType === 'dog' && pricingTables.DOG_PRICING[newProgram] && pricingTables.DOG_PRICING[newProgram][weightCategory]) {
+            newPricing = pricingTables.DOG_PRICING[newProgram][weightCategory];
+        } else if (petType === 'cat' && pricingTables.CAT_PRICING[newProgram] && pricingTables.CAT_PRICING[newProgram][weightCategory]) {
+            newPricing = pricingTables.CAT_PRICING[newProgram][weightCategory];
+        }
+        
+        if (newPricing) {
+            firstPetPricingData = newPricing;
+            
+            // Check if there's a second pet
+            {% if second_pet_name %}
+            // Recalculate second pet pricing with new program
+            const secondPetWeight = document.getElementById('secondPetWeight')?.value;
+            if (secondPetWeight) {
+                calculateSecondPetPricing('{{ second_pet_type }}', secondPetWeight);
+            } else {
+                displayPricing(newPricing);
+            }
+            {% else %}
+            displayPricing(newPricing);
+            {% endif %}
+            
+            animatePricingUpdate();
+        }
     }
     
     // Extract and display weight info
@@ -610,6 +710,11 @@ function setupFormValidation() {
             // Get all parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
             
+            // Get selected program from selector (or fallback to URL param)
+            const selectedProgram = document.getElementById('programSelector')?.value || 
+                                   document.getElementById('selectedProgram')?.value || 
+                                   urlParams.get('program') || '';
+            
             // Get affiliate code from localStorage if exists
             const affiliateCode = localStorage.getItem('affiliateCode') || '';
             
@@ -622,7 +727,7 @@ function setupFormValidation() {
                 name: urlParams.get('name') || '',
                 health_status: urlParams.get('health_status') || '',
                 conditions: urlParams.get('conditions') || '',
-                program: urlParams.get('program') || '',
+                program: selectedProgram,
                 fullName: userData.fullName || '',
                 afm: userData.afm || '',
                 phone: userData.phone || '',
@@ -796,9 +901,10 @@ function updateWeightOptions(petType) {
 }
 
 function calculateSecondPetPricing(petType, weightCategory) {
-    // Get first pet program from URL
+    // Get first pet program from selector (or fallback to URL)
+    const programSelector = document.getElementById('programSelector');
+    const program = programSelector ? programSelector.value : (new URLSearchParams(window.location.search).get('program'));
     const urlParams = new URLSearchParams(window.location.search);
-    const program = urlParams.get('program');
     const firstPetWeight = getWeightFromBreed(urlParams.get('breed'));
     
     if (!program || !firstPetPricingData) return;
