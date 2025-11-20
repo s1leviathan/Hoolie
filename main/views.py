@@ -412,7 +412,7 @@ def handle_application_submission(request):
                         try:
                             second_pet_birthdate = datetime.strptime(second_birthdate_str, '%d/%m/%Y').date()
                         except ValueError:
-                            pass
+                            logger.error(f"Could not parse second pet birthdate: {second_birthdate_str}")
         
         # Calculate base premium
         base_premium = calculate_total_premium(request.POST)
@@ -861,6 +861,66 @@ def upload_pet_photo(request):
             return JsonResponse({'success': False, 'message': str(e)})
     
     return JsonResponse({'success': False, 'message': 'Method not allowed'})
+
+@require_http_methods(["POST"])
+def validate_affiliate_code(request):
+    """Validate an affiliate/ambassador code and return discount information"""
+    import json
+    from .models import AmbassadorCode
+    
+    try:
+        data = json.loads(request.body)
+        code = data.get('code', '').strip().upper()
+        
+        if not code:
+            return JsonResponse({
+                'success': False,
+                'error': 'Παρακαλώ εισάγετε έναν κωδικό συνεργάτη.'
+            })
+        
+        try:
+            affiliate_code = AmbassadorCode.objects.get(code=code)
+            
+            if not affiliate_code.is_valid():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Ο κωδικός δεν είναι έγκυρος ή έχει λήξει.'
+                })
+            
+            # Return success with discount information
+            discount_info = {
+                'type': 'percentage' if affiliate_code.discount_percentage > 0 else 'fixed',
+                'value': float(affiliate_code.discount_percentage) if affiliate_code.discount_percentage > 0 else float(affiliate_code.discount_amount),
+                'description': f"Έκπτωση {affiliate_code.discount_percentage}%" if affiliate_code.discount_percentage > 0 else f"Έκπτωση {affiliate_code.discount_amount}€"
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Ο κωδικός "{code}" είναι έγκυρος!',
+                'discount': discount_info
+            })
+            
+        except AmbassadorCode.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Ο κωδικός δεν βρέθηκε.'
+            })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Μη έγκυρο αίτημα.'
+        })
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error validating affiliate code: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'error': 'Σφάλμα κατά την επικύρωση του κωδικού.'
+        })
 
 def serve_file(request, file_type, file_id):
     """Serve files from S3 or local storage"""
