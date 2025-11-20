@@ -15,7 +15,7 @@ import logging
 from .models import InsuranceApplication, PaymentTransaction
 from .viva_wallet import VivaWalletAPI, create_insurance_payment, verify_payment_webhook
 try:
-    from .qr_utils import generate_payment_qr_for_application
+from .qr_utils import generate_payment_qr_for_application
 except ImportError:
     def generate_payment_qr_for_application(application):
         return None

@@ -246,21 +246,33 @@ def upload_pet_photo(request):
         }, status=500)
 
 def health_status(request):
-    """Pet health status page"""
+    """Pet health status page - NOW REPLACED WITH QUESTIONNAIRE"""
+    # Handle form submission (questionnaire)
+    if request.method == 'POST':
+        return handle_application_submission(request)
+    
+    # GET request - show questionnaire form
     pet_type = request.GET.get('type', 'pet')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
+    health_status = request.GET.get('health_status', '')
+    conditions = request.GET.get('health_conditions', '')
+    program = request.GET.get('program', '')
     
     context = {
         'pet_type': pet_type,
         'gender': gender,
         'birthdate': birthdate,
         'breed': breed,
-        'name': name
+        'name': name,
+        'health_status': health_status,
+        'health_conditions': conditions,
+        'program': program
     }
-    return render(request, 'main/health_status.html', context)
+    # Render questionnaire instead of health_status page
+    return render(request, 'main/questionnaire.html', context)
 
 def dog_health_conditions(request):
     """Dog health conditions selection page"""
@@ -557,8 +569,8 @@ def user_data(request):
     if request.method == 'POST':
         return handle_application_submission(request)
     
-    # Render questionnaire template instead of user_data
-    return render(request, 'main/questionnaire.html', context)
+    # Render old user_data template (keep for now, but questionnaire is at health-status)
+    return render(request, 'main/user_data.html', context)
 
 def handle_application_submission(request):
     """Handle insurance application form submission"""

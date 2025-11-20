@@ -320,19 +320,19 @@ function applyAffiliateCode() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Store affiliate code in localStorage for later use
-            localStorage.setItem('affiliateCode', code);
-            
+    // Store affiliate code in localStorage for later use
+    localStorage.setItem('affiliateCode', code);
+    
             // Show success message with discount info
             let message = data.message;
             if (data.discount && data.discount.description) {
                 message += ` ${data.discount.description}`;
             }
             showAffiliateStatus('success', message);
-            
+    
             // Add visual feedback to the input
-            codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
-            codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
+    codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
+    codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
         } else {
             showAffiliateStatus('error', data.error || 'Ο κωδικός δεν είναι έγκυρος.');
             codeInput.style.borderColor = 'rgba(220, 53, 69, 0.6)';

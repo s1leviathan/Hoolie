@@ -305,9 +305,9 @@ def process_payment_success(webhook_data):
                 application = payment.application
                 application.status = 'paid'
                 application.save()
-                
+        
                 logger.info(f"Payment completed (by viva_order_code): {transaction_id}, Order: {order_code}")
-                return {'success': True, 'message': 'Payment processed successfully'}
+        return {'success': True, 'message': 'Payment processed successfully'}
             except PaymentTransaction.DoesNotExist:
                 logger.error(f"Payment transaction not found for order_code: {order_code}")
                 return {'success': False, 'error': f'Payment transaction not found for order: {order_code}'}
@@ -340,8 +340,8 @@ def process_payment_failure(webhook_data):
             except PaymentTransaction.DoesNotExist:
                 logger.warning(f"Payment transaction not found for failed order: {order_code}")
         
-        logger.warning(f"Payment failed: {webhook_data}")
-        return {'success': True, 'message': 'Payment failure processed'}
+    logger.warning(f"Payment failed: {webhook_data}")
+    return {'success': True, 'message': 'Payment failure processed'}
         
     except Exception as e:
         logger.error(f"Payment failure processing error: {e}")
@@ -380,8 +380,8 @@ def process_payment_refund(webhook_data):
             except PaymentTransaction.DoesNotExist:
                 logger.warning(f"Payment transaction not found for refund: {transaction_id}")
         
-        logger.info(f"Payment refunded: {webhook_data}")
-        return {'success': True, 'message': 'Refund processed'}
+    logger.info(f"Payment refunded: {webhook_data}")
+    return {'success': True, 'message': 'Refund processed'}
         
     except Exception as e:
         logger.error(f"Refund processing error: {e}")
