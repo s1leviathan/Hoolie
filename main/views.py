@@ -374,11 +374,17 @@ def user_data(request):
     
     # Get second pet pricing
     second_pet_pricing_data = None
-        if second_pet_type and second_pet_program and second_pet_weight_category:
-            if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
-                second_pet_pricing_data = DOG_PRICING[second_pet_program][second_pet_weight_category]
-            elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
-                second_pet_pricing_data = CAT_PRICING[second_pet_program][second_pet_weight_category]
+    if second_pet_type and second_pet_program and second_pet_weight_category:
+        if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
+            second_pet_pricing_data = DOG_PRICING[second_pet_program][second_pet_weight_category].copy()
+            # Add 'final' field for compatibility with JavaScript
+            if 'annual' in second_pet_pricing_data and 'final' not in second_pet_pricing_data:
+                second_pet_pricing_data['final'] = second_pet_pricing_data['annual']
+        elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
+            second_pet_pricing_data = CAT_PRICING[second_pet_program][second_pet_weight_category].copy()
+            # Add 'final' field for compatibility with JavaScript
+            if 'annual' in second_pet_pricing_data and 'final' not in second_pet_pricing_data:
+                second_pet_pricing_data['final'] = second_pet_pricing_data['annual']
 
     context = {
         'pet_type': pet_type,
@@ -839,7 +845,7 @@ def contact_info(request):
             'breed': breed,
             'name': name
         }
-    return render(request, 'main/contact_info.html', context)
+        return render(request, 'main/contact_info.html', context)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
