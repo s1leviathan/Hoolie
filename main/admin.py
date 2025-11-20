@@ -993,6 +993,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
     list_display = [
         'application_link',
         'program_display',
+        'breed_surcharge_display',
         'payment_method_display',
         'payment_frequency_display',
         'desired_start_date',
@@ -1138,6 +1139,18 @@ class QuestionnaireAdmin(admin.ModelAdmin):
         }
         return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
     payment_frequency_display.short_description = 'Συχνότητα'
+    
+    def breed_surcharge_display(self, obj):
+        """Display breed surcharges"""
+        surcharges = []
+        if obj.special_breed_5_percent:
+            surcharges.append('5%')
+        if obj.special_breed_20_percent:
+            surcharges.append('20%')
+        if surcharges:
+            return format_html('<span style="color: #dc3545; font-weight: bold;">{}</span>', ' + '.join(surcharges))
+        return format_html('<span style="color: #6c757d;">-</span>')
+    breed_surcharge_display.short_description = 'Επασφάλιστρο Ράτσας'
     
     def has_add_permission(self, request):
         """Disable manual addition - questionnaires are created through the application flow"""
