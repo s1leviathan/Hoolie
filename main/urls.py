@@ -15,17 +15,14 @@ urlpatterns = [
     path('health-status/', views.health_status, name='health_status'),
     path('dog-health-conditions/', views.dog_health_conditions, name='dog_health_conditions'),
     path('cat-health-conditions/', views.cat_health_conditions, name='cat_health_conditions'),
-    path('insurance-choice/', views.insurance_choice, name='insurance_choice'),
-    path('review-info/', views.review_info, name='review_info'),
     path('insurance-programs/', views.insurance_programs, name='insurance_programs'),
     path('non-covered/', views.non_covered, name='non_covered'),
     path('user-data/', views.user_data, name='user_data'),
-    path('application-processing/', views.application_processing, name='application_processing'),
     path('contact-info/', views.contact_info, name='contact_info'),
     path('thank-you/', views.thank_you, name='thank_you'),
+    path('handle-application/', views.handle_application_submission, name='handle_application_submission'),
     
     # API endpoints
-    path('api/validate-affiliate-code/', views.validate_affiliate_code, name='validate_affiliate_code'),
     path('api/upload-pet-document/', views.upload_pet_document, name='upload_pet_document'),
     path('api/upload-pet-photo/', views.upload_pet_photo, name='upload_pet_photo'),
     
