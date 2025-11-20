@@ -252,8 +252,18 @@ def health_status(request):
     # The application will be submitted later from contact_info page
     if request.method == 'POST':
         # Store all questionnaire data in session for later use
-        request.session['questionnaire_data'] = dict(request.POST)
+        # Properly convert QueryDict to regular dict with lists
+        questionnaire_data = {}
+        for key in request.POST.keys():
+            values = request.POST.getlist(key)
+            if len(values) == 1:
+                questionnaire_data[key] = values[0]
+            else:
+                questionnaire_data[key] = values
+        
+        request.session['questionnaire_data'] = questionnaire_data
         request.session['questionnaire_submitted'] = True
+        request.session.modified = True  # Ensure session is saved
         
         from django.http import JsonResponse
         return JsonResponse({

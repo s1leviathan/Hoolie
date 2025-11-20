@@ -70,6 +70,10 @@
                     </div>
                     
                     <form id="userDataForm" class="user-form">
+                        <!-- Hidden field for selected payment frequency -->
+                        <input type="hidden" id="selectedPaymentFrequency" name="payment_frequency" value="annual">
+                        <input type="hidden" id="selectedPaymentAmount" name="payment_amount" value="">
+                        
                         <div class="form-grid">
                             <!-- Personal Information -->
                             <div class="form-group full-width">
@@ -498,7 +502,7 @@ function displayPricing(pricing) {
     const pricingOptions = document.getElementById('pricingOptions');
     
     const pricingHTML = `
-        <div class="pricing-option main-option">
+        <div class="pricing-option main-option" onclick="selectPaymentFrequency('annual', ${pricing.final})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Ετήσια Πληρωμή</span>
                 <span class="option-badge recommended">Συνιστάται</span>
@@ -513,7 +517,7 @@ function displayPricing(pricing) {
             </div>
         </div>
         
-        <div class="pricing-option">
+        <div class="pricing-option" onclick="selectPaymentFrequency('six_month', ${pricing.six_month})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Εξαμηνιαία Πληρωμή</span>
             </div>
@@ -526,7 +530,7 @@ function displayPricing(pricing) {
             </div>
         </div>
         
-        <div class="pricing-option">
+        <div class="pricing-option" onclick="selectPaymentFrequency('three_month', ${pricing.three_month})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Τριμηνιαία Πληρωμή</span>
             </div>
@@ -598,7 +602,7 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
             </div>
         </div>
         
-        <div class="pricing-option main-option">
+        <div class="pricing-option main-option" onclick="selectPaymentFrequency('annual', ${combinedAnnual})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Ετήσια Πληρωμή - Συνολικά</span>
                 <span class="option-badge recommended">Συνιστάται</span>
@@ -613,7 +617,7 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
             </div>
         </div>
         
-        <div class="pricing-option">
+        <div class="pricing-option" onclick="selectPaymentFrequency('six_month', ${combinedSixMonth})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Εξαμηνιαία Πληρωμή - Συνολικά</span>
             </div>
@@ -626,7 +630,7 @@ function displayBothPetsPricing(firstPetPricing, secondPetPricing) {
             </div>
         </div>
         
-        <div class="pricing-option">
+        <div class="pricing-option" onclick="selectPaymentFrequency('three_month', ${combinedThreeMonth})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Τριμηνιαία Πληρωμή - Συνολικά</span>
             </div>
