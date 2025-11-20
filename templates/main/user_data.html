@@ -722,6 +722,10 @@ function setupFormValidation() {
             // Get affiliate code from localStorage if exists
             const affiliateCode = localStorage.getItem('affiliateCode') || '';
             
+            // Get selected payment frequency
+            const paymentFrequency = document.getElementById('selectedPaymentFrequency')?.value || 'annual';
+            const paymentAmount = document.getElementById('selectedPaymentAmount')?.value || '';
+            
             // Navigate to contact info page with all data
             const params = new URLSearchParams({
                 type: urlParams.get('type') || '',
@@ -732,6 +736,8 @@ function setupFormValidation() {
                 health_status: urlParams.get('health_status') || '',
                 conditions: urlParams.get('conditions') || '',
                 program: selectedProgram,
+                payment_frequency: paymentFrequency,
+                payment_amount: paymentAmount,
                 fullName: userData.fullName || '',
                 afm: userData.afm || '',
                 phone: userData.phone || '',
@@ -1169,6 +1175,33 @@ function getPricingTables() {
             }
         }
     };
+}
+
+function selectPaymentFrequency(frequency, amount) {
+    // Store selected payment frequency
+    document.getElementById('selectedPaymentFrequency').value = frequency;
+    document.getElementById('selectedPaymentAmount').value = amount;
+    
+    // Update visual selection
+    const options = document.querySelectorAll('.pricing-option');
+    options.forEach(opt => {
+        opt.classList.remove('selected');
+        opt.style.border = '';
+        opt.style.boxShadow = '';
+    });
+    
+    // Highlight selected option
+    event.currentTarget.classList.add('selected');
+    event.currentTarget.style.border = '2px solid #5AC8CD';
+    event.currentTarget.style.boxShadow = '0 4px 12px rgba(90, 200, 189, 0.3)';
+    
+    // Show confirmation
+    const frequencyNames = {
+        'annual': 'Ετήσια',
+        'six_month': 'Εξαμηνιαία',
+        'three_month': 'Τριμηνιαία'
+    };
+    showSuccessMessage(`Επιλέχθηκε: ${frequencyNames[frequency]} Πληρωμή (${amount.toFixed(2)}€)`);
 }
 
 function goBack() {
