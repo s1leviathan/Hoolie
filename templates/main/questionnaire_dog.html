@@ -341,139 +341,9 @@
                     </div>
                 </div>
                 
-                <!-- Section 3: Program Selection -->
+                <!-- Section 3: Declarations -->
                 <div class="questionnaire-section">
-                    <h2 class="section-title">3. Επιλογή Προγράμματος</h2>
-                    
-                    <div class="form-group">
-                        <label>Πρόγραμμα Ασφάλισης:</label>
-                        <div class="program-selection">
-                            <label class="radio-label program-option">
-                                <input type="radio" name="program" value="silver" {% if program == 'silver' %}checked{% endif %} required>
-                                <span>SILVER</span>
-                            </label>
-                            <label class="radio-label program-option">
-                                <input type="radio" name="program" value="gold" {% if program == 'gold' %}checked{% endif %} required>
-                                <span>GOLD</span>
-                            </label>
-                            <label class="radio-label program-option">
-                                <input type="radio" name="program" value="platinum" {% if program == 'platinum' %}checked{% endif %} required>
-                                <span>PLATINUM</span>
-                            </label>
-                            <label class="radio-label program-option">
-                                <input type="radio" name="program" value="dynasty" {% if program == 'dynasty' %}checked{% endif %} required>
-                                <span>DYNASTY</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="additional_poisoning_coverage" value="true">
-                            <span>Πρόσθετη Κάλυψη Δηλητηρίασης (Silver: 18€, Gold: 20€, Platinum/Dynasty: 25€)</span>
-                        </label>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Επιπλέον Παροχή Προνομιακού Αιματολογικού Check-Up με 28€/έτος:</label>
-                        <div class="yes-no-group">
-                            <label class="radio-label">
-                                <input type="radio" name="additional_blood_checkup" value="true">
-                                <span>ΝΑΙ</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="additional_blood_checkup" value="false">
-                                <span>ΟΧΙ</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Section 4: Desired Start Date -->
-                <div class="questionnaire-section">
-                    <h2 class="section-title">4. Επιθυμητή Έναρξη Ασφάλισης</h2>
-                    
-                    <div class="form-group">
-                        <label for="desired_start_date">Ημερομηνία Έναρξης:</label>
-                        <input type="date" id="desired_start_date" name="desired_start_date" required>
-                    </div>
-                </div>
-                
-                <!-- Section 5: Payment Method -->
-                <div class="questionnaire-section">
-                    <h2 class="section-title">5. Τρόπος Πληρωμής Ασφαλίστρων</h2>
-                    
-                    <div class="form-group">
-                        <label>Τρόπος Πληρωμής:</label>
-                        <div class="payment-method-selection">
-                            <label class="radio-label">
-                                <input type="radio" name="payment_method" value="card" required>
-                                <span>Χρεωστική/Πιστωτική/Προπληρωμένη κάρτα</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="payment_method" value="bank_deposit" required>
-                                <span>Τραπεζική κατάθεση</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="payment_method" value="cash" required>
-                                <span>Μετρητά</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Συχνότητα Πληρωμής:</label>
-                        <div class="payment-frequency-selection">
-                            <label class="radio-label">
-                                <input type="radio" name="payment_frequency" value="annual" required>
-                                <span>Ετήσια Πληρωμή</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="payment_frequency" value="six_month" required>
-                                <span>Εξάμηνη Πληρωμή</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Section 6: User Information -->
-                <div class="questionnaire-section">
-                    <h2 class="section-title">Στοιχεία Ασφαλισμένου</h2>
-                    
-                    <div class="form-group">
-                        <label for="fullName">Ονοματεπώνυμο: <span class="required">*</span></label>
-                        <input type="text" id="fullName" name="fullName" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="afm">Α.Φ.Μ.: <span class="required">*</span></label>
-                        <input type="text" id="afm" name="afm" required maxlength="9" pattern="[0-9]{9}">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="phone">Τηλέφωνο: <span class="required">*</span></label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="address">Διεύθυνση: <span class="required">*</span></label>
-                        <input type="text" id="address" name="address" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="postalCode">Τ.Κ.: <span class="required">*</span></label>
-                        <input type="text" id="postalCode" name="postalCode" required maxlength="5" pattern="[0-9]{5}">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email: <span class="required">*</span></label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                </div>
-                
-                <!-- Section 6: Declarations -->
-                <div class="questionnaire-section">
-                    <h2 class="section-title">6. Δηλώσεις – Εξουσιοδοτήσεις – Συγκαταθέσεις</h2>
+                    <h2 class="section-title">3. Δηλώσεις – Εξουσιοδοτήσεις – Συγκαταθέσεις</h2>
                     
                     <div class="declaration-group">
                         <label class="checkbox-label declaration-label">
@@ -795,13 +665,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-    
-    // Set minimum date for start date to today
-    const startDateInput = document.getElementById('desired_start_date');
-    if (startDateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        startDateInput.setAttribute('min', today);
-    }
     
     // Form submission
     const form = document.getElementById('questionnaireForm');
