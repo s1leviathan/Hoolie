@@ -865,7 +865,8 @@ def upload_pet_photo(request):
 def serve_file(request, file_type, file_id):
     """Serve files from S3 or local storage"""
     from .models import PetDocument, PetPhoto
-    from django.http import Http404, FileResponse
+    from django.http import Http404, FileResponse, HttpResponseRedirect
+    from django.conf import settings
     import os
     
     try:
@@ -876,19 +877,21 @@ def serve_file(request, file_type, file_id):
         else:
             raise Http404("Invalid file type")
         
-        # Get file URL
-        file_url = file_obj.get_file_url()
-        
-        # If using S3, redirect to S3 URL
-        if file_url.startswith('http://') or file_url.startswith('https://'):
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect(file_url)
-        
-        # Otherwise, serve from local storage
-        if os.path.exists(file_url):
-            return FileResponse(open(file_url, 'rb'), content_type=file_obj.file_type)
-        else:
+        if not file_obj.file:
             raise Http404("File not found")
+        
+        # Check if using S3 storage
+        if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3' in settings.DEFAULT_FILE_STORAGE.lower():
+            # Using S3 - get the S3 URL and redirect
+            s3_url = file_obj.file.url
+            return HttpResponseRedirect(s3_url)
+        else:
+            # Using local storage - serve the file directly
+            file_path = file_obj.file.path
+            if os.path.exists(file_path):
+                return FileResponse(open(file_path, 'rb'), content_type=file_obj.file_type)
+            else:
+                raise Http404("File not found")
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
