@@ -698,7 +698,13 @@ def handle_application_submission(request):
                         questionnaire_data[key] = value
             else:
                 # Fallback to POST data (for backwards compatibility)
-                questionnaire_data = dict(request.POST)
+                # Django QueryDict needs special handling
+                for key in request.POST.keys():
+                    values = request.POST.getlist(key)
+                    if len(values) == 1:
+                        questionnaire_data[key] = values[0]
+                    else:
+                        questionnaire_data[key] = values
             
             # Helper function to safely get boolean value
             def get_bool(key, default=False):
