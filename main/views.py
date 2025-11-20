@@ -825,20 +825,30 @@ def pet_documents(request):
 
 def contact_info(request):
     """Contact information page"""
-    pet_type = request.GET.get('type', '')
-    gender = request.GET.get('gender', '')
-    birthdate = request.GET.get('birthdate', '')
-    breed = request.GET.get('breed', '')
-    name = request.GET.get('name', '')
-    
-    context = {
-        'pet_type': pet_type,
-        'gender': gender,
-        'birthdate': birthdate,
-        'breed': breed,
-        'name': name
-    }
+    try:
+        pet_type = request.GET.get('type', '')
+        gender = request.GET.get('gender', '')
+        birthdate = request.GET.get('birthdate', '')
+        breed = request.GET.get('breed', '')
+        name = request.GET.get('name', '')
+        
+        context = {
+            'pet_type': pet_type,
+            'gender': gender,
+            'birthdate': birthdate,
+            'breed': breed,
+            'name': name
+        }
     return render(request, 'main/contact_info.html', context)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in contact_info view: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        # Return a simple error page or redirect
+        from django.http import HttpResponse
+        return HttpResponse(f"Error loading page: {str(e)}", status=500)
 
 def thank_you(request):
     """Thank you page after successful submission"""
