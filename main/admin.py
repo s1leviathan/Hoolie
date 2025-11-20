@@ -289,15 +289,37 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     photos_list.short_description = 'Ανεβασμένες Φωτογραφίες'
     
     def questionnaire_link(self, obj):
-        """Display link to questionnaire with ID"""
+        """Display link to questionnaire with ID and status"""
         try:
             if hasattr(obj, 'questionnaire') and obj.questionnaire:
                 questionnaire = obj.questionnaire
                 url = reverse('admin:main_questionnaire_change', args=[questionnaire.pk])
-                return format_html(
-                    '<a href="{}" target="_blank" style="font-weight: bold; color: #007bff;">📋 Ερωτηματολόγιο (ID: {})</a>',
-                    url, questionnaire.id
+                # Check if questionnaire has any data
+                has_data = (
+                    questionnaire.is_healthy is not None or
+                    questionnaire.program or
+                    questionnaire.payment_frequency or
+                    questionnaire.has_other_insured_pet or
+                    questionnaire.has_been_denied_insurance
                 )
+                status_icon = '✅' if has_data else '⚠️'
+                status_text = 'Συμπληρωμένο' if has_data else 'Ατελές'
+                return format_html(
+                    '<a href="{}" target="_blank" style="font-weight: bold; color: #007bff; text-decoration: none;">{} 📋 Ερωτηματολόγιο (ID: {})</a><br><small style="color: #6c757d;">{}</small>',
+                    url, status_icon, questionnaire.id, status_text
+                )
+            else:
+                # Try to find questionnaire by application
+                from .models import Questionnaire
+                try:
+                    questionnaire = Questionnaire.objects.get(application=obj)
+                    url = reverse('admin:main_questionnaire_change', args=[questionnaire.pk])
+                    return format_html(
+                        '<a href="{}" target="_blank" style="font-weight: bold; color: #007bff; text-decoration: none;">📋 Ερωτηματολόγιο (ID: {})</a>',
+                        url, questionnaire.id
+                    )
+                except Questionnaire.DoesNotExist:
+                    pass
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)

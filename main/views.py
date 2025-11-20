@@ -505,6 +505,9 @@ def handle_application_submission(request):
                     else:
                         questionnaire_data[key] = values
             
+            # Log questionnaire data for debugging
+            logger.info(f"Creating questionnaire for application {application.id} with {len(questionnaire_data)} fields")
+            
             def get_bool(key, default=False):
                 val = questionnaire_data.get(key, '')
                 if isinstance(val, list):
@@ -616,6 +619,9 @@ def handle_application_submission(request):
                 questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
                 questionnaire.save()
             
+            # Log successful creation
+            logger.info(f"Questionnaire {'created' if created else 'updated'} successfully for application {application.id} (Questionnaire ID: {questionnaire.id})")
+            
             if 'questionnaire_data' in request.session:
                 del request.session['questionnaire_data']
                 if 'questionnaire_submitted' in request.session:
@@ -623,6 +629,12 @@ def handle_application_submission(request):
         except Exception as e:
             logger.error(f"Error creating/updating questionnaire for application {application.id}: {e}")
             logger.error(traceback.format_exc())
+            # Even if there's an error, try to create an empty questionnaire so it's visible in admin
+            try:
+                Questionnaire.objects.get_or_create(application=application)
+                logger.info(f"Created empty questionnaire for application {application.id} as fallback")
+            except Exception as fallback_error:
+                logger.error(f"Failed to create fallback questionnaire: {fallback_error}")
         
         # Link uploaded documents to application
         try:
