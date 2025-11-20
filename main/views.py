@@ -247,10 +247,13 @@ def upload_pet_photo(request):
 
 def health_status(request):
     """Pet health status page - NOW REPLACED WITH QUESTIONNAIRE"""
-    # Handle form submission (questionnaire) - for now, just redirect to insurance programs
+    # Handle form submission (questionnaire) - store data in session for later submission
     # The application will be submitted later from contact_info page
     if request.method == 'POST':
-        # Just return success - the frontend will handle redirect to insurance programs
+        # Store all questionnaire data in session for later use
+        request.session['questionnaire_data'] = dict(request.POST)
+        request.session['questionnaire_submitted'] = True
+        
         from django.http import JsonResponse
         return JsonResponse({
             'success': True,
@@ -677,71 +680,120 @@ def handle_application_submission(request):
         )
         
         # Create and save questionnaire
+        # Get questionnaire data from session (stored when questionnaire was submitted) or from POST
         try:
             from .models import Questionnaire
             from datetime import datetime
             
+            # Get questionnaire data from session or POST
+            questionnaire_data = {}
+            if 'questionnaire_data' in request.session:
+                # Get from session (stored when questionnaire was submitted)
+                session_data = request.session['questionnaire_data']
+                # Convert QueryDict-like structure to regular dict
+                for key, value in session_data.items():
+                    if isinstance(value, list) and len(value) > 0:
+                        questionnaire_data[key] = value[0]  # Get first value from list
+                    else:
+                        questionnaire_data[key] = value
+            else:
+                # Fallback to POST data (for backwards compatibility)
+                questionnaire_data = dict(request.POST)
+            
+            # Helper function to safely get boolean value
+            def get_bool(key, default=False):
+                val = questionnaire_data.get(key, '')
+                if isinstance(val, list):
+                    val = val[0] if val else ''
+                return val == 'true' or val is True
+            
+            # Helper function to safely get string value
+            def get_str(key, default=''):
+                val = questionnaire_data.get(key, default)
+                if isinstance(val, list):
+                    val = val[0] if val else default
+                return str(val) if val else default
+            
             # Parse desired start date
             desired_start_date = None
-            if request.POST.get('desired_start_date'):
+            start_date_str = get_str('desired_start_date')
+            if start_date_str:
                 try:
-                    desired_start_date = datetime.strptime(request.POST.get('desired_start_date'), '%Y-%m-%d').date()
+                    desired_start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
                 except ValueError:
                     pass
+            
+            # Determine if it's a dog or cat to handle leishmaniasis question
+            pet_type_val = request.POST.get('type', '') or get_str('type', '')
+            is_dog = pet_type_val == 'dog'
+            
+            # Handle breed_type (purebred/mixed/crossbreed)
+            breed_type = get_str('breed_type', '')
+            is_purebred = breed_type == 'purebred'
+            is_mixed = breed_type == 'mixed'
+            is_crossbreed = breed_type == 'crossbreed'
             
             questionnaire = Questionnaire.objects.create(
                 application=application,
                 # Section 1.1
-                has_other_insured_pet=request.POST.get('has_other_insured_pet') == 'true',
-                has_been_denied_insurance=request.POST.get('has_been_denied_insurance') == 'true',
-                has_special_terms_imposed=request.POST.get('has_special_terms_imposed') == 'true',
+                has_other_insured_pet=get_bool('has_other_insured_pet'),
+                has_been_denied_insurance=get_bool('has_been_denied_insurance'),
+                has_special_terms_imposed=get_bool('has_special_terms_imposed'),
                 # Section 2
-                pet_colors=request.POST.get('pet_colors', ''),
-                pet_weight=request.POST.get('pet_weight', ''),
-                is_purebred=request.POST.get('is_purebred') == 'true',
-                is_mixed=request.POST.get('is_mixed') == 'true',
-                is_crossbreed=request.POST.get('is_crossbreed') == 'true',
-                # Section 2.1
-                special_breed_5_percent=request.POST.get('special_breed_5_percent') == 'true',
-                special_breed_20_percent=request.POST.get('special_breed_20_percent') == 'true',
+                pet_colors=get_str('pet_colors'),
+                pet_weight=get_str('pet_weight'),
+                is_purebred=is_purebred,
+                is_mixed=is_mixed,
+                is_crossbreed=is_crossbreed,
+                pet_breed_or_crossbreed=get_str('pet_breed_or_crossbreed'),
+                # Section 2.1 (Dog specific)
+                special_breed_5_percent=get_bool('special_breed_5_percent') if is_dog else False,
+                special_breed_20_percent=get_bool('special_breed_20_percent') if is_dog else False,
                 # Section 2.2
-                is_healthy=request.POST.get('is_healthy') == 'true',
-                is_healthy_details=request.POST.get('is_healthy_details', ''),
-                has_injury_illness_3_years=request.POST.get('has_injury_illness_3_years') == 'true',
-                has_injury_illness_details=request.POST.get('has_injury_illness_details', ''),
-                has_surgical_procedure=request.POST.get('has_surgical_procedure') == 'true',
-                has_surgical_procedure_details=request.POST.get('has_surgical_procedure_details', ''),
-                has_examination_findings=request.POST.get('has_examination_findings') == 'true',
-                has_examination_findings_details=request.POST.get('has_examination_findings_details', ''),
-                is_sterilized=request.POST.get('is_sterilized') == 'true',
+                is_healthy=get_bool('is_healthy'),
+                is_healthy_details=get_str('is_healthy_details'),
+                has_injury_illness_3_years=get_bool('has_injury_illness_3_years'),
+                has_injury_illness_details=get_str('has_injury_illness_3_years_details'),
+                has_surgical_procedure=get_bool('has_surgical_procedure'),
+                has_surgical_procedure_details=get_str('has_surgical_procedure_details'),
+                has_examination_findings=get_bool('has_examination_findings'),
+                has_examination_findings_details=get_str('has_examination_findings_details'),
+                is_sterilized=get_bool('is_sterilized'),
                 # Leishmaniasis vaccination only for dogs (cats don't have this question)
-                is_vaccinated_leishmaniasis=request.POST.get('is_vaccinated_leishmaniasis') == 'true' if request.POST.get('is_vaccinated_leishmaniasis') else False,
-                follows_vaccination_program=request.POST.get('follows_vaccination_program') == 'true',
-                follows_vaccination_program_details=request.POST.get('follows_vaccination_program_details', ''),
-                has_hereditary_disease=request.POST.get('has_hereditary_disease') == 'true',
-                has_hereditary_disease_details=request.POST.get('has_hereditary_disease_details', ''),
+                is_vaccinated_leishmaniasis=get_bool('is_vaccinated_leishmaniasis') if is_dog else False,
+                follows_vaccination_program=get_bool('follows_vaccination_program'),
+                follows_vaccination_program_details=get_str('follows_vaccination_program_details'),
+                has_hereditary_disease=get_bool('has_hereditary_disease'),
+                has_hereditary_disease_details=get_str('has_hereditary_disease_details'),
                 # Section 3
-                program=request.POST.get('program', ''),
-                additional_poisoning_coverage=request.POST.get('additional_poisoning_coverage') == 'true',
-                # Additional blood checkup can be true/false (radio button) or checkbox
-                additional_blood_checkup=request.POST.get('additional_blood_checkup') == 'true' if request.POST.get('additional_blood_checkup') else False,
+                program=get_str('program') or request.POST.get('program', ''),
+                additional_poisoning_coverage=get_bool('additional_poisoning_coverage'),
+                additional_blood_checkup=get_bool('additional_blood_checkup'),
                 # Section 4
                 desired_start_date=desired_start_date,
                 # Section 5
-                payment_method=request.POST.get('payment_method', ''),
-                payment_frequency=request.POST.get('payment_frequency', ''),
+                payment_method=get_str('payment_method'),
+                payment_frequency=get_str('payment_frequency'),
                 # Section 6
-                consent_terms_conditions=request.POST.get('consent_terms_conditions') == 'true',
-                consent_info_document=request.POST.get('consent_info_document') == 'true',
-                consent_email_notifications=request.POST.get('consent_email_notifications') == 'true',
-                consent_marketing=request.POST.get('consent_marketing') == 'true',
-                consent_data_processing=request.POST.get('consent_data_processing') == 'true',
-                consent_pet_gov_platform=request.POST.get('consent_pet_gov_platform') == 'true',
+                consent_terms_conditions=get_bool('consent_terms_conditions'),
+                consent_info_document=get_bool('consent_info_document'),
+                consent_email_notifications=get_bool('consent_email_notifications'),
+                consent_marketing=get_bool('consent_marketing'),
+                consent_data_processing=get_bool('consent_data_processing'),
+                consent_pet_gov_platform=get_bool('consent_pet_gov_platform'),
             )
+            
+            # Clear questionnaire data from session after successful save
+            if 'questionnaire_data' in request.session:
+                del request.session['questionnaire_data']
+                if 'questionnaire_submitted' in request.session:
+                    del request.session['questionnaire_submitted']
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error creating questionnaire for application {application.id}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         
         # Link uploaded documents to this application
         try:

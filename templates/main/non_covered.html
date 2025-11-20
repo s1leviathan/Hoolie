@@ -226,6 +226,7 @@ function selectDeclaration(choice) {
     const breed = urlParams.get('breed');
     const name = urlParams.get('name');
     const program = urlParams.get('program');
+    const isHealthy = urlParams.get('is_healthy'); // Preserve is_healthy parameter
     
     if (choice === 'has_conditions') {
         // Redirect to health conditions page based on pet type
@@ -239,13 +240,18 @@ function selectDeclaration(choice) {
             program: program || ''
         });
         
+        // Preserve is_healthy if available
+        if (isHealthy) {
+            params.set('is_healthy', isHealthy);
+        }
+        
         if (petType === 'dog') {
             window.location.href = `{% url 'main:dog_health_conditions' %}?${params.toString()}`;
         } else if (petType === 'cat') {
             window.location.href = `{% url 'main:cat_health_conditions' %}?${params.toString()}`;
         }
     } else if (choice === 'no_conditions') {
-        // Continue to contact info page
+        // Continue to user data page
         const params = new URLSearchParams({
             type: petType || '',
             gender: gender || '',
@@ -256,6 +262,11 @@ function selectDeclaration(choice) {
             conditions: '',
             program: program || ''
         });
+        
+        // Preserve is_healthy if available
+        if (isHealthy) {
+            params.set('is_healthy', isHealthy);
+        }
         
         window.location.href = `{% url 'main:user_data' %}?${params.toString()}`;
     }
