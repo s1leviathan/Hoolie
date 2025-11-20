@@ -251,7 +251,7 @@ def health_status(request):
     if request.method == 'POST':
         return handle_application_submission(request)
     
-    # GET request - show questionnaire form
+    # GET request - show questionnaire form (different for dogs and cats)
     pet_type = request.GET.get('type', 'pet')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
@@ -271,8 +271,14 @@ def health_status(request):
         'health_conditions': conditions,
         'program': program
     }
-    # Render questionnaire instead of health_status page
-    return render(request, 'main/questionnaire.html', context)
+    
+    # Render different questionnaire template based on pet type
+    if pet_type == 'dog':
+        return render(request, 'main/questionnaire_dog.html', context)
+    elif pet_type == 'cat':
+        return render(request, 'main/questionnaire_cat.html', context)
+    else:
+        return render(request, 'main/questionnaire_dog.html', context)  # Default to dog
 
 def dog_health_conditions(request):
     """Dog health conditions selection page"""
@@ -698,7 +704,8 @@ def handle_application_submission(request):
                 has_examination_findings=request.POST.get('has_examination_findings') == 'true',
                 has_examination_findings_details=request.POST.get('has_examination_findings_details', ''),
                 is_sterilized=request.POST.get('is_sterilized') == 'true',
-                is_vaccinated_leishmaniasis=request.POST.get('is_vaccinated_leishmaniasis') == 'true',
+                # Leishmaniasis vaccination only for dogs (cats don't have this question)
+                is_vaccinated_leishmaniasis=request.POST.get('is_vaccinated_leishmaniasis') == 'true' if request.POST.get('is_vaccinated_leishmaniasis') else False,
                 follows_vaccination_program=request.POST.get('follows_vaccination_program') == 'true',
                 follows_vaccination_program_details=request.POST.get('follows_vaccination_program_details', ''),
                 has_hereditary_disease=request.POST.get('has_hereditary_disease') == 'true',
@@ -706,7 +713,8 @@ def handle_application_submission(request):
                 # Section 3
                 program=request.POST.get('program', ''),
                 additional_poisoning_coverage=request.POST.get('additional_poisoning_coverage') == 'true',
-                additional_blood_checkup=request.POST.get('additional_blood_checkup') == 'true',
+                # Additional blood checkup can be true/false (radio button) or checkbox
+                additional_blood_checkup=request.POST.get('additional_blood_checkup') == 'true' if request.POST.get('additional_blood_checkup') else False,
                 # Section 4
                 desired_start_date=desired_start_date,
                 # Section 5
