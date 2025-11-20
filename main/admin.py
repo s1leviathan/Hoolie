@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument
+from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument, PetPhoto
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
@@ -55,7 +55,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'contract_end_date',
         'application_number',
         'contract_pdf_link',
-        'documents_list'
+        'documents_list',
+        'photos_list'
     ]
     
     fieldsets = (
@@ -100,7 +101,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'microchip_number',
                 'health_status',
                 'health_conditions',
-                'documents_list'
+                'documents_list',
+                'photos_list'
             )
         }),
         ('🐕 Στοιχεία 2ου Κατοικιδίου', {
@@ -238,6 +240,32 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             return format_html('<div>{}</div>', mark_safe(' '.join(links_html)))
         return format_html('<span style="color: #6c757d;">Δεν υπάρχουν ανεβασμένα έγγραφα</span>')
     documents_list.short_description = 'Ανεβασμένα Έγγραφα'
+    
+    def photos_list(self, obj):
+        """Display grid of uploaded photos with view links"""
+        photos = obj.photos.all()
+        if photos:
+            photos_html = []
+            for photo in photos:
+                url = photo.get_file_url()
+                if url:
+                    photos_html.append(
+                        f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                        f'<a href="{url}" target="_blank" style="display: block;">'
+                        f'<img src="{url}" alt="{photo.original_filename}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #28a745;">'
+                        f'</a>'
+                        f'<small style="display: block; margin-top: 3px; color: #666;">{photo.original_filename}</small>'
+                        f'</div>'
+                    )
+                else:
+                    photos_html.append(
+                        f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                        f'<span style="color: #dc3545; font-size: 12px;">⚠️ {photo.original_filename}</span>'
+                        f'</div>'
+                    )
+            return format_html('<div style="display: flex; flex-wrap: wrap;">{}</div>', mark_safe(''.join(photos_html)))
+        return format_html('<span style="color: #6c757d;">Δεν υπάρχουν ανεβασμένες φωτογραφίες</span>')
+    photos_list.short_description = 'Ανεβασμένες Φωτογραφίες'
     
     def contract_actions(self, obj):
         """Display action buttons"""
@@ -810,3 +838,124 @@ class PetDocumentAdmin(admin.ModelAdmin):
                 return format_html('<a href="{}" target="_blank">📥 Προβολή/Λήψη</a>', url)
         return '-'
     file_download.short_description = 'Αρχείο'
+
+
+@admin.register(PetPhoto)
+class PetPhotoAdmin(admin.ModelAdmin):
+    """Admin interface for Pet Photos"""
+    
+    list_display = [
+        'photo_thumbnail',
+        'original_filename',
+        'pet_name',
+        'pet_type_display',
+        'application_link',
+        'file_size_display',
+        'file_type',
+        'uploaded_at',
+        'photo_view'
+    ]
+    
+    list_filter = [
+        'pet_type',
+        'file_type',
+        'uploaded_at',
+        'application'
+    ]
+    
+    search_fields = [
+        'original_filename',
+        'pet_name',
+        'application__contract_number',
+        'application__full_name',
+        'application__email'
+    ]
+    
+    readonly_fields = [
+        'uploaded_at',
+        'created_at',
+        'updated_at',
+        'file_size',
+        'file_type',
+        'original_filename'
+    ]
+    
+    fieldsets = (
+        ('📸 Φωτογραφία', {
+            'fields': (
+                'file',
+                'original_filename',
+                'file_size',
+                'file_type'
+            )
+        }),
+        ('🐾 Στοιχεία Κατοικιδίου', {
+            'fields': (
+                'pet_name',
+                'pet_type'
+            )
+        }),
+        ('📋 Σύνδεση με Αίτηση', {
+            'fields': (
+                'application',
+            )
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'uploaded_at',
+                'created_at',
+                'updated_at'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def photo_thumbnail(self, obj):
+        """Display photo thumbnail"""
+        if obj.file:
+            url = obj.get_file_url()
+            if url:
+                return format_html(
+                    '<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;">',
+                    url
+                )
+        return '-'
+    photo_thumbnail.short_description = 'Προεπισκόπηση'
+    
+    def pet_type_display(self, obj):
+        """Display pet type with emoji"""
+        if obj.pet_type == 'dog':
+            return "🐕 Σκύλος"
+        elif obj.pet_type == 'cat':
+            return "🐱 Γάτα"
+        return obj.pet_type or '-'
+    pet_type_display.short_description = 'Είδος'
+    
+    def application_link(self, obj):
+        """Link to the related application"""
+        if obj.application:
+            url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.application.contract_number or obj.application.application_number)
+        return '-'
+    application_link.short_description = 'Αίτηση'
+    
+    def file_size_display(self, obj):
+        """Display file size in human-readable format"""
+        if obj.file_size:
+            if obj.file_size < 1024:
+                return f"{obj.file_size} B"
+            elif obj.file_size < 1024 * 1024:
+                return f"{obj.file_size / 1024:.2f} KB"
+            else:
+                return f"{obj.file_size / (1024 * 1024):.2f} MB"
+        return '-'
+    file_size_display.short_description = 'Μέγεθος'
+    
+    def photo_view(self, obj):
+        """Link to view photo"""
+        if obj.file:
+            url = obj.get_file_url()
+            if url:
+                return format_html('<a href="{}" target="_blank">📷 Προβολή</a>', url)
+        return '-'
+    photo_view.short_description = 'Φωτογραφία'

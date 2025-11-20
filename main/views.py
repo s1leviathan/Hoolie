@@ -177,6 +177,74 @@ def upload_pet_document(request):
             'error': f'Σφάλμα κατά το ανέβασμα: {str(e)}'
         }, status=500)
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def upload_pet_photo(request):
+    """API endpoint to handle pet photo uploads (minimum 5 required)"""
+    from .models import PetPhoto
+    import json
+    
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({
+                'success': False,
+                'error': 'Δεν βρέθηκε αρχείο'
+            }, status=400)
+        
+        uploaded_file = request.FILES['file']
+        pet_name = request.POST.get('pet_name', '')
+        pet_type = request.POST.get('pet_type', '')
+        
+        # Validate file size (10MB max)
+        max_size = 10 * 1024 * 1024  # 10MB
+        if uploaded_file.size > max_size:
+            return JsonResponse({
+                'success': False,
+                'error': f'Το αρχείο υπερβαίνει το όριο 10MB'
+            }, status=400)
+        
+        # Validate file type - only images for photos
+        allowed_types = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp'
+        ]
+        if uploaded_file.content_type not in allowed_types:
+            return JsonResponse({
+                'success': False,
+                'error': f'Ο τύπος αρχείου δεν είναι αποδεκτός. Μόνο εικόνες (JPG, PNG, WEBP)'
+            }, status=400)
+        
+        # Save photo to S3/local storage
+        photo = PetPhoto.objects.create(
+            file=uploaded_file,
+            original_filename=uploaded_file.name,
+            file_size=uploaded_file.size,
+            file_type=uploaded_file.content_type,
+            pet_name=pet_name,
+            pet_type=pet_type
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'photo_id': photo.id,
+            'filename': photo.original_filename,
+            'file_url': photo.get_file_url(),
+            'message': 'Η φωτογραφία ανέβηκε επιτυχώς'
+        })
+        
+    except Exception as e:
+        import logging
+        import traceback
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error uploading pet photo: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'error': f'Σφάλμα κατά το ανέβασμα: {str(e)}'
+        }, status=500)
+
 def health_status(request):
     """Pet health status page"""
     pet_type = request.GET.get('type', 'pet')
@@ -595,6 +663,23 @@ def handle_application_submission(request):
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Could not link documents to application {application.id}: {e}")
+        
+        # Link uploaded photos to this application
+        try:
+            from .models import PetPhoto
+            pet_name = request.POST.get('name', '')
+            pet_type = request.POST.get('type', '')
+            
+            # Find photos uploaded for this pet (before application was created)
+            PetPhoto.objects.filter(
+                application__isnull=True,
+                pet_name=pet_name,
+                pet_type=pet_type
+            ).update(application=application)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Could not link photos to application {application.id}: {e}")
         
         # Generate and store contract PDF (contains all application data for admin access)
         try:

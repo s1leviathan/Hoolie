@@ -61,6 +61,48 @@
                 </div>
             </div>
             
+            <!-- Photo Upload Section -->
+            <div class="document-upload-section" style="margin-top: 3rem;">
+                <div class="document-upload-card">
+                    <div class="upload-header">
+                        <div class="upload-icon">📸</div>
+                        <h3>Ανέβασμα Φωτογραφιών</h3>
+                        <p>Παρακαλώ ανεβάστε <strong>τουλάχιστον 5 φωτογραφίες</strong> του κατοικιδιού σας από διάφορες γωνίες (περιμετρικά)</p>
+                    </div>
+                    
+                    <div class="upload-area" id="photoUploadArea">
+                        <input type="file" id="photoInput" multiple accept="image/jpeg,image/jpg,image/png,image/webp" style="display: none;">
+                        <div class="upload-content">
+                            <div class="upload-icon-large">📷</div>
+                            <p class="upload-text">Σύρετε τις φωτογραφίες εδώ</p>
+                            <p class="upload-subtext">ή</p>
+                            <button type="button" class="btn-upload" onclick="document.getElementById('photoInput').click()">
+                                Επιλέξτε Φωτογραφίες
+                            </button>
+                            <p class="upload-hint">Μέγιστο μέγεθος: 10MB ανά φωτογραφία<br>Αποδεκτά: JPG, PNG, WEBP<br><strong>Απαιτείται: τουλάχιστον 5 φωτογραφίες</strong></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Photo Counter -->
+                    <div class="photo-counter" id="photoCounter" style="margin-top: 1.5rem; padding: 1rem; background: rgba(90, 200, 189, 0.1); border-radius: 10px; text-align: center;">
+                        <p style="margin: 0; color: var(--brand-primary); font-weight: 600;">
+                            <span id="photoCount">0</span> / 5 φωτογραφίες (απαιτείται τουλάχιστον 5)
+                        </p>
+                    </div>
+                    
+                    <!-- Uploaded Photos Grid -->
+                    <div class="uploaded-photos" id="uploadedPhotos" style="display: none; margin-top: 2rem;">
+                        <h4>Ανεβασμένες Φωτογραφίες:</h4>
+                        <div class="photos-grid" id="photosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;"></div>
+                    </div>
+                    
+                    <!-- Photo Upload Status -->
+                    <div class="upload-status" id="photoUploadStatus" style="display: none;">
+                        <div class="status-message"></div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Navigation Buttons -->
             <div class="navigation-buttons" style="margin-top: 3rem;">
                 <button class="btn btn-lg btn-light me-3" onclick="goBack()" style="padding: 1rem 2rem; border-radius: 15px; font-weight: 600;">
@@ -279,6 +321,7 @@
 
 <script>
 let uploadedFiles = [];
+let uploadedPhotos = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     // Get parameters from URL
@@ -336,6 +379,38 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.dataTransfer.files);
         handleFileSelection(files);
     });
+    
+    // Setup photo input
+    const photoInput = document.getElementById('photoInput');
+    const photoUploadArea = document.getElementById('photoUploadArea');
+    
+    // Click to upload photos
+    photoUploadArea.addEventListener('click', () => {
+        photoInput.click();
+    });
+    
+    // Photo selection
+    photoInput.addEventListener('change', handlePhotos);
+    
+    // Drag and drop for photos
+    photoUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        photoUploadArea.classList.add('dragover');
+    });
+    
+    photoUploadArea.addEventListener('dragleave', () => {
+        photoUploadArea.classList.remove('dragover');
+    });
+    
+    photoUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        photoUploadArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handlePhotoSelection(files);
+    });
+    
+    // Update photo counter on load
+    updatePhotoCounter();
 });
 
 function handleFiles(e) {
@@ -502,7 +577,8 @@ function removeFile(index) {
 
 function updateContinueButton() {
     const continueBtn = document.getElementById('continueBtn');
-    if (uploadedFiles.length > 0) {
+    // Require at least 1 document AND at least 5 photos
+    if (uploadedFiles.length > 0 && uploadedPhotos.length >= 5) {
         continueBtn.disabled = false;
         continueBtn.style.background = 'var(--brand-gradient)';
         continueBtn.style.cursor = 'pointer';
@@ -511,6 +587,157 @@ function updateContinueButton() {
         continueBtn.style.background = '#ccc';
         continueBtn.style.cursor = 'not-allowed';
     }
+}
+
+// Photo upload functions
+function handlePhotos(e) {
+    const files = Array.from(e.target.files);
+    handlePhotoSelection(files);
+}
+
+function handlePhotoSelection(files) {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    files.forEach(file => {
+        // Validate file size
+        if (file.size > maxSize) {
+            showPhotoStatus('error', `Η φωτογραφία "${file.name}" υπερβαίνει το όριο 10MB`);
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type || !allowedTypes.includes(file.type)) {
+            showPhotoStatus('error', `Η φωτογραφία "${file.name}" δεν είναι αποδεκτού τύπου`);
+            return;
+        }
+        
+        // Upload photo to server
+        uploadPhotoToServer(file);
+    });
+}
+
+function uploadPhotoToServer(file) {
+    // Get pet information from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petName = urlParams.get('name') || '';
+    const petType = urlParams.get('type') || '';
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('pet_name', petName);
+    formData.append('pet_type', petType);
+    
+    // Get CSRF token
+    const csrfToken = getCookie('csrftoken');
+    
+    // Show uploading status
+    showPhotoStatus('info', `Ανέβασμα ${file.name}...`);
+    
+    // Upload to server
+    fetch('{% url "main:upload_pet_photo" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => {
+        // Check if response is OK
+        if (!response.ok) {
+            // Try to parse error response
+            return response.json().then(data => {
+                throw new Error(data.error || `Server error: ${response.status}`);
+            }).catch(() => {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success === true || data.success === 'true') {
+            // Add to uploaded photos list with server response
+            uploadedPhotos.push({
+                name: file.name,
+                size: file.size,
+                type: file.type || 'image/jpeg',
+                photo_id: data.photo_id,
+                file_url: data.file_url,
+                uploaded: true
+            });
+            displayUploadedPhotos();
+            updatePhotoCounter();
+            updateContinueButton();
+            showPhotoStatus('success', data.message || 'Η φωτογραφία ανέβηκε επιτυχώς');
+        } else {
+            showPhotoStatus('error', data.error || 'Σφάλμα κατά το ανέβασμα');
+        }
+    })
+    .catch(error => {
+        console.error('Photo upload error:', error);
+        showPhotoStatus('error', error.message || 'Σφάλμα κατά το ανέβασμα της φωτογραφίας');
+    });
+}
+
+function displayUploadedPhotos() {
+    const photosGrid = document.getElementById('photosGrid');
+    const uploadedPhotosDiv = document.getElementById('uploadedPhotos');
+    
+    photosGrid.innerHTML = '';
+    
+    if (uploadedPhotos.length > 0) {
+        uploadedPhotosDiv.style.display = 'block';
+        
+        uploadedPhotos.forEach((photo, index) => {
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'photo-item';
+            photoDiv.style.cssText = 'position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+            
+            photoDiv.innerHTML = `
+                <img src="${photo.file_url}" alt="${photo.name}" style="width: 100%; height: 150px; object-fit: cover; display: block;">
+                <button type="button" class="remove-photo" onclick="removePhoto(${index})" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">×</button>
+            `;
+            
+            photosGrid.appendChild(photoDiv);
+        });
+    } else {
+        uploadedPhotosDiv.style.display = 'none';
+    }
+}
+
+function removePhoto(index) {
+    uploadedPhotos.splice(index, 1);
+    displayUploadedPhotos();
+    updatePhotoCounter();
+    updateContinueButton();
+}
+
+function updatePhotoCounter() {
+    const photoCount = document.getElementById('photoCount');
+    const count = uploadedPhotos.length;
+    photoCount.textContent = count;
+    
+    // Update counter color based on requirement
+    const counterDiv = document.getElementById('photoCounter');
+    if (count >= 5) {
+        counterDiv.style.background = 'rgba(40, 167, 69, 0.1)';
+        counterDiv.querySelector('p').style.color = '#28a745';
+    } else {
+        counterDiv.style.background = 'rgba(90, 200, 189, 0.1)';
+        counterDiv.querySelector('p').style.color = 'var(--brand-primary)';
+    }
+}
+
+function showPhotoStatus(type, message) {
+    const statusDiv = document.getElementById('photoUploadStatus');
+    statusDiv.className = `upload-status ${type}`;
+    statusDiv.style.display = 'block';
+    statusDiv.querySelector('.status-message').textContent = message;
+    
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 5000);
 }
 
 function showStatus(type, message) {
@@ -526,15 +753,26 @@ function showStatus(type, message) {
 
 function continueToHealth() {
     // Check if all files have been uploaded
-    const allUploaded = uploadedFiles.every(f => f.uploaded === true);
+    const allFilesUploaded = uploadedFiles.every(f => f.uploaded === true);
+    const allPhotosUploaded = uploadedPhotos.every(p => p.uploaded === true);
     
     if (uploadedFiles.length === 0) {
         alert('Παρακαλώ ανεβάστε τουλάχιστον ένα έγγραφο για να συνεχίσετε.');
         return;
     }
     
-    if (!allUploaded) {
+    if (uploadedPhotos.length < 5) {
+        alert('Παρακαλώ ανεβάστε τουλάχιστον 5 φωτογραφίες του κατοικιδιού σας για να συνεχίσετε.');
+        return;
+    }
+    
+    if (!allFilesUploaded) {
         alert('Παρακαλώ περιμένετε να ολοκληρωθεί το ανέβασμα όλων των αρχείων.');
+        return;
+    }
+    
+    if (!allPhotosUploaded) {
+        alert('Παρακαλώ περιμένετε να ολοκληρωθεί το ανέβασμα όλων των φωτογραφιών.');
         return;
     }
     

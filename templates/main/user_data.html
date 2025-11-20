@@ -952,7 +952,7 @@ function getWeightText(weightValue) {
 }
 
 function getWeightFromBreed(breed) {
-    if (!breed) return null;
+    if (!breed || typeof breed !== 'string') return null;
     
     if (breed.includes('έως 10 κιλά')) return '10';
     if (breed.includes('11-20 κιλά')) return '11-20';

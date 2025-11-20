@@ -362,3 +362,39 @@ class PetDocument(models.Model):
         if self.file:
             return self.file.url
         return None
+
+
+class PetPhoto(models.Model):
+    """Model to store user-uploaded pet photos (minimum 5 required for application)"""
+    
+    # Link to insurance application (optional - can be uploaded before application is created)
+    application = models.ForeignKey(InsuranceApplication, on_delete=models.CASCADE, related_name='photos', null=True, blank=True)
+    
+    # Photo details
+    file = models.ImageField(upload_to='pet_photos/%Y/%m/%d/', help_text="Uploaded pet photo")
+    original_filename = models.CharField(max_length=255, help_text="Original filename")
+    file_size = models.IntegerField(help_text="File size in bytes")
+    file_type = models.CharField(max_length=50, help_text="MIME type of the file")
+    
+    # Pet information (for photos uploaded before application creation)
+    pet_name = models.CharField(max_length=100, blank=True, null=True)
+    pet_type = models.CharField(max_length=10, choices=[('dog', 'Σκύλος'), ('cat', 'Γάτα')], blank=True, null=True)
+    
+    # Photo metadata
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = 'Pet Photo'
+        verbose_name_plural = 'Pet Photos'
+    
+    def __str__(self):
+        return f"Photo: {self.original_filename} - {self.pet_name or 'Unknown'}"
+    
+    def get_file_url(self):
+        """Get the URL to access the photo"""
+        if self.file:
+            return self.file.url
+        return None

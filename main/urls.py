@@ -27,4 +27,5 @@ urlpatterns = [
     # API endpoints
     path('api/validate-affiliate-code/', views.validate_affiliate_code, name='validate_affiliate_code'),
     path('api/upload-pet-document/', views.upload_pet_document, name='upload_pet_document'),
+    path('api/upload-pet-photo/', views.upload_pet_photo, name='upload_pet_photo'),
 ]
