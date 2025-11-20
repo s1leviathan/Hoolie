@@ -740,67 +740,117 @@ def handle_application_submission(request):
             is_mixed = breed_type == 'mixed'
             is_crossbreed = breed_type == 'crossbreed'
             
-            questionnaire = Questionnaire.objects.create(
+            # Check if questionnaire already exists for this application
+            questionnaire, created = Questionnaire.objects.get_or_create(
                 application=application,
-                # Section 1.1
-                has_other_insured_pet=get_bool('has_other_insured_pet'),
-                has_been_denied_insurance=get_bool('has_been_denied_insurance'),
-                has_special_terms_imposed=get_bool('has_special_terms_imposed'),
-                # Section 2
-                pet_colors=get_str('pet_colors'),
-                pet_weight=get_str('pet_weight'),
-                is_purebred=is_purebred,
-                is_mixed=is_mixed,
-                is_crossbreed=is_crossbreed,
-                pet_breed_or_crossbreed=get_str('pet_breed_or_crossbreed'),
-                # Section 2.1 (Dog specific)
-                special_breed_5_percent=get_bool('special_breed_5_percent') if is_dog else False,
-                special_breed_20_percent=get_bool('special_breed_20_percent') if is_dog else False,
-                # Section 2.2
-                is_healthy=get_bool('is_healthy'),
-                is_healthy_details=get_str('is_healthy_details'),
-                has_injury_illness_3_years=get_bool('has_injury_illness_3_years'),
-                has_injury_illness_details=get_str('has_injury_illness_3_years_details'),
-                has_surgical_procedure=get_bool('has_surgical_procedure'),
-                has_surgical_procedure_details=get_str('has_surgical_procedure_details'),
-                has_examination_findings=get_bool('has_examination_findings'),
-                has_examination_findings_details=get_str('has_examination_findings_details'),
-                is_sterilized=get_bool('is_sterilized'),
-                # Leishmaniasis vaccination only for dogs (cats don't have this question)
-                is_vaccinated_leishmaniasis=get_bool('is_vaccinated_leishmaniasis') if is_dog else False,
-                follows_vaccination_program=get_bool('follows_vaccination_program'),
-                follows_vaccination_program_details=get_str('follows_vaccination_program_details'),
-                has_hereditary_disease=get_bool('has_hereditary_disease'),
-                has_hereditary_disease_details=get_str('has_hereditary_disease_details'),
-                # Section 3
-                program=get_str('program') or request.POST.get('program', ''),
-                additional_poisoning_coverage=get_bool('additional_poisoning_coverage'),
-                additional_blood_checkup=get_bool('additional_blood_checkup'),
-                # Section 4
-                desired_start_date=desired_start_date,
-                # Section 5
-                payment_method=get_str('payment_method'),
-                payment_frequency=get_str('payment_frequency'),
-                # Section 6
-                consent_terms_conditions=get_bool('consent_terms_conditions'),
-                consent_info_document=get_bool('consent_info_document'),
-                consent_email_notifications=get_bool('consent_email_notifications'),
-                consent_marketing=get_bool('consent_marketing'),
-                consent_data_processing=get_bool('consent_data_processing'),
-                consent_pet_gov_platform=get_bool('consent_pet_gov_platform'),
+                defaults={
+                    # Section 1.1
+                    'has_other_insured_pet': get_bool('has_other_insured_pet'),
+                    'has_been_denied_insurance': get_bool('has_been_denied_insurance'),
+                    'has_special_terms_imposed': get_bool('has_special_terms_imposed'),
+                    # Section 2
+                    'pet_colors': get_str('pet_colors'),
+                    'pet_weight': get_str('pet_weight'),
+                    'is_purebred': is_purebred,
+                    'is_mixed': is_mixed,
+                    'is_crossbreed': is_crossbreed,
+                    'pet_breed_or_crossbreed': get_str('pet_breed_or_crossbreed'),
+                    # Section 2.1 (Dog specific)
+                    'special_breed_5_percent': get_bool('special_breed_5_percent') if is_dog else False,
+                    'special_breed_20_percent': get_bool('special_breed_20_percent') if is_dog else False,
+                    # Section 2.2
+                    'is_healthy': get_bool('is_healthy'),
+                    'is_healthy_details': get_str('is_healthy_details'),
+                    'has_injury_illness_3_years': get_bool('has_injury_illness_3_years'),
+                    'has_injury_illness_details': get_str('has_injury_illness_3_years_details'),
+                    'has_surgical_procedure': get_bool('has_surgical_procedure'),
+                    'has_surgical_procedure_details': get_str('has_surgical_procedure_details'),
+                    'has_examination_findings': get_bool('has_examination_findings'),
+                    'has_examination_findings_details': get_str('has_examination_findings_details'),
+                    'is_sterilized': get_bool('is_sterilized'),
+                    # Leishmaniasis vaccination only for dogs (cats don't have this question)
+                    'is_vaccinated_leishmaniasis': get_bool('is_vaccinated_leishmaniasis') if is_dog else False,
+                    'follows_vaccination_program': get_bool('follows_vaccination_program'),
+                    'follows_vaccination_program_details': get_str('follows_vaccination_program_details'),
+                    'has_hereditary_disease': get_bool('has_hereditary_disease'),
+                    'has_hereditary_disease_details': get_str('has_hereditary_disease_details'),
+                    # Section 3
+                    'program': get_str('program') or request.POST.get('program', ''),
+                    'additional_poisoning_coverage': get_bool('additional_poisoning_coverage'),
+                    'additional_blood_checkup': get_bool('additional_blood_checkup'),
+                    # Section 4
+                    'desired_start_date': desired_start_date,
+                    # Section 5
+                    'payment_method': get_str('payment_method'),
+                    'payment_frequency': get_str('payment_frequency'),
+                    # Section 6
+                    'consent_terms_conditions': get_bool('consent_terms_conditions'),
+                    'consent_info_document': get_bool('consent_info_document'),
+                    'consent_email_notifications': get_bool('consent_email_notifications'),
+                    'consent_marketing': get_bool('consent_marketing'),
+                    'consent_data_processing': get_bool('consent_data_processing'),
+                    'consent_pet_gov_platform': get_bool('consent_pet_gov_platform'),
+                }
             )
+            
+            # If questionnaire already existed, update it
+            if not created:
+                questionnaire.has_other_insured_pet = get_bool('has_other_insured_pet')
+                questionnaire.has_been_denied_insurance = get_bool('has_been_denied_insurance')
+                questionnaire.has_special_terms_imposed = get_bool('has_special_terms_imposed')
+                questionnaire.pet_colors = get_str('pet_colors')
+                questionnaire.pet_weight = get_str('pet_weight')
+                questionnaire.is_purebred = is_purebred
+                questionnaire.is_mixed = is_mixed
+                questionnaire.is_crossbreed = is_crossbreed
+                questionnaire.pet_breed_or_crossbreed = get_str('pet_breed_or_crossbreed')
+                questionnaire.special_breed_5_percent = get_bool('special_breed_5_percent') if is_dog else False
+                questionnaire.special_breed_20_percent = get_bool('special_breed_20_percent') if is_dog else False
+                questionnaire.is_healthy = get_bool('is_healthy')
+                questionnaire.is_healthy_details = get_str('is_healthy_details')
+                questionnaire.has_injury_illness_3_years = get_bool('has_injury_illness_3_years')
+                questionnaire.has_injury_illness_details = get_str('has_injury_illness_3_years_details')
+                questionnaire.has_surgical_procedure = get_bool('has_surgical_procedure')
+                questionnaire.has_surgical_procedure_details = get_str('has_surgical_procedure_details')
+                questionnaire.has_examination_findings = get_bool('has_examination_findings')
+                questionnaire.has_examination_findings_details = get_str('has_examination_findings_details')
+                questionnaire.is_sterilized = get_bool('is_sterilized')
+                questionnaire.is_vaccinated_leishmaniasis = get_bool('is_vaccinated_leishmaniasis') if is_dog else False
+                questionnaire.follows_vaccination_program = get_bool('follows_vaccination_program')
+                questionnaire.follows_vaccination_program_details = get_str('follows_vaccination_program_details')
+                questionnaire.has_hereditary_disease = get_bool('has_hereditary_disease')
+                questionnaire.has_hereditary_disease_details = get_str('has_hereditary_disease_details')
+                questionnaire.program = get_str('program') or request.POST.get('program', '')
+                questionnaire.additional_poisoning_coverage = get_bool('additional_poisoning_coverage')
+                questionnaire.additional_blood_checkup = get_bool('additional_blood_checkup')
+                questionnaire.desired_start_date = desired_start_date
+                questionnaire.payment_method = get_str('payment_method')
+                questionnaire.payment_frequency = get_str('payment_frequency')
+                questionnaire.consent_terms_conditions = get_bool('consent_terms_conditions')
+                questionnaire.consent_info_document = get_bool('consent_info_document')
+                questionnaire.consent_email_notifications = get_bool('consent_email_notifications')
+                questionnaire.consent_marketing = get_bool('consent_marketing')
+                questionnaire.consent_data_processing = get_bool('consent_data_processing')
+                questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
+                questionnaire.save()
             
             # Clear questionnaire data from session after successful save
             if 'questionnaire_data' in request.session:
                 del request.session['questionnaire_data']
                 if 'questionnaire_submitted' in request.session:
                     del request.session['questionnaire_submitted']
+            
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Questionnaire {'created' if created else 'updated'} successfully for application {application.id} (Questionnaire ID: {questionnaire.id})")
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Error creating questionnaire for application {application.id}: {e}")
+            logger.error(f"CRITICAL: Error creating/updating questionnaire for application {application.id}: {e}")
             import traceback
             logger.error(traceback.format_exc())
+            # Re-raise the exception so we know questionnaires are failing
+            raise
         
         # Link uploaded documents to this application
         try:

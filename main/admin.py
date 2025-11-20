@@ -17,6 +17,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'status_display',
         'annual_premium',
         'affiliate_code_display',
+        'questionnaire_link',
         'created_at',
         'contract_actions'
     ]
@@ -275,18 +276,20 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     photos_list.short_description = 'Ανεβασμένες Φωτογραφίες'
     
     def questionnaire_link(self, obj):
-        """Display link to questionnaire"""
+        """Display link to questionnaire with ID"""
         try:
             if hasattr(obj, 'questionnaire') and obj.questionnaire:
                 questionnaire = obj.questionnaire
                 url = reverse('admin:main_questionnaire_change', args=[questionnaire.pk])
                 return format_html(
-                    '<a href="{}" target="_blank">📋 Προβολή Ερωτηματολογίου</a>',
-                    url
+                    '<a href="{}" target="_blank" style="font-weight: bold; color: #007bff;">📋 Ερωτηματολόγιο (ID: {})</a>',
+                    url, questionnaire.id
                 )
-        except Exception:
-            pass
-        return format_html('<span style="color: #6c757d;">Δεν υπάρχει ερωτηματολόγιο</span>')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting questionnaire for application {obj.id}: {e}")
+        return format_html('<span style="color: #dc3545; font-weight: bold;">⚠️ Δεν υπάρχει ερωτηματολόγιο</span>')
     questionnaire_link.short_description = 'Ερωτηματολόγιο'
     
     def contract_actions(self, obj):
