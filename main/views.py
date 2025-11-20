@@ -243,12 +243,35 @@ def cat_health_conditions(request):
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
     
+    # List of cat health conditions
+    conditions = [
+        'Καταρράκτης',
+        'Γλαύκωμα',
+        'Καρδιακές παθήσεις',
+        'Αλλεργίες δέρματος',
+        'Διαβήτης',
+        'Παχυσαρκία',
+        'Προβλήματα θυρεοειδούς',
+        'Νεφρικές παθήσεις',
+        'Ηπατικές παθήσεις',
+        'Αναπνευστικά προβλήματα',
+        'Γαστρεντερικές διαταραχές',
+        'Όγκοι/Καρκίνος',
+        'Τραυματισμοί από ατυχήματα',
+        'Χειρουργικές επεμβάσεις',
+        'FIV (Feline Immunodeficiency Virus)',
+        'FeLV (Feline Leukemia Virus)',
+        'FIP (Feline Infectious Peritonitis)',
+        'Προβλήματα ουροποιητικού συστήματος'
+    ]
+    
     context = {
         'pet_type': pet_type,
         'gender': gender,
         'birthdate': birthdate,
         'breed': breed,
-        'name': name
+        'name': name,
+        'conditions': conditions
     }
     return render(request, 'main/cat_health_conditions.html', context)
 
