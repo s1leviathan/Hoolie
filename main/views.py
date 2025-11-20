@@ -247,9 +247,15 @@ def upload_pet_photo(request):
 
 def health_status(request):
     """Pet health status page - NOW REPLACED WITH QUESTIONNAIRE"""
-    # Handle form submission (questionnaire)
+    # Handle form submission (questionnaire) - for now, just redirect to insurance programs
+    # The application will be submitted later from contact_info page
     if request.method == 'POST':
-        return handle_application_submission(request)
+        # Just return success - the frontend will handle redirect to insurance programs
+        from django.http import JsonResponse
+        return JsonResponse({
+            'success': True,
+            'message': 'Το ερωτηματολόγιο συμπληρώθηκε επιτυχώς!'
+        })
     
     # GET request - show questionnaire form (different for dogs and cats)
     pet_type = request.GET.get('type', 'pet')
@@ -385,6 +391,7 @@ def insurance_programs(request):
     name = request.GET.get('name', '')
     health_status = request.GET.get('health_status', '')
     conditions = request.GET.get('conditions', '')
+    is_healthy = request.GET.get('is_healthy', '')  # Get is_healthy from questionnaire
     
     context = {
         'pet_type': pet_type,
@@ -394,6 +401,7 @@ def insurance_programs(request):
         'name': name,
         'health_status': health_status,
         'conditions': conditions,
+        'is_healthy': is_healthy,  # Pass to template
     }
     
     return render(request, 'main/insurance_programs.html', context)
@@ -408,6 +416,7 @@ def non_covered(request):
     health_status = request.GET.get('health_status', '')
     conditions = request.GET.get('conditions', '')
     program = request.GET.get('program', '')
+    is_healthy = request.GET.get('is_healthy', '')  # Get is_healthy from questionnaire
     
     context = {
         'pet_type': pet_type,
@@ -418,6 +427,7 @@ def non_covered(request):
         'health_status': health_status,
         'conditions': conditions,
         'program': program,
+        'is_healthy': is_healthy,  # Pass to template for auto-routing
     }
     
     return render(request, 'main/non_covered.html', context)
@@ -793,12 +803,16 @@ def handle_application_submission(request):
             logger.error(f"Error sending emails for application {application.id}: {e}")
         
         # Redirect to thank you page for all applications
+        # Get is_healthy from questionnaire for passing through URL
+        is_healthy_value = request.POST.get('is_healthy', '')
+        
         return JsonResponse({
             'success': True,
             'message': 'Η αίτησή σας υποβλήθηκε επιτυχώς!',
             'application_number': application.application_number,
             'application_id': application.id,
-            'redirect_url': f'/thank-you/?application_id={application.id}'
+            'redirect_url': f'/thank-you/?application_id={application.id}',
+            'is_healthy': is_healthy_value  # Pass is_healthy for potential use in other flows
         })
         
     except Exception as e:

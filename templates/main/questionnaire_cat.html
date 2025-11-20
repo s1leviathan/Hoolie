@@ -758,7 +758,31 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                window.location.href = data.redirect_url || '/thank-you/';
+                // Get is_healthy from form to pass through URL
+                const isHealthy = document.querySelector('input[name="is_healthy"]:checked')?.value || '';
+                
+                // Get all parameters from URL to pass through
+                const urlParams = new URLSearchParams(window.location.search);
+                const petType = urlParams.get('type') || '{{ pet_type }}';
+                const gender = urlParams.get('gender') || '{{ gender }}';
+                const birthdate = urlParams.get('birthdate') || '{{ birthdate }}';
+                const breed = urlParams.get('breed') || '{{ breed }}';
+                const name = urlParams.get('name') || '{{ name }}';
+                
+                // Redirect to insurance programs with is_healthy parameter
+                const params = new URLSearchParams({
+                    type: petType,
+                    gender: gender,
+                    birthdate: birthdate,
+                    breed: breed,
+                    name: name
+                });
+                
+                if (isHealthy) {
+                    params.set('is_healthy', isHealthy);
+                }
+                
+                window.location.href = `{% url 'main:insurance_programs' %}?${params.toString()}`;
             } else {
                 alert(data.message || 'Σφάλμα κατά την υποβολή');
                 submitBtn.disabled = false;

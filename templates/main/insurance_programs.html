@@ -274,6 +274,7 @@ function selectProgram(program) {
     const name = urlParams.get('name');
     const healthStatus = urlParams.get('health_status');
     const conditions = urlParams.get('conditions');
+    const isHealthy = urlParams.get('is_healthy') || '{{ is_healthy }}'; // Get is_healthy from questionnaire
     
     // Navigate to non-covered page with selected program
     const params = new URLSearchParams({
@@ -286,6 +287,11 @@ function selectProgram(program) {
         conditions: conditions || '',
         program: program
     });
+    
+    // Pass is_healthy if available (from questionnaire)
+    if (isHealthy) {
+        params.set('is_healthy', isHealthy);
+    }
     
     window.location.href = `{% url 'main:non_covered' %}?${params.toString()}`;
 }

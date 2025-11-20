@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const gender = urlParams.get('gender');
     const name = urlParams.get('name');
     const program = urlParams.get('program');
+    const isHealthy = urlParams.get('is_healthy'); // Get is_healthy from questionnaire
     
     // Set pet avatar
     if (petType === 'dog') {
@@ -198,6 +199,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add program-specific styling
         const programCard = document.getElementById('selected-program-display');
         programCard.classList.add(`program-${program}`);
+    }
+    
+    // Auto-route based on questionnaire answer (is_healthy)
+    // If is_healthy is set from questionnaire, automatically route
+    if (isHealthy !== null && isHealthy !== '') {
+        // Delay slightly to allow page to render
+        setTimeout(function() {
+            if (isHealthy === 'true' || isHealthy === true) {
+                // Pet is healthy - automatically route to no_conditions (user_data)
+                selectDeclaration('no_conditions');
+            } else if (isHealthy === 'false' || isHealthy === false) {
+                // Pet is not healthy - automatically route to has_conditions (health_conditions)
+                selectDeclaration('has_conditions');
+            }
+        }, 500); // Small delay to ensure page is fully loaded
     }
 });
 
