@@ -28,4 +28,7 @@ urlpatterns = [
     path('api/validate-affiliate-code/', views.validate_affiliate_code, name='validate_affiliate_code'),
     path('api/upload-pet-document/', views.upload_pet_document, name='upload_pet_document'),
     path('api/upload-pet-photo/', views.upload_pet_photo, name='upload_pet_photo'),
+    
+    # File serving endpoint
+    path('media/<str:file_type>/<int:file_id>/', views.serve_file, name='serve_file'),
 ]

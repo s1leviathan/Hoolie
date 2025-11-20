@@ -360,7 +360,9 @@ class PetDocument(models.Model):
     def get_file_url(self):
         """Get the URL to access the file"""
         if self.file:
-            return self.file.url
+            # Use Django view to serve file instead of direct S3 URL
+            from django.urls import reverse
+            return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
         return None
 
 
@@ -396,7 +398,9 @@ class PetPhoto(models.Model):
     def get_file_url(self):
         """Get the URL to access the photo"""
         if self.file:
-            return self.file.url
+            # Use Django view to serve file instead of direct S3 URL
+            from django.urls import reverse
+            return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
         return None
 
 

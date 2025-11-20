@@ -1,7 +1,8 @@
-from django.shortcuts import render
-from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse, FileResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
 
 def index(request):
     """Main introduction page with beautiful animations"""
@@ -1043,3 +1044,34 @@ def validate_affiliate_code(request):
             'success': False,
             'error': f'Σφάλμα: {str(e)}'
         }, status=500)
+
+def serve_file(request, file_type, file_id):
+    """Serve files from S3 or local storage through Django"""
+    try:
+        if file_type == 'photo':
+            from .models import PetPhoto
+            file_obj = get_object_or_404(PetPhoto, id=file_id)
+        elif file_type == 'document':
+            from .models import PetDocument
+            file_obj = get_object_or_404(PetDocument, id=file_id)
+        else:
+            raise Http404("Invalid file type")
+        
+        if not file_obj.file:
+            raise Http404("File not found")
+        
+        # Check if file exists in storage
+        if not default_storage.exists(file_obj.file.name):
+            raise Http404("File not found in storage")
+        
+        # Open and serve the file
+        file = default_storage.open(file_obj.file.name, 'rb')
+        response = FileResponse(file, content_type=file_obj.file_type)
+        response['Content-Disposition'] = f'inline; filename="{file_obj.original_filename}"'
+        return response
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error serving file {file_type}/{file_id}: {str(e)}")
+        raise Http404("File not found")
