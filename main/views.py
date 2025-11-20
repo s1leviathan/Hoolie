@@ -203,12 +203,35 @@ def dog_health_conditions(request):
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
     
+    # List of dog health conditions
+    conditions = [
+        'Δυσπλασία ισχίου',
+        'Δυσπλασία αγκώνα',
+        'Καταρράκτης',
+        'Γλαύκωμα',
+        'Καρδιακές παθήσεις',
+        'Επιληψία',
+        'Αλλεργίες δέρματος',
+        'Οστεοαρθρίτιδα',
+        'Διαβήτης',
+        'Παχυσαρκία',
+        'Προβλήματα θυρεοειδούς',
+        'Νεφρικές παθήσεις',
+        'Ηπατικές παθήσεις',
+        'Αναπνευστικά προβλήματα',
+        'Γαστρεντερικές διαταραχές',
+        'Όγκοι/Καρκίνος',
+        'Τραυματισμοί από ατυχήματα',
+        'Χειρουργικές επεμβάσεις'
+    ]
+    
     context = {
         'pet_type': pet_type,
         'gender': gender,
         'birthdate': birthdate,
         'breed': breed,
-        'name': name
+        'name': name,
+        'conditions': conditions
     }
     return render(request, 'main/dog_health_conditions.html', context)
 

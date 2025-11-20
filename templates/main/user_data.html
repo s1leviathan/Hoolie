@@ -501,14 +501,24 @@ document.addEventListener('DOMContentLoaded', function() {
 function displayPricing(pricing) {
     const pricingOptions = document.getElementById('pricingOptions');
     
+    // Handle both formats: 'final' or 'annual'
+    const annualPrice = pricing.final || pricing.annual || 0;
+    const sixMonthPrice = pricing.six_month || 0;
+    const threeMonthPrice = pricing.three_month || 0;
+    
+    if (!annualPrice || annualPrice === 0) {
+        console.error('Invalid pricing data:', pricing);
+        return;
+    }
+    
     const pricingHTML = `
-        <div class="pricing-option main-option" onclick="selectPaymentFrequency('annual', ${pricing.final})" style="cursor: pointer;">
+        <div class="pricing-option main-option" onclick="selectPaymentFrequency('annual', ${annualPrice})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Ετήσια Πληρωμή</span>
                 <span class="option-badge recommended">Συνιστάται</span>
             </div>
             <div class="option-price">
-                <span class="price">${pricing.final}€</span>
+                <span class="price">${annualPrice.toFixed(2)}€</span>
                 <span class="period">/έτος</span>
             </div>
             <div class="option-benefits">
@@ -517,29 +527,29 @@ function displayPricing(pricing) {
             </div>
         </div>
         
-        <div class="pricing-option" onclick="selectPaymentFrequency('six_month', ${pricing.six_month})" style="cursor: pointer;">
+        <div class="pricing-option" onclick="selectPaymentFrequency('six_month', ${sixMonthPrice})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Εξαμηνιαία Πληρωμή</span>
             </div>
             <div class="option-price">
-                <span class="price">${pricing.six_month}€</span>
+                <span class="price">${sixMonthPrice.toFixed(2)}€</span>
                 <span class="period">/6μηνο</span>
             </div>
             <div class="option-total">
-                <small>Συνολικά: ${(pricing.six_month * 2).toFixed(2)}€/έτος</small>
+                <small>Συνολικά: ${(sixMonthPrice * 2).toFixed(2)}€/έτος</small>
             </div>
         </div>
         
-        <div class="pricing-option" onclick="selectPaymentFrequency('three_month', ${pricing.three_month})" style="cursor: pointer;">
+        <div class="pricing-option" onclick="selectPaymentFrequency('three_month', ${threeMonthPrice})" style="cursor: pointer;">
             <div class="option-header">
                 <span class="option-title">Τριμηνιαία Πληρωμή</span>
             </div>
             <div class="option-price">
-                <span class="price">${pricing.three_month}€</span>
+                <span class="price">${threeMonthPrice.toFixed(2)}€</span>
                 <span class="period">/3μηνο</span>
             </div>
             <div class="option-total">
-                <small>Συνολικά: ${(pricing.three_month * 4).toFixed(2)}€/έτος</small>
+                <small>Συνολικά: ${(threeMonthPrice * 4).toFixed(2)}€/έτος</small>
             </div>
         </div>
     `;
