@@ -7,10 +7,8 @@
 <section class="hero-section">
     <div class="container">
         <div class="hero-content">
-            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                    Τι δεν Καλύπτει το πρόγραμμα; 🔍
-                </span>
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--brand-primary);">
+                Τι δεν Καλύπτει το πρόγραμμα; 🔍
             </h1>
             
             <p class="hero-subtitle" style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto;">
@@ -201,20 +199,8 @@ document.addEventListener('DOMContentLoaded', function() {
         programCard.classList.add(`program-${program}`);
     }
     
-    // Auto-route based on questionnaire answer (is_healthy)
-    // If is_healthy is set from questionnaire, automatically route
-    if (isHealthy !== null && isHealthy !== '') {
-        // Delay slightly to allow page to render
-        setTimeout(function() {
-            if (isHealthy === 'true' || isHealthy === true) {
-                // Pet is healthy - automatically route to no_conditions (user_data)
-                selectDeclaration('no_conditions');
-            } else if (isHealthy === 'false' || isHealthy === false) {
-                // Pet is not healthy - automatically route to has_conditions (health_conditions)
-                selectDeclaration('has_conditions');
-            }
-        }, 500); // Small delay to ensure page is fully loaded
-    }
+    // Show the page and let user make their choice
+    // We don't auto-route anymore - user must see the non-covered page and declare
 });
 
 function selectDeclaration(choice) {
