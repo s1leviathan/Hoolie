@@ -108,31 +108,19 @@
                 </div>
             </div>
             
-            <!-- Declaration Section -->
+            <!-- Acknowledgment Section -->
             <div class="declaration-section">
                 <h3 class="declaration-title">
                     Δήλωση για <span id="pet-name-in-question">το κατοικίδιό σας</span>
                 </h3>
                 <p class="declaration-subtitle">
-                    Παρακαλούμε δηλώστε εάν <span id="pet-name-in-subtitle">το κατοικίδιό σας</span> έχει κάποια από τις παραπάνω καταστάσεις:
+                    Έχετε διαβάσει και κατανοήσει τις παραπάνω πληροφορίες σχετικά με το τι δεν καλύπτει το πρόγραμμα;
                 </p>
                 
-                <div class="declaration-options">
-                    <div class="declaration-card has-conditions" onclick="selectDeclaration('has_conditions')">
-                        <div class="declaration-icon">⚠️</div>
-                        <div class="declaration-content">
-                            <h4><span id="pet-name-has">Το κατοικίδιό μου</span> έχει μία από αυτές τις καταστάσεις</h4>
-                            <p>Θα σας καθοδηγήσουμε για την καλύτερη λύση</p>
-                        </div>
-                    </div>
-                    
-                    <div class="declaration-card no-conditions" onclick="selectDeclaration('no_conditions')">
-                        <div class="declaration-icon">✅</div>
-                        <div class="declaration-content">
-                            <h4><span id="pet-name-none">Το κατοικίδιό μου</span> δεν έχει καμία από αυτές</h4>
-                            <p>Μπορούμε να συνεχίσουμε με την ασφάλιση</p>
-                        </div>
-                    </div>
+                <div class="acknowledgment-button-container" style="text-align: center; margin-top: 2rem;">
+                    <button class="btn btn-lg" id="acknowledgeBtn" onclick="acknowledgeAndContinue()" style="background: var(--brand-gradient); color: white; border: none; padding: 1.5rem 3rem; border-radius: 15px; font-weight: 600; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(90, 200, 189, 0.3); transition: all 0.3s ease;">
+                        Έλαβα Γνώση ✓
+                    </button>
                 </div>
             </div>
             
@@ -199,9 +187,31 @@ document.addEventListener('DOMContentLoaded', function() {
         programCard.classList.add(`program-${program}`);
     }
     
-    // Show the page and let user make their choice
-    // We don't auto-route anymore - user must see the non-covered page and declare
+    // Show the page - user must acknowledge before continuing
 });
+
+function acknowledgeAndContinue() {
+    // Get all parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const petType = urlParams.get('type');
+    const gender = urlParams.get('gender');
+    const birthdate = urlParams.get('birthdate');
+    const breed = urlParams.get('breed');
+    const name = urlParams.get('name');
+    const program = urlParams.get('program');
+    const isHealthy = urlParams.get('is_healthy'); // Get is_healthy from questionnaire
+    
+    // Check if pet is healthy based on questionnaire answer
+    // If is_healthy is false, or if there are health issues, route to health conditions
+    // Otherwise, route to user_data
+    if (isHealthy === 'false' || isHealthy === false) {
+        // Pet is not healthy - route to health conditions page
+        selectDeclaration('has_conditions');
+    } else {
+        // Pet is healthy - route to user_data
+        selectDeclaration('no_conditions');
+    }
+}
 
 function selectDeclaration(choice) {
     // Get all parameters from URL
