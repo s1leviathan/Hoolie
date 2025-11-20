@@ -792,6 +792,7 @@ def thank_you(request):
     """Thank you page after successful submission"""
     return render(request, 'main/thank_you.html')
 
+@csrf_exempt
 def upload_pet_document(request):
     """Handle pet document upload via AJAX"""
     if request.method == 'POST':
@@ -833,6 +834,7 @@ def upload_pet_document(request):
     
     return JsonResponse({'success': False, 'message': 'Method not allowed'})
 
+@csrf_exempt
 def upload_pet_photo(request):
     """Handle pet photo upload via AJAX"""
     if request.method == 'POST':
