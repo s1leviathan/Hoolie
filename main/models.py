@@ -398,3 +398,92 @@ class PetPhoto(models.Model):
         if self.file:
             return self.file.url
         return None
+
+
+class Questionnaire(models.Model):
+    """Model to store comprehensive insurance questionnaire answers"""
+    
+    # Link to insurance application
+    application = models.OneToOneField(InsuranceApplication, on_delete=models.CASCADE, related_name='questionnaire', null=True, blank=True)
+    
+    # Section 1.1: Questionnaire for the Insured (YES/NO)
+    has_other_insured_pet = models.BooleanField(default=False, help_text="Α. Έχετε άλλο, ήδη ασφαλιζόμενο κατοικίδιο στο ίδιο ασφαλιστικό πρόγραμμα;")
+    has_been_denied_insurance = models.BooleanField(default=False, help_text="Β. Σας έχουν αρνηθεί ή ακυρώσει την ανανέωση ή σας έχουν ή αρνηθεί στο παρελθόν πρότασή σας")
+    has_special_terms_imposed = models.BooleanField(default=False, help_text="Γ. Σας έχουν επιβάλλει Ειδικούς Όρους στο παρελθόν")
+    
+    # Section 2: Pet Details (stored in InsuranceApplication, but questionnaire may have additional info)
+    pet_colors = models.CharField(max_length=200, blank=True, null=True, help_text="Χρώματα κατοικιδίου")
+    pet_weight = models.CharField(max_length=50, blank=True, null=True, help_text="Βάρος")
+    is_purebred = models.BooleanField(default=False, help_text="Καθαρόαιμο")
+    is_mixed = models.BooleanField(default=False, help_text="Ημίαιμο")
+    is_crossbreed = models.BooleanField(default=False, help_text="Διασταύρωση ράτσας")
+    
+    # Section 2.1: Special Breed Cases (surcharges applied in pricing)
+    special_breed_5_percent = models.BooleanField(default=False, help_text="Cane Corso, Dogo Argentino, Rottweiler (5% surcharge)")
+    special_breed_20_percent = models.BooleanField(default=False, help_text="Pit Bull, French Bulldog, English Bulldog, Chow Chow (20% surcharge)")
+    
+    # Section 2.2: Pet Questionnaire (YES/NO with details)
+    is_healthy = models.BooleanField(default=True, help_text="Α. Το κατοικίδιο είναι υγιές κατά την ημερομηνία αίτησης;")
+    is_healthy_details = models.TextField(blank=True, null=True, help_text="Εάν ΟΧΙ, περισσότερες λεπτομέρειες")
+    
+    has_injury_illness_3_years = models.BooleanField(default=False, help_text="Β. Υπήρξε τραυματισμός, ασθένεια τα τελευταία 3 έτη;")
+    has_injury_illness_details = models.TextField(blank=True, null=True, help_text="Εάν ΝΑΙ, περισσότερες λεπτομέρειες")
+    
+    has_surgical_procedure = models.BooleanField(default=False, help_text="Γ. Έχει υποβληθεί σε χειρουργική επέμβαση;")
+    has_surgical_procedure_details = models.TextField(blank=True, null=True, help_text="Εάν ΝΑΙ, περισσότερες λεπτομέρειες")
+    
+    has_examination_findings = models.BooleanField(default=False, help_text="Δ. Έχει υποβληθεί σε εξέταση (ακτινογραφία, MRI, υπερηχογράφημα) και υπήρξαν ευρήματα;")
+    has_examination_findings_details = models.TextField(blank=True, null=True, help_text="Εάν ΝΑΙ, περισσότερες λεπτομέρειες")
+    
+    is_sterilized = models.BooleanField(default=False, help_text="Ε. Έχει υποβληθεί σε στείρωση;")
+    
+    is_vaccinated_leishmaniasis = models.BooleanField(default=False, help_text="Ζ. Το κατοικίδιο έχει εμβολιαστεί κατά της λεϊσμανίασης;")
+    
+    follows_vaccination_program = models.BooleanField(default=True, help_text="Η. Ακολουθεί πιστά το πρόγραμμα εμβολιασμών;")
+    follows_vaccination_program_details = models.TextField(blank=True, null=True, help_text="Εάν ΟΧΙ, περισσότερες λεπτομέρειες")
+    
+    has_hereditary_disease = models.BooleanField(default=False, help_text="Θ. Έχει το κατοικίδιο οποιαδήποτε κληρονομική ασθένεια;")
+    has_hereditary_disease_details = models.TextField(blank=True, null=True, help_text="Αν ΝΑΙ, αναφέρετε ποια/ποιες")
+    
+    # Section 3: Program Selection
+    program = models.CharField(max_length=20, choices=[('silver', 'Silver'), ('gold', 'Gold'), ('platinum', 'Platinum'), ('dynasty', 'Dynasty')], blank=True, null=True)
+    additional_poisoning_coverage = models.BooleanField(default=False, help_text="Πρόσθετη Κάλυψη Δηλητηρίασης")
+    additional_blood_checkup = models.BooleanField(default=False, help_text="Επιπλέον Παροχή Προνομιακού Αιματολογικού Check-Up με 28€/έτος")
+    
+    # Section 4: Desired Start Date
+    desired_start_date = models.DateField(blank=True, null=True, help_text="Επιθυμητή Έναρξη Ασφάλισης")
+    
+    # Section 5: Payment Method
+    PAYMENT_METHOD_CHOICES = [
+        ('card', 'Χρεωστική/Πιστωτική/Προπληρωμένη κάρτα'),
+        ('bank_deposit', 'Τραπεζική κατάθεση'),
+        ('cash', 'Μετρητά'),
+    ]
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True)
+    PAYMENT_FREQUENCY_CHOICES = [
+        ('annual', 'Ετήσια Πληρωμή'),
+        ('six_month', 'Εξάμηνη Πληρωμή'),
+    ]
+    payment_frequency = models.CharField(max_length=20, choices=PAYMENT_FREQUENCY_CHOICES, blank=True, null=True)
+    
+    # Section 6: Declarations - Authorizations - Consents
+    consent_terms_conditions = models.BooleanField(default=False, help_text="1. Γνωρίζω ότι στην ασφάλιση αυτή ισχύουν οι Γενικοί και Ειδικοί Όροι")
+    consent_info_document = models.BooleanField(default=False, help_text="2. Παρέλαβα το ενημερωτικό έντυπο")
+    consent_email_notifications = models.BooleanField(default=False, help_text="3. Ενημέρωση σχετικά με ασφάλιση μέσω E-mail")
+    consent_marketing = models.BooleanField(default=False, help_text="4. Ενημέρωση για διαφημιστικούς, εμπορικούς σκοπούς")
+    consent_data_processing = models.BooleanField(default=False, help_text="5. Ενημέρωση σχετικά με Επεξεργασία Προσωπικών Δεδομένων")
+    consent_pet_gov_platform = models.BooleanField(default=False, help_text="Συναίνεση για χρήση πλατφόρμας pet.gov.gr")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Questionnaire'
+        verbose_name_plural = 'Questionnaires'
+    
+    def __str__(self):
+        if self.application:
+            return f"Questionnaire for {self.application.application_number or self.application.contract_number}"
+        return f"Questionnaire {self.id}"

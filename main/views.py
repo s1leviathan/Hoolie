@@ -557,7 +557,8 @@ def user_data(request):
     if request.method == 'POST':
         return handle_application_submission(request)
     
-    return render(request, 'main/user_data.html', context)
+    # Render questionnaire template instead of user_data
+    return render(request, 'main/questionnaire.html', context)
 
 def handle_application_submission(request):
     """Handle insurance application form submission"""
@@ -646,6 +647,71 @@ def handle_application_submission(request):
             # Status
             status='submitted'
         )
+        
+        # Create and save questionnaire
+        try:
+            from .models import Questionnaire
+            from datetime import datetime
+            
+            # Parse desired start date
+            desired_start_date = None
+            if request.POST.get('desired_start_date'):
+                try:
+                    desired_start_date = datetime.strptime(request.POST.get('desired_start_date'), '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            
+            questionnaire = Questionnaire.objects.create(
+                application=application,
+                # Section 1.1
+                has_other_insured_pet=request.POST.get('has_other_insured_pet') == 'true',
+                has_been_denied_insurance=request.POST.get('has_been_denied_insurance') == 'true',
+                has_special_terms_imposed=request.POST.get('has_special_terms_imposed') == 'true',
+                # Section 2
+                pet_colors=request.POST.get('pet_colors', ''),
+                pet_weight=request.POST.get('pet_weight', ''),
+                is_purebred=request.POST.get('is_purebred') == 'true',
+                is_mixed=request.POST.get('is_mixed') == 'true',
+                is_crossbreed=request.POST.get('is_crossbreed') == 'true',
+                # Section 2.1
+                special_breed_5_percent=request.POST.get('special_breed_5_percent') == 'true',
+                special_breed_20_percent=request.POST.get('special_breed_20_percent') == 'true',
+                # Section 2.2
+                is_healthy=request.POST.get('is_healthy') == 'true',
+                is_healthy_details=request.POST.get('is_healthy_details', ''),
+                has_injury_illness_3_years=request.POST.get('has_injury_illness_3_years') == 'true',
+                has_injury_illness_details=request.POST.get('has_injury_illness_details', ''),
+                has_surgical_procedure=request.POST.get('has_surgical_procedure') == 'true',
+                has_surgical_procedure_details=request.POST.get('has_surgical_procedure_details', ''),
+                has_examination_findings=request.POST.get('has_examination_findings') == 'true',
+                has_examination_findings_details=request.POST.get('has_examination_findings_details', ''),
+                is_sterilized=request.POST.get('is_sterilized') == 'true',
+                is_vaccinated_leishmaniasis=request.POST.get('is_vaccinated_leishmaniasis') == 'true',
+                follows_vaccination_program=request.POST.get('follows_vaccination_program') == 'true',
+                follows_vaccination_program_details=request.POST.get('follows_vaccination_program_details', ''),
+                has_hereditary_disease=request.POST.get('has_hereditary_disease') == 'true',
+                has_hereditary_disease_details=request.POST.get('has_hereditary_disease_details', ''),
+                # Section 3
+                program=request.POST.get('program', ''),
+                additional_poisoning_coverage=request.POST.get('additional_poisoning_coverage') == 'true',
+                additional_blood_checkup=request.POST.get('additional_blood_checkup') == 'true',
+                # Section 4
+                desired_start_date=desired_start_date,
+                # Section 5
+                payment_method=request.POST.get('payment_method', ''),
+                payment_frequency=request.POST.get('payment_frequency', ''),
+                # Section 6
+                consent_terms_conditions=request.POST.get('consent_terms_conditions') == 'true',
+                consent_info_document=request.POST.get('consent_info_document') == 'true',
+                consent_email_notifications=request.POST.get('consent_email_notifications') == 'true',
+                consent_marketing=request.POST.get('consent_marketing') == 'true',
+                consent_data_processing=request.POST.get('consent_data_processing') == 'true',
+                consent_pet_gov_platform=request.POST.get('consent_pet_gov_platform') == 'true',
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating questionnaire for application {application.id}: {e}")
         
         # Link uploaded documents to this application
         try:

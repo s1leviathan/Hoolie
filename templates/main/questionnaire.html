@@ -1,0 +1,889 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ερωτηματολόγιο Ασφάλισης - Hoolie Pet Insurance{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                <span style="background: linear-gradient(45deg, #ffffff, #f0f8ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Ερωτηματολόγιο Ασφάλισης 📋
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle" style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                Παρακαλούμε συμπληρώστε το ερωτηματολόγιο για την ολοκλήρωση της ασφάλισης
+            </p>
+            
+            <form id="questionnaireForm" class="questionnaire-form">
+                {% csrf_token %}
+                
+                <!-- Hidden fields for pet data from previous steps -->
+                <input type="hidden" name="type" id="petType" value="{{ pet_type }}">
+                <input type="hidden" name="gender" id="petGender" value="{{ gender }}">
+                <input type="hidden" name="birthdate" id="petBirthdate" value="{{ birthdate }}">
+                <input type="hidden" name="breed" id="petBreed" value="{{ breed }}">
+                <input type="hidden" name="name" id="petName" value="{{ name }}">
+                <input type="hidden" name="health_status" id="healthStatus" value="{{ health_status }}">
+                <input type="hidden" name="health_conditions" id="healthConditions" value="{{ health_conditions }}">
+                <input type="hidden" name="program" id="selectedProgram" value="{{ program }}">
+                
+                <!-- Section 1.1: Questionnaire for the Insured -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">1.1 Ερωτηματολόγιο Συμβαλλόμενου</h2>
+                    
+                    <div class="question-group">
+                        <label class="question-label">
+                            <strong>Α.</strong> Έχετε άλλο, ήδη ασφαλιζόμενο κατοικίδιο στο ίδιο ασφαλιστικό πρόγραμμα;
+                        </label>
+                        <div class="yes-no-group">
+                            <label class="radio-label">
+                                <input type="radio" name="has_other_insured_pet" value="true" required>
+                                <span>ΝΑΙ</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="has_other_insured_pet" value="false" required>
+                                <span>ΟΧΙ</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="question-group">
+                        <label class="question-label">
+                            <strong>Β.</strong> Σας έχουν αρνηθεί ή ακυρώσει την ανανέωση ή σας έχουν ή αρνηθεί στο παρελθόν πρότασή σας
+                            για ασφάλιση των παραπάνω κινδύνων (για οποιοδήποτε κατοικίδιο είχατε στο παρελθόν ή που θέλατε να ασφαλίσετε);
+                        </label>
+                        <div class="yes-no-group">
+                            <label class="radio-label">
+                                <input type="radio" name="has_been_denied_insurance" value="true" required>
+                                <span>ΝΑΙ</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="has_been_denied_insurance" value="false" required>
+                                <span>ΟΧΙ</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="question-group">
+                        <label class="question-label">
+                            <strong>Γ.</strong> Σας έχουν επιβάλλει Ειδικούς Όρους στο παρελθόν για σχετική ασφάλιση (για οποιοδήποτε
+                            κατοικίδιο είχατε στο παρελθόν ή που θέλατε να ασφαλίσετε);
+                        </label>
+                        <div class="yes-no-group">
+                            <label class="radio-label">
+                                <input type="radio" name="has_special_terms_imposed" value="true" required>
+                                <span>ΝΑΙ</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="has_special_terms_imposed" value="false" required>
+                                <span>ΟΧΙ</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 2: Pet Details -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">2. Στοιχεία Κατοικίδιου</h2>
+                    
+                    <div class="pet-details-display">
+                        <div class="detail-row">
+                            <strong>Όνομα:</strong> <span id="displayPetName">{{ name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Φύλο:</strong> <span id="displayPetGender">{{ gender|title }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Ράτσα:</strong> <span id="displayPetBreed">{{ breed }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Ημ/νία Γέννησης:</strong> <span id="displayPetBirthdate">{{ birthdate }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pet_colors">Χρώματα:</label>
+                        <input type="text" id="pet_colors" name="pet_colors" placeholder="π.χ. Καφέ, Λευκό">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pet_weight">Βάρος:</label>
+                        <input type="text" id="pet_weight" name="pet_weight" placeholder="π.χ. 15 κιλά">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="microchip">Αρ. Σήμανσης (Microchip):</label>
+                        <input type="text" id="microchip" name="microchip" placeholder="Αριθμός microchip">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Τύπος:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_purebred" value="true">
+                                <span>Καθαρόαιμο</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_mixed" value="true">
+                                <span>Ημίαιμο</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_crossbreed" value="true">
+                                <span>Ράτσα / Διασταύρωση Ράτσας</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 2.1: Special Breed Cases -->
+                    <div class="special-breed-section">
+                        <h3 class="subsection-title">2.1. Ειδική Περίπτωση Ράτσας</h3>
+                        <p class="info-text">Στη περίπτωση που ο σκύλος σας ανήκει σε μία από τις παρακάτω ράτσες, ισχύουν τα παρακάτω επασφάλιστρα:</p>
+                        
+                        <div class="breed-surcharge-group">
+                            <div class="surcharge-item">
+                                <strong>Επασφάλιστρο 5%:</strong>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_5_percent" value="true">
+                                        <span>Cane Corso</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_5_percent" value="true">
+                                        <span>Dogo Argentino</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_5_percent" value="true">
+                                        <span>Rottweiler</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="surcharge-item">
+                                <strong>Επασφάλιστρο 20%:</strong>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_20_percent" value="true">
+                                        <span>Pit Bull</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_20_percent" value="true">
+                                        <span>French Bulldog</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_20_percent" value="true">
+                                        <span>English Bulldog</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="special_breed_20_percent" value="true">
+                                        <span>Chow Chow</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 2.2: Pet Questionnaire -->
+                    <div class="pet-questionnaire-section">
+                        <h3 class="subsection-title">2.2 Ερωτηματολόγιο Κατοικίδιου</h3>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Α.</strong> Το κατοικίδιο είναι υγιές κατά την ημερομηνία αίτησης ασφάλισης;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="is_healthy" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="is_healthy" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="is_healthy_details" style="display: none;">
+                                <label>Εάν ΟΧΙ, παρακαλώ δώστε περισσότερες λεπτομέρειες:</label>
+                                <textarea name="is_healthy_details" rows="3" placeholder="Περιγράψτε τα προβλήματα υγείας"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Β.</strong> Υπήρξε οποιοσδήποτε τραυματισμός, ασθένεια στο κατοικίδιο ζώο σας τα τελευταία 3 έτη;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="has_injury_illness_3_years" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="has_injury_illness_3_years" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="has_injury_illness_details" style="display: none;">
+                                <label>Εάν ΝΑΙ, παρακαλώ δώστε περισσότερες λεπτομέρειες:</label>
+                                <textarea name="has_injury_illness_details" rows="3" placeholder="Περιγράψτε τον τραυματισμό/ασθένεια"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Γ.</strong> Έχει υποβληθεί σε κάποια χειρουργική επέμβαση;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="has_surgical_procedure" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="has_surgical_procedure" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="has_surgical_procedure_details" style="display: none;">
+                                <label>Εάν ΝΑΙ, παρακαλώ δώστε περισσότερες λεπτομέρειες:</label>
+                                <textarea name="has_surgical_procedure_details" rows="3" placeholder="Περιγράψτε τη χειρουργική επέμβαση"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Δ.</strong> Έχει υποβληθεί ποτέ σε εξέταση, όπως ακτινογραφία, μαγνητική, υπερηχογράφημα και υπήρξαν ευρήματα;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="has_examination_findings" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="has_examination_findings" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="has_examination_findings_details" style="display: none;">
+                                <label>Εάν ΝΑΙ, παρακαλώ δώστε περισσότερες λεπτομέρειες:</label>
+                                <textarea name="has_examination_findings_details" rows="3" placeholder="Περιγράψτε τα ευρήματα"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Ε.</strong> Έχει υποβληθεί σε στείρωση;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="is_sterilized" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="is_sterilized" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Ζ.</strong> Το κατοικίδιο έχει εμβολιαστεί κατά της λεϊσμανίασης;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="is_vaccinated_leishmaniasis" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="is_vaccinated_leishmaniasis" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Η.</strong> Ακολουθεί πιστά το πρόγραμμα εμβολιασμών;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="follows_vaccination_program" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="follows_vaccination_program" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="follows_vaccination_program_details" style="display: none;">
+                                <label>Εάν ΟΧΙ, παρακαλώ δώστε περισσότερες λεπτομέρειες:</label>
+                                <textarea name="follows_vaccination_program_details" rows="3" placeholder="Περιγράψτε γιατί δεν ακολουθεί"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="question-group">
+                            <label class="question-label">
+                                <strong>Θ.</strong> Έχει το κατοικίδιο οποιαδήποτε κληρονομική ασθένεια;
+                            </label>
+                            <div class="yes-no-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="has_hereditary_disease" value="true" required>
+                                    <span>ΝΑΙ</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="has_hereditary_disease" value="false" required>
+                                    <span>ΟΧΙ</span>
+                                </label>
+                            </div>
+                            <div class="details-field" id="has_hereditary_disease_details" style="display: none;">
+                                <label>Αν ΝΑΙ, παρακαλώ αναφέρετε παρακάτω ποια/ποιες:</label>
+                                <textarea name="has_hereditary_disease_details" rows="3" placeholder="Αναφέρετε τις κληρονομικές ασθένειες"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 3: Program Selection -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">3. Επιλογή Προγράμματος</h2>
+                    
+                    <div class="form-group">
+                        <label>Πρόγραμμα Ασφάλισης:</label>
+                        <div class="program-selection">
+                            <label class="radio-label program-option">
+                                <input type="radio" name="program" value="silver" {% if program == 'silver' %}checked{% endif %} required>
+                                <span>SILVER</span>
+                            </label>
+                            <label class="radio-label program-option">
+                                <input type="radio" name="program" value="gold" {% if program == 'gold' %}checked{% endif %} required>
+                                <span>GOLD</span>
+                            </label>
+                            <label class="radio-label program-option">
+                                <input type="radio" name="program" value="platinum" {% if program == 'platinum' %}checked{% endif %} required>
+                                <span>PLATINUM</span>
+                            </label>
+                            <label class="radio-label program-option">
+                                <input type="radio" name="program" value="dynasty" {% if program == 'dynasty' %}checked{% endif %} required>
+                                <span>DYNASTY</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="additional_poisoning_coverage" value="true">
+                            <span>Πρόσθετη Κάλυψη Δηλητηρίασης (Silver: 18€, Gold: 20€, Platinum/Dynasty: 25€)</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="additional_blood_checkup" value="true">
+                            <span>Επιπλέον Παροχή Προνομιακού Αιματολογικού Check-Up με 28€/έτος</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Section 4: Desired Start Date -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">4. Επιθυμητή Έναρξη Ασφάλισης</h2>
+                    
+                    <div class="form-group">
+                        <label for="desired_start_date">Ημερομηνία Έναρξης:</label>
+                        <input type="date" id="desired_start_date" name="desired_start_date" required>
+                    </div>
+                </div>
+                
+                <!-- Section 5: Payment Method -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">5. Τρόπος Πληρωμής Ασφαλίστρων</h2>
+                    
+                    <div class="form-group">
+                        <label>Τρόπος Πληρωμής:</label>
+                        <div class="payment-method-selection">
+                            <label class="radio-label">
+                                <input type="radio" name="payment_method" value="card" required>
+                                <span>Χρεωστική/Πιστωτική/Προπληρωμένη κάρτα</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="payment_method" value="bank_deposit" required>
+                                <span>Τραπεζική κατάθεση</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="payment_method" value="cash" required>
+                                <span>Μετρητά</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Συχνότητα Πληρωμής:</label>
+                        <div class="payment-frequency-selection">
+                            <label class="radio-label">
+                                <input type="radio" name="payment_frequency" value="annual" required>
+                                <span>Ετήσια Πληρωμή</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="payment_frequency" value="six_month" required>
+                                <span>Εξάμηνη Πληρωμή</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 6: User Information -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">Στοιχεία Ασφαλισμένου</h2>
+                    
+                    <div class="form-group">
+                        <label for="fullName">Ονοματεπώνυμο: <span class="required">*</span></label>
+                        <input type="text" id="fullName" name="fullName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="afm">Α.Φ.Μ.: <span class="required">*</span></label>
+                        <input type="text" id="afm" name="afm" required maxlength="9" pattern="[0-9]{9}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Τηλέφωνο: <span class="required">*</span></label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address">Διεύθυνση: <span class="required">*</span></label>
+                        <input type="text" id="address" name="address" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="postalCode">Τ.Κ.: <span class="required">*</span></label>
+                        <input type="text" id="postalCode" name="postalCode" required maxlength="5" pattern="[0-9]{5}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email: <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+                
+                <!-- Section 6: Declarations -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">6. Δηλώσεις – Εξουσιοδοτήσεις – Συγκαταθέσεις</h2>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_terms_conditions" value="true" required>
+                            <span><strong>1.</strong> Γνωρίζω ότι στην ασφάλιση αυτή ισχύουν οι Γενικοί και Ειδικοί Όροι που μου παραδόθηκαν αλλά και των οποίων έλαβα γνώση διαβάζοντας τους στην ιστοσελίδα της εταιρίας σας. Στους Όρους αυτούς περιλαμβάνονται και Εξαιρέσεις τις οποίες και αποδέχομαι. Με την παρούσα υποβάλλω αίτηση ασφάλισης που θα περιλαμβάνει όλους τους ανωτέρω Γενικούς και Ειδικούς Όρους ασφάλισης.</span>
+                        </label>
+                    </div>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_info_document" value="true" required>
+                            <span><strong>2.</strong> Παρέλαβα το ενημερωτικό έντυπο με τις πληροφορίες που προβλέπονται από το άρθρο 150 και 151 του Ν. 4364/2016 όπως αυτό ισχύει και τις σχετικές δηλώσεις εναντίωσης και υπαναχώρησης, τα οποία και αποδέχομαι.</span>
+                        </label>
+                    </div>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_email_notifications" value="true" required>
+                            <span><strong>3. Ενημέρωση σχετικά με ασφάλιση μέσω E-mail.</strong> Αποδέχομαι την ενημέρωση και αποστολή εγγράφων που αφορούν στην ασφάλιση (π.χ. Ασφαλιστήριο Συμβόλαιο, Ανανέωση, Ειδοποίηση Πληρωμής κ.λπ.) μέσω της ηλεκτρονικής διεύθυνσης (e-mail).</span>
+                        </label>
+                    </div>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_marketing" value="true">
+                            <span><strong>4. Ενημέρωση για διαφημιστικούς, εμπορικούς σκοπούς.</strong> Αποδέχομαι να λαμβάνω ενημερώσεις για διαφημιστικούς, εμπορικούς ή ερευνητικούς σκοπούς και σκοπούς προώθησης προϊόντων και υπηρεσιών με αυτοματοποιημένα μέσα π.χ. μέσω e-email, SMS, μέσων κοινωνικής δικτύωσης ή τηλεφωνικά κατά τη διάρκεια της ασφάλισης και έως 5 έτη μετά τη λήξη της και τη δυνατότητα να τροποποιώ ή/και να ανακαλώ οποτεδήποτε εγγράφως, τη συγκατάθεση μου για την επιλογή του τρόπου επικοινωνίας και λήψης ενημερώσεων για διαφημιστικούς ή ερευνητικούς σκοπούς (αποστολή e-mail στο dpo@hoolie.gr ή τηλεφωνικά στο 2104405888).</span>
+                        </label>
+                    </div>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_data_processing" value="true" required>
+                            <span><strong>5. Ενημέρωση σχετικά με Επεξεργασία Προσωπικών Δεδομένων</strong> Παρέλαβα, ανέγνωσα και ενημερώθηκα από το «Έντυπο Ενημέρωσης για την επεξεργασία δεδομένων προσωπικού χαρακτήρα και ειδικής κατηγορίας δεδομένων προσωπικού χαρακτήρα» για το πλαίσιο που διέπει την επεξεργασία δεδομένων προσωπικού χαρακτήρα και ειδικής κατηγορίας δεδομένων προσωπικού χαρακτήρα που περιλαμβάνονται στη σύμβαση καθώς και οποιωνδήποτε άλλων έρθουν σε γνώση της Εταιρίας και έχουν σχέση με τη σύμβαση ασφάλισης και για τα δικαιώματα που έχω και διατηρώ ως υποκείμενο των δεδομένων (πρόσβασης, διόρθωσης, διαγραφής, περιορισμού της επεξεργασίας, φορητότητας, εναντίωσης στην επεξεργασία αυτών, το δικαίωμα εξασφάλισης ανθρώπινης παρέμβασης σε αυτοματοποιημένες διαδικασίες) και την άσκηση τους με την αποστολή e-mail στην ηλεκτρονική διεύθυνση dpo@hoolie.gr και αναγνωρίζω ότι είναι απολύτως αναγκαία για τον σκοπό και τη λειτουργία της σύμβασης ασφάλισης, προκειμένου να αξιολογηθεί ο ασφαλιστικός κίνδυνος, να υπολογισθεί σωστά το ασφάλιστρο και να εκπληρωθεί ο σκοπός και η λειτουργία της ασφαλιστικής σύμβασης. Γνωρίζω ότι άρνηση ή ανάκληση της σχετικής συναίνεσης επεξεργασίας ΔΠΧ και ΕΚΔΠΧ, δίνει το δικαίωμα στην Εταιρία να καταγγείλει ή να μην δεχτεί τη σύμβαση.</span>
+                        </label>
+                    </div>
+                    
+                    <div class="declaration-group">
+                        <label class="checkbox-label declaration-label">
+                            <input type="checkbox" name="consent_pet_gov_platform" value="true" required>
+                            <span>Δηλώνω υπεύθυνα ότι παρέχω τη ρητή και ανεπιφύλακτη συναίνεσή μου ώστε η εταιρεία να προβεί, μέσω της πλατφόρμας pet.gov.gr, σε κάθε απαραίτητη ενέργεια για την ολοκλήρωση της διαδικασίας ασφάλισης του κατοικιδίου μου, περιλαμβανομένης...</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-lg btn-light" onclick="goBack()">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Πίσω
+                    </button>
+                    <button type="submit" class="btn btn-lg" id="submitBtn">
+                        Υποβολή Αίτησης
+                        <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+.questionnaire-form {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.questionnaire-section {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 40px rgba(90, 200, 189, 0.2);
+}
+
+.section-title {
+    color: var(--brand-primary);
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--brand-primary);
+}
+
+.subsection-title {
+    color: var(--brand-primary);
+    font-size: 1.4rem;
+    margin: 1.5rem 0 1rem;
+}
+
+.question-group {
+    margin-bottom: 2rem;
+}
+
+.question-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #333;
+    line-height: 1.6;
+}
+
+.yes-no-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f5f5f5;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.radio-label:hover {
+    background: #e8f5e9;
+}
+
+.radio-label input[type="radio"]:checked + span {
+    color: var(--brand-primary);
+    font-weight: 600;
+}
+
+.radio-label input[type="radio"]:checked ~ span {
+    color: var(--brand-primary);
+}
+
+.details-field {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 10px;
+    border-left: 3px solid var(--brand-primary);
+}
+
+.details-field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #666;
+}
+
+.details-field textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f5f5f5;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.pet-details-display {
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.detail-row {
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.special-breed-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #fff3cd;
+    border-radius: 10px;
+    border-left: 4px solid #ffc107;
+}
+
+.info-text {
+    margin-bottom: 1rem;
+    color: #856404;
+}
+
+.breed-surcharge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.surcharge-item {
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+}
+
+.program-selection,
+.payment-method-selection,
+.payment-frequency-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.program-option {
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.program-option input[type="radio"]:checked + span {
+    font-weight: bold;
+}
+
+.declaration-group {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 10px;
+}
+
+.declaration-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    line-height: 1.6;
+}
+
+.declaration-label input[type="checkbox"] {
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+}
+
+.required {
+    color: #dc3545;
+}
+
+#submitBtn {
+    background: var(--brand-gradient);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#submitBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(90, 200, 189, 0.4);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide details fields based on YES/NO answers
+    const yesNoQuestions = [
+        { name: 'is_healthy', detailsId: 'is_healthy_details', showOn: 'false' },
+        { name: 'has_injury_illness_3_years', detailsId: 'has_injury_illness_details', showOn: 'true' },
+        { name: 'has_surgical_procedure', detailsId: 'has_surgical_procedure_details', showOn: 'true' },
+        { name: 'has_examination_findings', detailsId: 'has_examination_findings_details', showOn: 'true' },
+        { name: 'follows_vaccination_program', detailsId: 'follows_vaccination_program_details', showOn: 'false' },
+        { name: 'has_hereditary_disease', detailsId: 'has_hereditary_disease_details', showOn: 'true' },
+    ];
+    
+    yesNoQuestions.forEach(q => {
+        const radios = document.querySelectorAll(`input[name="${q.name}"]`);
+        const detailsField = document.getElementById(q.detailsId);
+        
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === q.showOn) {
+                    detailsField.style.display = 'block';
+                } else {
+                    detailsField.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Set minimum date for start date to today
+    const startDateInput = document.getElementById('desired_start_date');
+    if (startDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        startDateInput.setAttribute('min', today);
+    }
+    
+    // Form submission
+    const form = document.getElementById('questionnaireForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate all required consents
+        const requiredConsents = [
+            'consent_terms_conditions',
+            'consent_info_document',
+            'consent_email_notifications',
+            'consent_data_processing',
+            'consent_pet_gov_platform'
+        ];
+        
+        let allConsentsChecked = true;
+        requiredConsents.forEach(name => {
+            const checkbox = document.querySelector(`input[name="${name}"]`);
+            if (!checkbox.checked) {
+                allConsentsChecked = false;
+            }
+        });
+        
+        if (!allConsentsChecked) {
+            alert('Παρακαλώ αποδεχτείτε όλες τις υποχρεωτικές δηλώσεις για να συνεχίσετε.');
+            return;
+        }
+        
+        // Submit form
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Υποβολή...';
+        
+        fetch('{% url "main:user_data" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect_url || '/thank-you/';
+            } else {
+                alert(data.message || 'Σφάλμα κατά την υποβολή');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Υποβολή Αίτησης';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Σφάλμα κατά την υποβολή της αίτησης');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Υποβολή Αίτησης';
+        });
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function goBack() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const program = urlParams.get('program') || '{{ program }}';
+    window.location.href = `{% url 'main:non_covered' %}?program=${program}&type={{ pet_type }}&gender={{ gender }}&birthdate={{ birthdate }}&breed={{ breed }}&name={{ name }}&health_status={{ health_status }}&health_conditions={{ health_conditions }}`;
+}
+</script>
+{% endblock %}
+

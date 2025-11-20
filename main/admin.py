@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument, PetPhoto
+from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument, PetPhoto, Questionnaire
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
@@ -56,7 +56,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'application_number',
         'contract_pdf_link',
         'documents_list',
-        'photos_list'
+        'photos_list',
+        'questionnaire_link'
     ]
     
     fieldsets = (
@@ -131,6 +132,12 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             'fields': (
                 'affiliate_code',
                 'discount_applied'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('📋 Ερωτηματολόγιο', {
+            'fields': (
+                'questionnaire_link',
             ),
             'classes': ('collapse',)
         })
@@ -266,6 +273,21 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             return format_html('<div style="display: flex; flex-wrap: wrap;">{}</div>', mark_safe(''.join(photos_html)))
         return format_html('<span style="color: #6c757d;">Δεν υπάρχουν ανεβασμένες φωτογραφίες</span>')
     photos_list.short_description = 'Ανεβασμένες Φωτογραφίες'
+    
+    def questionnaire_link(self, obj):
+        """Display link to questionnaire"""
+        try:
+            if hasattr(obj, 'questionnaire') and obj.questionnaire:
+                questionnaire = obj.questionnaire
+                url = reverse('admin:main_questionnaire_change', args=[questionnaire.pk])
+                return format_html(
+                    '<a href="{}" target="_blank">📋 Προβολή Ερωτηματολογίου</a>',
+                    url
+                )
+        except Exception:
+            pass
+        return format_html('<span style="color: #6c757d;">Δεν υπάρχει ερωτηματολόγιο</span>')
+    questionnaire_link.short_description = 'Ερωτηματολόγιο'
     
     def contract_actions(self, obj):
         """Display action buttons"""
@@ -959,3 +981,160 @@ class PetPhotoAdmin(admin.ModelAdmin):
                 return format_html('<a href="{}" target="_blank">📷 Προβολή</a>', url)
         return '-'
     photo_view.short_description = 'Φωτογραφία'
+
+
+@admin.register(Questionnaire)
+class QuestionnaireAdmin(admin.ModelAdmin):
+    """Admin interface for Questionnaires"""
+    
+    list_display = [
+        'application_link',
+        'program_display',
+        'payment_method_display',
+        'payment_frequency_display',
+        'desired_start_date',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'program',
+        'payment_method',
+        'payment_frequency',
+        'created_at',
+        'is_healthy',
+        'has_hereditary_disease'
+    ]
+    
+    search_fields = [
+        'application__application_number',
+        'application__contract_number',
+        'application__full_name',
+        'application__email',
+        'application__pet_name'
+    ]
+    
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
+    
+    fieldsets = (
+        ('📋 Σύνδεση με Αίτηση', {
+            'fields': (
+                'application',
+            )
+        }),
+        ('1.1 Ερωτηματολόγιο Συμβαλλόμενου', {
+            'fields': (
+                'has_other_insured_pet',
+                'has_been_denied_insurance',
+                'has_special_terms_imposed',
+            )
+        }),
+        ('2. Στοιχεία Κατοικίδιου', {
+            'fields': (
+                'pet_colors',
+                'pet_weight',
+                'is_purebred',
+                'is_mixed',
+                'is_crossbreed',
+                'special_breed_5_percent',
+                'special_breed_20_percent',
+            )
+        }),
+        ('2.2 Ερωτηματολόγιο Κατοικίδιου', {
+            'fields': (
+                'is_healthy',
+                'is_healthy_details',
+                'has_injury_illness_3_years',
+                'has_injury_illness_details',
+                'has_surgical_procedure',
+                'has_surgical_procedure_details',
+                'has_examination_findings',
+                'has_examination_findings_details',
+                'is_sterilized',
+                'is_vaccinated_leishmaniasis',
+                'follows_vaccination_program',
+                'follows_vaccination_program_details',
+                'has_hereditary_disease',
+                'has_hereditary_disease_details',
+            )
+        }),
+        ('3. Επιλογή Προγράμματος', {
+            'fields': (
+                'program',
+                'additional_poisoning_coverage',
+                'additional_blood_checkup',
+            )
+        }),
+        ('4. Επιθυμητή Έναρξη', {
+            'fields': (
+                'desired_start_date',
+            )
+        }),
+        ('5. Τρόπος Πληρωμής', {
+            'fields': (
+                'payment_method',
+                'payment_frequency',
+            )
+        }),
+        ('6. Δηλώσεις – Εξουσιοδοτήσεις – Συγκαταθέσεις', {
+            'fields': (
+                'consent_terms_conditions',
+                'consent_info_document',
+                'consent_email_notifications',
+                'consent_marketing',
+                'consent_data_processing',
+                'consent_pet_gov_platform',
+            )
+        }),
+        ('📅 Χρονοσήματα', {
+            'fields': (
+                'created_at',
+                'updated_at'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def application_link(self, obj):
+        """Link to the related application"""
+        if obj.application:
+            url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.application.application_number or obj.application.contract_number)
+        return '-'
+    application_link.short_description = 'Αίτηση'
+    
+    def program_display(self, obj):
+        """Display program"""
+        programs = {
+            'silver': 'Silver',
+            'gold': 'Gold',
+            'platinum': 'Platinum',
+            'dynasty': 'Dynasty'
+        }
+        return programs.get(obj.program, obj.program or '-')
+    program_display.short_description = 'Πρόγραμμα'
+    
+    def payment_method_display(self, obj):
+        """Display payment method"""
+        methods = {
+            'card': 'Κάρτα',
+            'bank_deposit': 'Τραπεζική Κατάθεση',
+            'cash': 'Μετρητά'
+        }
+        return methods.get(obj.payment_method, obj.payment_method or '-')
+    payment_method_display.short_description = 'Τρόπος Πληρωμής'
+    
+    def payment_frequency_display(self, obj):
+        """Display payment frequency"""
+        frequencies = {
+            'annual': 'Ετήσια',
+            'six_month': 'Εξάμηνη'
+        }
+        return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
+    payment_frequency_display.short_description = 'Συχνότητα'
+    
+    def has_add_permission(self, request):
+        """Disable manual addition - questionnaires are created through the application flow"""
+        return False
