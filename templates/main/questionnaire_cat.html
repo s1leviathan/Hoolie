@@ -644,8 +644,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Get is_healthy from form to pass through URL
+                // Get health-related answers from form
                 const isHealthy = document.querySelector('input[name="is_healthy"]:checked')?.value || '';
+                const hasInjuryIllness = document.querySelector('input[name="has_injury_illness_3_years"]:checked')?.value || '';
+                const hasSurgicalProcedure = document.querySelector('input[name="has_surgical_procedure"]:checked')?.value || '';
+                const hasExaminationFindings = document.querySelector('input[name="has_examination_findings"]:checked')?.value || '';
+                const hasHereditaryDisease = document.querySelector('input[name="has_hereditary_disease"]:checked')?.value || '';
+                
+                // Determine if pet has health issues
+                // If is_healthy is false OR any health-related question is true, route to health conditions
+                const hasHealthIssues = (isHealthy === 'false') || 
+                                      (hasInjuryIllness === 'true') || 
+                                      (hasSurgicalProcedure === 'true') || 
+                                      (hasExaminationFindings === 'true') || 
+                                      (hasHereditaryDisease === 'true');
                 
                 // Get all parameters from URL to pass through
                 const urlParams = new URLSearchParams(window.location.search);
@@ -655,20 +667,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 const breed = urlParams.get('breed') || '{{ breed }}';
                 const name = urlParams.get('name') || '{{ name }}';
                 
-                // Redirect to insurance programs with is_healthy parameter
                 const params = new URLSearchParams({
                     type: petType,
                     gender: gender,
                     birthdate: birthdate,
                     breed: breed,
-                    name: name
+                    name: name,
+                    health_status: hasHealthIssues ? 'problems' : 'healthy',
+                    conditions: ''
                 });
                 
-                if (isHealthy) {
-                    params.set('is_healthy', isHealthy);
+                // Route based on health status
+                if (hasHealthIssues) {
+                    // Pet has health issues - route to health conditions page
+                    params.set('is_healthy', 'false');
+                    if (petType === 'dog') {
+                        window.location.href = `{% url 'main:dog_health_conditions' %}?${params.toString()}`;
+                    } else if (petType === 'cat') {
+                        window.location.href = `{% url 'main:cat_health_conditions' %}?${params.toString()}`;
+                    } else {
+                        window.location.href = `{% url 'main:cat_health_conditions' %}?${params.toString()}`;
+                    }
+                } else {
+                    // Pet is healthy - route to insurance programs
+                    params.set('is_healthy', 'true');
+                    window.location.href = `{% url 'main:insurance_programs' %}?${params.toString()}`;
                 }
-                
-                window.location.href = `{% url 'main:insurance_programs' %}?${params.toString()}`;
             } else {
                 alert(data.message || 'Σφάλμα κατά την υποβολή');
                 submitBtn.disabled = false;
