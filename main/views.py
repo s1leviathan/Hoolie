@@ -792,7 +792,7 @@ def handle_application_submission(request):
                     'desired_start_date': desired_start_date,
                     # Section 5
                     'payment_method': get_str('payment_method'),
-                    'payment_frequency': get_str('payment_frequency'),
+                    'payment_frequency': get_str('payment_frequency') or request.POST.get('payment_frequency', ''),
                     # Section 6
                     'consent_terms_conditions': get_bool('consent_terms_conditions'),
                     'consent_info_document': get_bool('consent_info_document'),
@@ -835,7 +835,7 @@ def handle_application_submission(request):
                 questionnaire.additional_blood_checkup = get_bool('additional_blood_checkup')
                 questionnaire.desired_start_date = desired_start_date
                 questionnaire.payment_method = get_str('payment_method')
-                questionnaire.payment_frequency = get_str('payment_frequency')
+                questionnaire.payment_frequency = get_str('payment_frequency') or request.POST.get('payment_frequency', '')
                 questionnaire.consent_terms_conditions = get_bool('consent_terms_conditions')
                 questionnaire.consent_info_document = get_bool('consent_info_document')
                 questionnaire.consent_email_notifications = get_bool('consent_email_notifications')

@@ -1133,7 +1133,8 @@ class QuestionnaireAdmin(admin.ModelAdmin):
         """Display payment frequency"""
         frequencies = {
             'annual': 'Ετήσια',
-            'six_month': 'Εξάμηνη'
+            'six_month': 'Εξάμηνη',
+            'three_month': 'Τριμηνιαία'
         }
         return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
     payment_frequency_display.short_description = 'Συχνότητα'

@@ -467,6 +467,7 @@ class Questionnaire(models.Model):
     PAYMENT_FREQUENCY_CHOICES = [
         ('annual', 'Ετήσια Πληρωμή'),
         ('six_month', 'Εξάμηνη Πληρωμή'),
+        ('three_month', 'Τριμηνιαία Πληρωμή'),
     ]
     payment_frequency = models.CharField(max_length=20, choices=PAYMENT_FREQUENCY_CHOICES, blank=True, null=True)
     
