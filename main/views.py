@@ -362,17 +362,23 @@ def user_data(request):
     # Get pricing data
     pricing_data = None
     if pet_type == 'dog' and program in DOG_PRICING and weight_category in DOG_PRICING[program]:
-        pricing_data = DOG_PRICING[program][weight_category]
+        pricing_data = DOG_PRICING[program][weight_category].copy()
+        # Add 'final' field for compatibility with JavaScript
+        if 'annual' in pricing_data and 'final' not in pricing_data:
+            pricing_data['final'] = pricing_data['annual']
     elif pet_type == 'cat' and program in CAT_PRICING and weight_category in CAT_PRICING[program]:
-        pricing_data = CAT_PRICING[program][weight_category]
+        pricing_data = CAT_PRICING[program][weight_category].copy()
+        # Add 'final' field for compatibility with JavaScript
+        if 'annual' in pricing_data and 'final' not in pricing_data:
+            pricing_data['final'] = pricing_data['annual']
     
     # Get second pet pricing
     second_pet_pricing_data = None
-    if second_pet_type and second_pet_program and second_pet_weight_category:
-        if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
-            second_pet_pricing_data = DOG_PRICING[second_pet_program][second_pet_weight_category]
-        elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
-            second_pet_pricing_data = CAT_PRICING[second_pet_program][second_pet_weight_category]
+        if second_pet_type and second_pet_program and second_pet_weight_category:
+            if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
+                second_pet_pricing_data = DOG_PRICING[second_pet_program][second_pet_weight_category]
+            elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
+                second_pet_pricing_data = CAT_PRICING[second_pet_program][second_pet_weight_category]
 
     context = {
         'pet_type': pet_type,
