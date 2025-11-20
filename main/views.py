@@ -784,26 +784,16 @@ def upload_pet_document(request):
     """Handle pet document upload via AJAX"""
     if request.method == 'POST':
         from .models import PetDocument
-        from django.core.files.storage import default_storage
-        import os
-        import uuid
         
         try:
             uploaded_file = request.FILES.get('file')
             if not uploaded_file:
                 return JsonResponse({'success': False, 'message': 'No file provided'})
             
-            # Generate unique filename
-            file_ext = os.path.splitext(uploaded_file.name)[1]
-            unique_filename = f"{uuid.uuid4()}{file_ext}"
-            
-            # Save file
-            file_path = default_storage.save(f"documents/{unique_filename}", uploaded_file)
-            
-            # Create PetDocument record
+            # Create PetDocument record with file
             document = PetDocument.objects.create(
-                file_path=file_path,
-                file_name=uploaded_file.name,
+                file=uploaded_file,
+                original_filename=uploaded_file.name,
                 file_type=uploaded_file.content_type or 'application/octet-stream',
                 file_size=uploaded_file.size
             )
@@ -818,7 +808,7 @@ def upload_pet_document(request):
                 'success': True,
                 'document_id': document.id,
                 'file_url': document.get_file_url(),
-                'file_name': document.file_name,
+                'file_name': document.original_filename,
                 'file_size': document.file_size
             })
         except Exception as e:
@@ -835,26 +825,16 @@ def upload_pet_photo(request):
     """Handle pet photo upload via AJAX"""
     if request.method == 'POST':
         from .models import PetPhoto
-        from django.core.files.storage import default_storage
-        import os
-        import uuid
         
         try:
             uploaded_file = request.FILES.get('file')
             if not uploaded_file:
                 return JsonResponse({'success': False, 'message': 'No file provided'})
             
-            # Generate unique filename
-            file_ext = os.path.splitext(uploaded_file.name)[1]
-            unique_filename = f"{uuid.uuid4()}{file_ext}"
-            
-            # Save file
-            file_path = default_storage.save(f"photos/{unique_filename}", uploaded_file)
-            
-            # Create PetPhoto record
+            # Create PetPhoto record with file
             photo = PetPhoto.objects.create(
-                file_path=file_path,
-                file_name=uploaded_file.name,
+                file=uploaded_file,
+                original_filename=uploaded_file.name,
                 file_type=uploaded_file.content_type or 'image/jpeg',
                 file_size=uploaded_file.size
             )
@@ -869,7 +849,7 @@ def upload_pet_photo(request):
                 'success': True,
                 'photo_id': photo.id,
                 'file_url': photo.get_file_url(),
-                'file_name': photo.file_name,
+                'file_name': photo.original_filename,
                 'file_size': photo.file_size
             })
         except Exception as e:
