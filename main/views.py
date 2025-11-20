@@ -927,6 +927,7 @@ def serve_file(request, file_type, file_id):
     from .models import PetDocument, PetPhoto
     from django.http import Http404, FileResponse, HttpResponseRedirect
     from django.conf import settings
+    from django.core.files.storage import default_storage
     import os
     
     try:
@@ -942,8 +943,11 @@ def serve_file(request, file_type, file_id):
         
         # Check if using S3 storage
         if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3' in settings.DEFAULT_FILE_STORAGE.lower():
-            # Using S3 - get the S3 URL and redirect
+            # Using S3 - get the S3 URL and redirect (ensure HTTPS)
             s3_url = file_obj.file.url
+            # Ensure URL uses HTTPS
+            if s3_url.startswith('http://'):
+                s3_url = s3_url.replace('http://', 'https://', 1)
             return HttpResponseRedirect(s3_url)
         else:
             # Using local storage - serve the file directly

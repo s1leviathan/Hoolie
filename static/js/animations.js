@@ -320,19 +320,23 @@ function applyAffiliateCode() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-    // Store affiliate code in localStorage for later use
-    localStorage.setItem('affiliateCode', code);
-    
+            // Store affiliate code in localStorage for later use
+            localStorage.setItem('affiliateCode', code);
+            
             // Show success message with discount info
             let message = data.message;
-            if (data.discount && data.discount.description) {
-                message += ` ${data.discount.description}`;
+            if (data.discount) {
+                if (data.discount.type === 'percentage') {
+                    message += `<br><strong style="color: #28a745; font-size: 1.1em;">Έκπτωση ${data.discount.value}%</strong>`;
+                } else {
+                    message += `<br><strong style="color: #28a745; font-size: 1.1em;">Έκπτωση ${data.discount.value}€</strong>`;
+                }
             }
             showAffiliateStatus('success', message);
     
             // Add visual feedback to the input
-    codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
-    codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
+            codeInput.style.borderColor = 'rgba(76, 175, 80, 0.6)';
+            codeInput.style.background = 'rgba(76, 175, 80, 0.1)';
         } else {
             showAffiliateStatus('error', data.error || 'Ο κωδικός δεν είναι έγκυρος.');
             codeInput.style.borderColor = 'rgba(220, 53, 69, 0.6)';
@@ -366,7 +370,7 @@ function showAffiliateStatus(type, message) {
     const statusMessage = statusDiv.querySelector('.status-message');
     
     statusDiv.className = `affiliate-status ${type}`;
-    statusMessage.textContent = message;
+    statusMessage.innerHTML = message; // Use innerHTML to support HTML formatting
     statusDiv.style.display = 'block';
     
     // Auto-hide success messages after 5 seconds
