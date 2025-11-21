@@ -161,7 +161,6 @@ else:
 
 # Viva Wallet Configuration
 # Environment variables for production security
-VIVA_WALLET_MERCHANT_ID = os.environ.get('VIVA_WALLET_MERCHANT_ID', '')
 VIVA_WALLET_CLIENT_ID = os.environ.get('VIVA_WALLET_CLIENT_ID', '')
 VIVA_WALLET_CLIENT_SECRET = os.environ.get('VIVA_WALLET_CLIENT_SECRET', '')
 VIVA_WALLET_SOURCE_CODE = os.environ.get('VIVA_WALLET_SOURCE_CODE', '')

@@ -34,7 +34,6 @@
 
 **Required Variables** (NOT SET in Heroku):
 ```
-VIVA_WALLET_MERCHANT_ID=        # Your Viva Wallet Merchant ID
 VIVA_WALLET_CLIENT_ID=          # Your Viva Wallet Client ID
 VIVA_WALLET_CLIENT_SECRET=      # Your Viva Wallet Client Secret
 VIVA_WALLET_SOURCE_CODE=        # Your Viva Wallet Source Code
@@ -52,7 +51,6 @@ VIVA_WALLET_PRODUCTION=         # Set to "true" for production, "false" for demo
 
 2. **Set Environment Variables in Heroku**:
    ```bash
-   heroku config:set VIVA_WALLET_MERCHANT_ID=your_merchant_id --app hoolie-pet-insurance
    heroku config:set VIVA_WALLET_CLIENT_ID=your_client_id --app hoolie-pet-insurance
    heroku config:set VIVA_WALLET_CLIENT_SECRET=your_client_secret --app hoolie-pet-insurance
    heroku config:set VIVA_WALLET_SOURCE_CODE=your_source_code --app hoolie-pet-insurance

@@ -19,7 +19,6 @@ class VivaWalletAPI:
     
     def __init__(self):
         # These should be in your settings.py
-        self.merchant_id = getattr(settings, 'VIVA_WALLET_MERCHANT_ID', '')
         self.source_code = getattr(settings, 'VIVA_WALLET_SOURCE_CODE', '')
         self.client_id = getattr(settings, 'VIVA_WALLET_CLIENT_ID', '')
         self.client_secret = getattr(settings, 'VIVA_WALLET_CLIENT_SECRET', '')
@@ -27,15 +26,19 @@ class VivaWalletAPI:
         # Environment URLs
         self.is_production = getattr(settings, 'VIVA_WALLET_PRODUCTION', False)
         if self.is_production:
-            self.api_base_url = "https://api.viva.com"
-            self.checkout_url = "https://www.viva.com"
+            self.api_base_url = "https://api.vivapayments.com"
+            self.checkout_url = "https://www.vivapayments.com"
         else:
-            self.api_base_url = "https://demo-api.viva.com"
-            self.checkout_url = "https://demo.viva.com"
+            self.api_base_url = "https://demo-api.vivapayments.com"
+            self.checkout_url = "https://demo.vivapayments.com"
     
     def get_access_token(self):
         """Get OAuth2 access token for API authentication"""
-        url = f"{self.api_base_url}/oauth2/token"
+        # OAuth endpoint is different from API base URL
+        if self.is_production:
+            url = "https://accounts.vivapayments.com/connect/token"
+        else:
+            url = "https://accounts-demo.vivapayments.com/connect/token"
         
         # Encode credentials
         credentials = f"{self.client_id}:{self.client_secret}"
