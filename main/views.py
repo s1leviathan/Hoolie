@@ -25,11 +25,13 @@ def pet_breed(request):
     pet_type = request.GET.get('type', 'dog')
     gender = request.GET.get('gender', '')
     
-    # Common dog breeds for dropdown
+    # Common dog breeds for dropdown (20 breeds)
     dog_breeds = [
-        'Λαμπραντόρ', 'Γερμανικός Ποιμενικός', 'Γκόλντεν Ριτρίβερ', 'Φρανσεζέ Μπουλντόγκ',
-        'Μποξέρ', 'Γερμανικό Δαχτυλίδι', 'Ροτβάιλερ', 'Γερμανικό Δάχτυλο',
-        'Γερμανικό Δάχτυλο', 'Γερμανικό Δάχτυλο', 'Γερμανικό Δάχτυλο', 'Γερμανικό Δάχτυλο'
+        'Λαμπραντόρ', 'Γκόλντεν Ρετρίβερ', 'Γερμανικός Ποιμενικός', 'Μπουλντόγκ',
+        'Πούντλ', 'Μπίγκλ', 'Ρότβαϊλερ', 'Γιόρκσαϊρ Τέριερ',
+        'Ντάξχουντ', 'Σιμπέριαν Χάσκι', 'Πομερανιάν', 'Σιτσού',
+        'Μπόξερ', 'Τσιουάουα', 'Μαλτέζ', 'Κοκέρ Σπάνιελ',
+        'Μπορντέρ Κόλι', 'Φρέντς Μπουλντόγκ', 'Αυστραλιανός Ποιμενικός', 'Μπασέτ Χάουντ'
     ]
     
     context = {
@@ -44,10 +46,13 @@ def cat_breed(request):
     pet_type = request.GET.get('type', 'cat')
     gender = request.GET.get('gender', '')
     
-    # Common cat breeds for dropdown  
+    # Common cat breeds for dropdown (20 breeds)
     cat_breeds = [
-        'Περσική', 'Μέιν Κουν', 'Βρετανική Κοντότριχη', 'Ράγκντολ',
-        'Αμπισινιανή', 'Σιαμική', 'Αμερικανική Κοντότριχη', 'Σκωτσέζικη Κρέμα'
+        'Περσική', 'Μέιν Κουν', 'Σιαμέζα', 'Ραγκντόλ',
+        'Βρετανική Κοντότριχη', 'Αμπισίνια', 'Ρωσική Μπλε', 'Σκωτσέζικη Πτυχωτή',
+        'Σφίγκα', 'Βεγγαλική', 'Μάνξ', 'Νορβηγική Δασική',
+        'Τούρκικη Αγκυρα', 'Αμερικανική Κοντότριχη', 'Εξωτική Κοντότριχη', 'Ορμιέντλ',
+        'Σομαλί', 'Τονκινέζα', 'Μπομπέι', 'Κορνίς Ρεξ'
     ]
     
     context = {
@@ -374,13 +379,13 @@ def user_data(request):
     
     # Get second pet pricing
     second_pet_pricing_data = None
-    if second_pet_type and second_pet_program and second_pet_weight_category:
-        if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
+        if second_pet_type and second_pet_program and second_pet_weight_category:
+            if second_pet_type == 'dog' and second_pet_program in DOG_PRICING and second_pet_weight_category in DOG_PRICING[second_pet_program]:
             second_pet_pricing_data = DOG_PRICING[second_pet_program][second_pet_weight_category].copy()
             # Add 'final' field for compatibility with JavaScript
             if 'annual' in second_pet_pricing_data and 'final' not in second_pet_pricing_data:
                 second_pet_pricing_data['final'] = second_pet_pricing_data['annual']
-        elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
+            elif second_pet_type == 'cat' and second_pet_program in CAT_PRICING and second_pet_weight_category in CAT_PRICING[second_pet_program]:
             second_pet_pricing_data = CAT_PRICING[second_pet_program][second_pet_weight_category].copy()
             # Add 'final' field for compatibility with JavaScript
             if 'annual' in second_pet_pricing_data and 'final' not in second_pet_pricing_data:
@@ -845,7 +850,7 @@ def contact_info(request):
             'breed': breed,
             'name': name
         }
-        return render(request, 'main/contact_info.html', context)
+    return render(request, 'main/contact_info.html', context)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
