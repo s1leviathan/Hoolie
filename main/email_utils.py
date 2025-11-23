@@ -99,7 +99,8 @@ def send_customer_confirmation_email(application):
         else:
             customer_greeting = 'Κύριε/Κυρία'  # Fallback if no name
         
-        subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {application.application_number}'
+        # Simplified subject line to match verification email format (better deliverability)
+        subject = f'Application Confirmation - {application.application_number}'
         
         # Prepare context
         context = {
