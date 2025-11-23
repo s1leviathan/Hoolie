@@ -115,43 +115,24 @@ def send_customer_confirmation_email(application):
         html_message = render_to_string('emails/customer_confirmation.html', context)
         plain_message = render_to_string('emails/customer_confirmation.txt', context)
         
-        # Create plain text email first to ensure delivery
-        # Gmail often filters HTML emails from new senders
-        from django.core.mail import send_mail
-        
-        # Send plain text version for better deliverability
-        logger.info(f"Attempting to send plain text email to {application.email} for application {application.application_number}")
+        # Send as single multipart email (plain text + HTML) to avoid Gmail filtering
+        # Sending two separate emails triggers spam filters
+        logger.info(f"Attempting to send customer confirmation email to {application.email} for application {application.application_number}")
         try:
-            result = send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[application.email],
-                fail_silently=False,
-            )
-            logger.info(f"Plain text email sent successfully to {application.email}. SMTP returned: {result}")
-        except Exception as e:
-            logger.error(f"Failed to send plain text email to {application.email}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            raise  # Re-raise to ensure we know if plain text fails
-        
-        # Also try sending HTML version
-        try:
-            logger.info(f"Attempting to send HTML email to {application.email} for application {application.application_number}")
             email = EmailMultiAlternatives(
                 subject=subject,
-                body=plain_message,
+                body=plain_message,  # Plain text version (required)
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[application.email],
             )
-            email.attach_alternative(html_message, "text/html")
-            email.send(fail_silently=True)  # Don't fail if HTML version doesn't send
-            logger.info(f"HTML email sent successfully to {application.email}")
+            email.attach_alternative(html_message, "text/html")  # HTML version (optional)
+            email.send(fail_silently=False)
+            logger.info(f"Customer confirmation email sent successfully to {application.email}. Application: {application.application_number}")
         except Exception as e:
-            logger.warning(f"HTML email failed but plain text sent: {e}")
-        
-        logger.info(f"Customer confirmation email process completed for {application.email} - application {application.application_number}")
+            logger.error(f"Failed to send customer confirmation email to {application.email}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise  # Re-raise to ensure we know if email fails
         
     except Exception as e:
         logger.error(f"Error sending customer confirmation email: {e}")
