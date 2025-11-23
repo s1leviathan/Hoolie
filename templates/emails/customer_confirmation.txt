@@ -1,31 +1,15 @@
-Hoolie Pet Insurance
-Επιβεβαίωση Αίτησης Ασφάλισης
+Application Confirmation - {{ application_number }}
 
-Αγαπητέ κύριε {{ customer_greeting }},
+Thank you for your insurance application for {{ pet_name }}{% if has_second_pet %} and {{ second_pet_name }}{% endif %}.
 
-Ευχαριστούμε θερμά που εμπιστευτήκατε την Hoolie Foundation για την φροντίδα της υγείας του/της {{ pet_name }}{% if has_second_pet %} και του/της {{ second_pet_name }}{% endif %}.
+Your application is being processed and will be reviewed by our Underwriting department. You will receive an update via email within 48 hours.
 
-Σας καλωσορίζουμε στην οικογένεια μας με την υπόσχεση να είμαστε δίπλα στο αγαπημένο μέλος της οικογένειας σας, παρέχοντας τα καλύτερα προϊόντα και υπηρεσίες. Το ασφαλιστικό μας πρόγραμμα έχει σχεδιαστεί από «γονείς» κατοικίδιων για τους «γονείς» κατοικίδιων ζώων και έχει προσαρμοστεί, ώστε να καλύπτει απόλυτα τις ανάγκες και τις απαιτήσεις της ελληνικής αγοράς στα θέματα που αφορούν στην υγεία των κατοικίδιων και στην πλήρη κάλυψη των αναγκών τους.
+Application Number: {{ application_number }}
+Pet: {{ pet_name }}{% if has_second_pet %} & {{ second_pet_name }}{% endif %}
 
-Βασικός στόχος μας είναι η εξασφάλιση της ευζωίας των τετράποδων φίλων μας.
-
-ΑΡΙΘΜΟΣ ΑΙΤΗΣΗΣ: {{ application_number }}
-ΚΑΤΟΙΚΙΔΙΟ: {{ pet_name }}{% if has_second_pet %} & {{ second_pet_name }}{% endif %}
-
-Η αίτησή σας βρίσκεται σε επεξεργασία και θα ελεγχθεί από το τμήμα Underwriting. Θα λάβετε ενημέρωση μέσω email εντός 48 ωρών.
-
-Εάν έχετε οποιαδήποτε ερώτηση σχετικά με τις υπηρεσίες μας, μη διστάσετε να επικοινωνήσετε μαζί μας:
-
+If you have any questions, please contact us:
 Email: info@hoolie.gr
-Τηλεφωνικά: 210 440 5888
+Phone: 210 440 5888
 
-Το έμπειρο και φιλικό προσωπικό της Hoolie Pet Insurance θα σας εξυπηρετήσει άμεσα.
-
-Ευχαριστούμε για την προτίμηση σας
-
-Με εκτίμηση
-Η ομάδα της Hoolie Pet Insurance
-
----
-© 2024 Hoolie Pet Insurance. Όλα τα δικαιώματα κατοχυρωμένα.
+Thank you for choosing Hoolie Pet Insurance.
 

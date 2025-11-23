@@ -112,23 +112,22 @@ def send_customer_confirmation_email(application):
             'second_pet_name': application.second_pet_name if application.has_second_pet else None,
         }
         
-        # Render HTML and plain text emails
-        html_message = render_to_string('emails/customer_confirmation.html', context)
+        # Render plain text email only (like verification email that works)
+        # Gmail filters multipart/HTML emails from new senders
         plain_message = render_to_string('emails/customer_confirmation.txt', context)
         
-        # Send as single multipart email (plain text + HTML) to avoid Gmail filtering
-        # Sending two separate emails triggers spam filters
+        # Send simple plain text email only (same format as verification email)
         logger.info(f"Attempting to send customer confirmation email to {application.email} for application {application.application_number}")
         try:
-            email = EmailMultiAlternatives(
+            from django.core.mail import send_mail
+            result = send_mail(
                 subject=subject,
-                body=plain_message,  # Plain text version (required)
+                message=plain_message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[application.email],
+                recipient_list=[application.email],
+                fail_silently=False,
             )
-            email.attach_alternative(html_message, "text/html")  # HTML version (optional)
-            email.send(fail_silently=False)
-            logger.info(f"Customer confirmation email sent successfully to {application.email}. Application: {application.application_number}")
+            logger.info(f"Customer confirmation email sent successfully to {application.email}. SMTP returned: {result}. Application: {application.application_number}")
         except Exception as e:
             logger.error(f"Failed to send customer confirmation email to {application.email}: {e}")
             import traceback
