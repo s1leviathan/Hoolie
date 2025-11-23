@@ -358,48 +358,11 @@ class PetDocument(models.Model):
         return f"Document: {self.original_filename} - {self.pet_name or 'Unknown'}"
     
     def get_file_url(self):
-        """Get the URL to access the file"""
+        """Get the URL to access the file - always use serve_file view for reliability"""
         if self.file:
-            # Check if using S3 storage (Bucketeer)
-            from django.conf import settings
-            if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3boto3' in settings.DEFAULT_FILE_STORAGE.lower():
-                # Using S3/Bucketeer - generate signed URL directly
-                try:
-                    import boto3
-                    from botocore.client import Config
-                    
-                    s3_client = boto3.client(
-                        's3',
-                        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                        region_name=settings.AWS_S3_REGION_NAME,
-                        config=Config(signature_version='s3v4')
-                    )
-                    
-                    # Get the S3 key (path) of the file
-                    s3_key = self.file.name
-                    
-                    # Generate signed URL (valid for 1 hour)
-                    signed_url = s3_client.generate_presigned_url(
-                        'get_object',
-                        Params={
-                            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                            'Key': s3_key
-                        },
-                        ExpiresIn=3600  # 1 hour
-                    )
-                    return signed_url
-                except Exception as e:
-                    # Fallback to Django view if signed URL generation fails
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error generating signed URL for document {self.id}: {e}")
-                    from django.urls import reverse
-                    return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
-            else:
-                # Using local storage - use Django view to serve file
-                from django.urls import reverse
-                return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
+            from django.urls import reverse
+            # Always use serve_file view which handles S3 signed URLs on-demand
+            return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
         return None
 
 
@@ -433,48 +396,11 @@ class PetPhoto(models.Model):
         return f"Photo: {self.original_filename} - {self.pet_name or 'Unknown'}"
     
     def get_file_url(self):
-        """Get the URL to access the photo"""
+        """Get the URL to access the photo - always use serve_file view for reliability"""
         if self.file:
-            # Check if using S3 storage (Bucketeer)
-            from django.conf import settings
-            if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3boto3' in settings.DEFAULT_FILE_STORAGE.lower():
-                # Using S3/Bucketeer - generate signed URL directly
-                try:
-                    import boto3
-                    from botocore.client import Config
-                    
-                    s3_client = boto3.client(
-                        's3',
-                        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                        region_name=settings.AWS_S3_REGION_NAME,
-                        config=Config(signature_version='s3v4')
-                    )
-                    
-                    # Get the S3 key (path) of the file
-                    s3_key = self.file.name
-                    
-                    # Generate signed URL (valid for 1 hour)
-                    signed_url = s3_client.generate_presigned_url(
-                        'get_object',
-                        Params={
-                            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                            'Key': s3_key
-                        },
-                        ExpiresIn=3600  # 1 hour
-                    )
-                    return signed_url
-                except Exception as e:
-                    # Fallback to Django view if signed URL generation fails
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error generating signed URL for photo {self.id}: {e}")
-                    from django.urls import reverse
-                    return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
-            else:
-                # Using local storage - use Django view to serve file
-                from django.urls import reverse
-                return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
+            from django.urls import reverse
+            # Always use serve_file view which handles S3 signed URLs on-demand
+            return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
         return None
 
 
