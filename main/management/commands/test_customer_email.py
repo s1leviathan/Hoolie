@@ -101,9 +101,9 @@ class Command(BaseCommand):
                 'second_pet_name': sample_app.second_pet_name if sample_app.has_second_pet else None,
             }
             
-            # Render HTML email
+            # Render HTML and plain text emails
             html_message = render_to_string('emails/customer_confirmation.html', context)
-            plain_message = strip_tags(html_message)
+            plain_message = render_to_string('emails/customer_confirmation.txt', context)
             
             # Send plain text email first to ensure delivery
             from django.core.mail import send_mail
