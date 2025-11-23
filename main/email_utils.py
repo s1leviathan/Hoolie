@@ -120,16 +120,25 @@ def send_customer_confirmation_email(application):
         from django.core.mail import send_mail
         
         # Send plain text version for better deliverability
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[application.email],
-            fail_silently=False,
-        )
+        logger.info(f"Attempting to send plain text email to {application.email} for application {application.application_number}")
+        try:
+            result = send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[application.email],
+                fail_silently=False,
+            )
+            logger.info(f"Plain text email sent successfully to {application.email}. SMTP returned: {result}")
+        except Exception as e:
+            logger.error(f"Failed to send plain text email to {application.email}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise  # Re-raise to ensure we know if plain text fails
         
         # Also try sending HTML version
         try:
+            logger.info(f"Attempting to send HTML email to {application.email} for application {application.application_number}")
             email = EmailMultiAlternatives(
                 subject=subject,
                 body=plain_message,
@@ -138,9 +147,11 @@ def send_customer_confirmation_email(application):
             )
             email.attach_alternative(html_message, "text/html")
             email.send(fail_silently=True)  # Don't fail if HTML version doesn't send
+            logger.info(f"HTML email sent successfully to {application.email}")
         except Exception as e:
             logger.warning(f"HTML email failed but plain text sent: {e}")
-        logger.info(f"Customer confirmation email sent to {application.email} for application {application.application_number}")
+        
+        logger.info(f"Customer confirmation email process completed for {application.email} - application {application.application_number}")
         
     except Exception as e:
         logger.error(f"Error sending customer confirmation email: {e}")
