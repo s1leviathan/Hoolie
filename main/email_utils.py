@@ -115,23 +115,31 @@ def send_customer_confirmation_email(application):
         html_message = render_to_string('emails/customer_confirmation.html', context)
         plain_message = strip_tags(html_message)
         
-        # Create email
-        email = EmailMultiAlternatives(
+        # Create plain text email first to ensure delivery
+        # Gmail often filters HTML emails from new senders
+        from django.core.mail import send_mail
+        
+        # Send plain text version for better deliverability
+        send_mail(
             subject=subject,
-            body=plain_message,
+            message=plain_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[application.email],
+            recipient_list=[application.email],
+            fail_silently=False,
         )
-        email.attach_alternative(html_message, "text/html")
         
-        # Add headers to improve deliverability
-        email.extra_headers = {
-            'X-Priority': '1',
-            'X-MSMail-Priority': 'High',
-            'Importance': 'high',
-        }
-        
-        email.send(fail_silently=False)
+        # Also try sending HTML version
+        try:
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[application.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            email.send(fail_silently=True)  # Don't fail if HTML version doesn't send
+        except Exception as e:
+            logger.warning(f"HTML email failed but plain text sent: {e}")
         logger.info(f"Customer confirmation email sent to {application.email} for application {application.application_number}")
         
     except Exception as e:
