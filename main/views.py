@@ -850,7 +850,7 @@ def contact_info(request):
             'breed': breed,
             'name': name
         }
-    return render(request, 'main/contact_info.html', context)
+        return render(request, 'main/contact_info.html', context)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
