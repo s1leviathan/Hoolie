@@ -772,9 +772,9 @@ def handle_application_submission(request):
         
         # Send notification emails (non-blocking - errors are logged but don't fail submission)
         try:
-            from .email_utils import send_company_notification_email, send_customer_notification_email
+            from .email_utils import send_company_notification_email, send_customer_confirmation_email
             send_company_notification_email(application)
-            send_customer_notification_email(application)
+            send_customer_confirmation_email(application)
         except Exception as e:
             logger.error(f"Error sending emails for application {application.id}: {e}")
             import traceback
