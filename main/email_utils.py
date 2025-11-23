@@ -111,9 +111,9 @@ def send_customer_confirmation_email(application):
             'second_pet_name': application.second_pet_name if application.has_second_pet else None,
         }
         
-        # Render HTML email
+        # Render HTML and plain text emails
         html_message = render_to_string('emails/customer_confirmation.html', context)
-        plain_message = strip_tags(html_message)
+        plain_message = render_to_string('emails/customer_confirmation.txt', context)
         
         # Create plain text email first to ensure delivery
         # Gmail often filters HTML emails from new senders
