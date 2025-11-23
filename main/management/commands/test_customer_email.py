@@ -89,7 +89,7 @@ class Command(BaseCommand):
             else:
                 customer_greeting = 'Κύριε/Κυρία'
             
-            subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {sample_app.application_number}'
+            subject = f'Application Confirmation - {sample_app.application_number}'
             
             # Prepare context
             context = {
