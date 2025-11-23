@@ -225,13 +225,13 @@ if DEBUG and not os.environ.get('EMAIL_BACKEND'):
 else:
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'pet_insurance.custom_email_backend.CustomEmailBackend')
 
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'hoolie.gr')  # Plesk mail server (use domain directly)
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))  # SSL port for Plesk
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.hostinger.com')  # Hostinger SMTP server
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))  # SSL port for Hostinger
 EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True').lower() == 'true'  # Use SSL for port 465
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False').lower() == 'true'  # Use TLS for port 587
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'pet@hoolie.gr')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'application@pet-insurance.gr')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'pet@hoolie.gr')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'application@pet-insurance.gr')
 COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'info@hoolie.gr')
 
 # Default primary key field type
