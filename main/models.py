@@ -360,9 +360,19 @@ class PetDocument(models.Model):
     def get_file_url(self):
         """Get the URL to access the file"""
         if self.file:
-            # Use Django view to serve file instead of direct S3 URL
-            from django.urls import reverse
-            return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
+            # Check if using S3 storage (Bucketeer)
+            from django.conf import settings
+            if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3boto3' in settings.DEFAULT_FILE_STORAGE.lower():
+                # Using S3 - return direct S3 URL with HTTPS
+                s3_url = self.file.url
+                # Ensure URL uses HTTPS
+                if s3_url.startswith('http://'):
+                    s3_url = s3_url.replace('http://', 'https://', 1)
+                return s3_url
+            else:
+                # Using local storage - use Django view to serve file
+                from django.urls import reverse
+                return reverse('main:serve_file', kwargs={'file_type': 'document', 'file_id': self.id})
         return None
 
 
@@ -398,9 +408,19 @@ class PetPhoto(models.Model):
     def get_file_url(self):
         """Get the URL to access the photo"""
         if self.file:
-            # Use Django view to serve file instead of direct S3 URL
-            from django.urls import reverse
-            return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
+            # Check if using S3 storage (Bucketeer)
+            from django.conf import settings
+            if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 's3boto3' in settings.DEFAULT_FILE_STORAGE.lower():
+                # Using S3 - return direct S3 URL with HTTPS
+                s3_url = self.file.url
+                # Ensure URL uses HTTPS
+                if s3_url.startswith('http://'):
+                    s3_url = s3_url.replace('http://', 'https://', 1)
+                return s3_url
+            else:
+                # Using local storage - use Django view to serve file
+                from django.urls import reverse
+                return reverse('main:serve_file', kwargs={'file_type': 'photo', 'file_id': self.id})
         return None
 
 

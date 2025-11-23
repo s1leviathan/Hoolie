@@ -700,15 +700,21 @@ function displayUploadedPhotos() {
             photoDiv.className = 'photo-item';
             photoDiv.style.cssText = 'position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
             
-            // Ensure URL is absolute and valid
+            // Ensure URL is absolute and valid, prefer HTTPS
             let imageUrl = photo.file_url || '';
             if (imageUrl) {
+                // If URL is HTTP, convert to HTTPS for security
+                if (imageUrl.startsWith('http://')) {
+                    imageUrl = imageUrl.replace('http://', 'https://', 1);
+                }
+                // If relative URL, make it absolute with HTTPS
                 if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-                    // If relative URL, make it absolute
+                    // Use HTTPS for absolute URLs
+                    const protocol = window.location.protocol === 'https:' ? 'https:' : 'https:';
                     if (imageUrl.startsWith('/')) {
-                        imageUrl = window.location.origin + imageUrl;
+                        imageUrl = protocol + '//' + window.location.host + imageUrl;
                     } else {
-                        imageUrl = window.location.origin + '/' + imageUrl;
+                        imageUrl = protocol + '//' + window.location.host + '/' + imageUrl;
                     }
                 }
             } else {
