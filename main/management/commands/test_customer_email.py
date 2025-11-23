@@ -101,11 +101,10 @@ class Command(BaseCommand):
                 'second_pet_name': sample_app.second_pet_name if sample_app.has_second_pet else None,
             }
             
-            # Render HTML and plain text emails
-            html_message = render_to_string('emails/customer_confirmation.html', context)
+            # Render plain text email only (same as verification email that works)
             plain_message = render_to_string('emails/customer_confirmation.txt', context)
             
-            # Send plain text email first to ensure delivery
+            # Send simple plain text email only (same format as verification email)
             from django.core.mail import send_mail
             send_mail(
                 subject=subject,
@@ -114,19 +113,6 @@ class Command(BaseCommand):
                 recipient_list=[recipient_email],
                 fail_silently=False,
             )
-            
-            # Also try sending HTML version (but don't fail if it doesn't work)
-            try:
-                email = EmailMultiAlternatives(
-                    subject=subject,
-                    body=plain_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=[recipient_email],
-                )
-                email.attach_alternative(html_message, "text/html")
-                email.send(fail_silently=True)
-            except Exception as e:
-                self.stdout.write(self.style.WARNING(f"HTML email failed but plain text sent: {e}"))
             
             self.stdout.write(
                 self.style.SUCCESS(
