@@ -124,6 +124,13 @@ def send_customer_confirmation_email(application):
         )
         email.attach_alternative(html_message, "text/html")
         
+        # Add headers to improve deliverability
+        email.extra_headers = {
+            'X-Priority': '1',
+            'X-MSMail-Priority': 'High',
+            'Importance': 'high',
+        }
+        
         email.send(fail_silently=False)
         logger.info(f"Customer confirmation email sent to {application.email} for application {application.application_number}")
         
