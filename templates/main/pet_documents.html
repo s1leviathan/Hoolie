@@ -90,10 +90,10 @@
                         </p>
                     </div>
                     
-                    <!-- Uploaded Photos Grid -->
+                    <!-- Uploaded Photos List -->
                     <div class="uploaded-photos" id="uploadedPhotos" style="display: none; margin-top: 2rem;">
                         <h4>Ανεβασμένες Φωτογραφίες:</h4>
-                        <div class="photos-grid" id="photosGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;"></div>
+                        <ul id="photosList" style="list-style: none; padding: 0; margin-top: 1rem;"></ul>
                     </div>
                     
                     <!-- Photo Upload Status -->
@@ -687,48 +687,36 @@ function uploadPhotoToServer(file) {
 }
 
 function displayUploadedPhotos() {
-    const photosGrid = document.getElementById('photosGrid');
+    const photosList = document.getElementById('photosList');
     const uploadedPhotosDiv = document.getElementById('uploadedPhotos');
     
-    photosGrid.innerHTML = '';
+    photosList.innerHTML = '';
     
     if (uploadedPhotos.length > 0) {
         uploadedPhotosDiv.style.display = 'block';
         
         uploadedPhotos.forEach((photo, index) => {
-            const photoDiv = document.createElement('div');
-            photoDiv.className = 'photo-item';
-            photoDiv.style.cssText = 'position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+            const li = document.createElement('li');
+            li.className = 'file-item';
             
-            // Ensure URL is absolute and valid, prefer HTTPS
-            let imageUrl = photo.file_url || '';
-            if (imageUrl) {
-                // If URL is HTTP, convert to HTTPS for security
-                if (imageUrl.startsWith('http://')) {
-                    imageUrl = imageUrl.replace('http://', 'https://', 1);
-                }
-                // If relative URL, make it absolute with HTTPS
-                if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-                    // Use HTTPS for absolute URLs
-                    const protocol = window.location.protocol === 'https:' ? 'https:' : 'https:';
-                    if (imageUrl.startsWith('/')) {
-                        imageUrl = protocol + '//' + window.location.host + imageUrl;
-                    } else {
-                        imageUrl = protocol + '//' + window.location.host + '/' + imageUrl;
-                    }
-                }
-            } else {
-                // Fallback placeholder if no URL
-                imageUrl = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'150\' height=\'150\'%3E%3Crect fill=\'%23ddd\' width=\'150\' height=\'150\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' dy=\'10.5\' font-weight=\'bold\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\'%3ENo Image%3C/text%3E%3C/svg%3E';
-            }
+            const fileSize = formatFileSize(photo.size || 0);
+            const photoName = photo.name || `Φωτογραφία ${index + 1}`;
             
-            photoDiv.innerHTML = `
-                <img src="${imageUrl}" alt="${photo.name}" style="width: 100%; height: 150px; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'150\\' height=\\'150\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'150\\' height=\\'150\\'/%3E%3Ctext fill=\\'%23999\\' font-family=\\'sans-serif\\' font-size=\\'14\\' dy=\\'10.5\\' font-weight=\\'bold\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\'%3EError%3C/text%3E%3C/svg%3E'; console.error('Failed to load image:', '${imageUrl}');">
-                <button type="button" class="remove-photo" onclick="removePhoto(${index})" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">×</button>
+            li.innerHTML = `
+                <div class="file-info">
+                    <span class="file-icon">📷</span>
+                    <div>
+                        <div class="file-name">${photoName} - Ανέβηκε</div>
+                        <div class="file-size">${fileSize}</div>
+                    </div>
+                </div>
+                <button type="button" class="remove-file" onclick="removePhoto(${index})">Αφαίρεση</button>
             `;
             
-            photosGrid.appendChild(photoDiv);
+            photosList.appendChild(li);
         });
+        
+        showStatus('success', `Επιτυχώς προστέθηκαν ${uploadedPhotos.length} φωτογραφίες`);
     } else {
         uploadedPhotosDiv.style.display = 'none';
     }
