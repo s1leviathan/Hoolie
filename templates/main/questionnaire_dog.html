@@ -109,12 +109,12 @@
                     
                     <div class="form-group">
                         <label for="pet_weight">Βάρος:</label>
-                        <input type="text" id="pet_weight" name="pet_weight" placeholder="π.χ. 15 κιλά">
+                        <input type="text" id="pet_weight" name="pet_weight" placeholder="π.χ. 15 κιλά" style="color: #333;">
                     </div>
                     
                     <div class="form-group">
                         <label for="microchip">Αρ. Σήμανσης (Microchip):</label>
-                        <input type="text" id="microchip" name="microchip" placeholder="Αριθμός microchip">
+                        <input type="text" id="microchip" name="microchip" placeholder="Αριθμός microchip" style="color: #333;">
                     </div>
                     
                     <div class="form-group">
@@ -494,6 +494,12 @@
     border-radius: 5px;
     font-family: inherit;
     resize: vertical;
+    color: #333;
+}
+
+.details-field textarea::placeholder {
+    color: #333;
+    opacity: 0.7;
 }
 
 .form-group {
@@ -511,11 +517,20 @@
 .form-group input[type="email"],
 .form-group input[type="tel"],
 .form-group input[type="date"] {
+    color: #333;
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 1rem;
+}
+
+.form-group input[type="text"]::placeholder,
+.form-group input[type="email"]::placeholder,
+.form-group input[type="tel"]::placeholder,
+.form-group input[type="date"]::placeholder {
+    color: #333;
+    opacity: 0.7;
 }
 
 .checkbox-group {
