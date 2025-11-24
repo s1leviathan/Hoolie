@@ -93,15 +93,30 @@ class Command(BaseCommand):
             subject = 'VERIFICATION TEST - Email Sending Test'
             plain_message = f'This is a confirmation email for your insurance application {sample_app.application_number} for {sample_app.pet_name}. Your application is being processed and you will receive an update within 48 hours.'
             
-            # Send simple plain text email only (same format as verification email)
-            from django.core.mail import send_mail
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[recipient_email],
-                fail_silently=False,
-            )
+            # Send using EXACT same method as verification email (smtplib directly)
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            # Create message exactly like verification email
+            msg = MIMEMultipart()
+            msg['From'] = settings.DEFAULT_FROM_EMAIL
+            msg['To'] = recipient_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(plain_message, 'plain'))
+            
+            # Connect and send exactly like verification email
+            if settings.EMAIL_USE_SSL:
+                server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            else:
+                server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+                if settings.EMAIL_USE_TLS:
+                    server.starttls()
+            
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            text = msg.as_string()
+            result = server.sendmail(settings.DEFAULT_FROM_EMAIL, [recipient_email], text)
+            server.quit()
             
             self.stdout.write(
                 self.style.SUCCESS(
