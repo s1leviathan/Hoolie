@@ -113,20 +113,36 @@ def send_customer_confirmation_email(application):
         }
         
         # Render plain text email only (like verification email that works)
-        # Gmail filters multipart/HTML emails from new senders
         plain_message = render_to_string('emails/customer_confirmation.txt', context)
         
-        # Send simple plain text email only (same format as verification email)
+        # Send using EXACT same method as verification email (smtplib directly)
+        # This bypasses Django's email backend which might format emails differently
         logger.info(f"Attempting to send customer confirmation email to {application.email} for application {application.application_number}")
         try:
-            from django.core.mail import send_mail
-            result = send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[application.email],
-                fail_silently=False,
-            )
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            # Create message exactly like verification email
+            msg = MIMEMultipart()
+            msg['From'] = settings.DEFAULT_FROM_EMAIL
+            msg['To'] = application.email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(plain_message, 'plain'))
+            
+            # Connect and send exactly like verification email
+            if settings.EMAIL_USE_SSL:
+                server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            else:
+                server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+                if settings.EMAIL_USE_TLS:
+                    server.starttls()
+            
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            text = msg.as_string()
+            result = server.sendmail(settings.DEFAULT_FROM_EMAIL, [application.email], text)
+            server.quit()
+            
             logger.info(f"Customer confirmation email sent successfully to {application.email}. SMTP returned: {result}. Application: {application.application_number}")
         except Exception as e:
             logger.error(f"Failed to send customer confirmation email to {application.email}: {e}")
