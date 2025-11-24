@@ -537,8 +537,18 @@ def handle_application_submission(request):
         
         # Apply breed surcharges from questionnaire (if available)
         # Check POST data first (from questionnaire submission)
-        special_breed_5_percent = request.POST.get('special_breed_5_percent') == 'true'
-        special_breed_20_percent = request.POST.get('special_breed_20_percent') == 'true'
+        # Multiple checkboxes with same name come as a list
+        special_breed_5_percent = False
+        special_breed_20_percent = False
+        
+        # Check POST data
+        post_5_percent = request.POST.getlist('special_breed_5_percent')
+        post_20_percent = request.POST.getlist('special_breed_20_percent')
+        
+        if post_5_percent and 'true' in post_5_percent:
+            special_breed_5_percent = True
+        if post_20_percent and 'true' in post_20_percent:
+            special_breed_20_percent = True
         
         # Also check session data (stored when questionnaire was submitted)
         if 'questionnaire_data' in request.session:
@@ -548,24 +558,33 @@ def handle_application_submission(request):
                 session_5_percent = session_data.get('special_breed_5_percent')
                 if session_5_percent:
                     if isinstance(session_5_percent, list):
-                        special_breed_5_percent = 'true' in session_5_percent
+                        special_breed_5_percent = 'true' in session_5_percent or True in [v == 'true' for v in session_5_percent]
                     else:
-                        special_breed_5_percent = session_5_percent == 'true'
+                        special_breed_5_percent = session_5_percent == 'true' or special_breed_5_percent
                 # Check for 20% surcharge in session
                 session_20_percent = session_data.get('special_breed_20_percent')
                 if session_20_percent:
                     if isinstance(session_20_percent, list):
-                        special_breed_20_percent = 'true' in session_20_percent
+                        special_breed_20_percent = 'true' in session_20_percent or True in [v == 'true' for v in session_20_percent]
                     else:
-                        special_breed_20_percent = session_20_percent == 'true'
+                        special_breed_20_percent = session_20_percent == 'true' or special_breed_20_percent
         
-        # Apply surcharges to base premium
+        # Log initial base premium
+        initial_premium = base_premium
+        logger.info(f"Initial base premium before surcharges: {base_premium}")
+        logger.info(f"Breed surcharges - 5%: {special_breed_5_percent}, 20%: {special_breed_20_percent}")
+        
+        # Apply surcharges to base premium (surcharges are cumulative if both selected)
         if special_breed_5_percent:
             base_premium = base_premium * 1.05  # Add 5% surcharge
-            logger.info(f"Applied 5% breed surcharge. New premium: {base_premium}")
+            logger.info(f"Applied 5% breed surcharge. Base premium: {initial_premium} -> {base_premium}")
         if special_breed_20_percent:
             base_premium = base_premium * 1.20  # Add 20% surcharge
-            logger.info(f"Applied 20% breed surcharge. New premium: {base_premium}")
+            logger.info(f"Applied 20% breed surcharge. Base premium: {base_premium}")
+        
+        # Round to 2 decimal places
+        base_premium = round(base_premium, 2)
+        logger.info(f"Final premium after breed surcharges: {base_premium} (was {initial_premium})")
         
         # Check for affiliate code and apply discount
         affiliate_code_str = request.POST.get('affiliateCode', '').strip().upper()
