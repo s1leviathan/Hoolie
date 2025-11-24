@@ -99,21 +99,11 @@ def send_customer_confirmation_email(application):
         else:
             customer_greeting = 'Κύριε/Κυρία'  # Fallback if no name
         
-        # Use exact same subject format as verification email that works
-        subject = f'VERIFICATION TEST - Application {application.application_number}'
+        # Use EXACT same subject and body format as verification email that works
+        subject = 'VERIFICATION TEST - Email Sending Test'
         
-        # Prepare context
-        context = {
-            'application': application,
-            'application_number': application.application_number,
-            'customer_greeting': customer_greeting,
-            'pet_name': application.pet_name,
-            'has_second_pet': application.has_second_pet,
-            'second_pet_name': application.second_pet_name if application.has_second_pet else None,
-        }
-        
-        # Render plain text email only (like verification email that works)
-        plain_message = render_to_string('emails/customer_confirmation.txt', context)
+        # Use simple body like verification email (no Greek characters, no template)
+        plain_message = f'This is a confirmation email for your insurance application {application.application_number} for {application.pet_name}. Your application is being processed and you will receive an update within 48 hours.'
         
         # Send using EXACT same method as verification email (smtplib directly)
         # This bypasses Django's email backend which might format emails differently
