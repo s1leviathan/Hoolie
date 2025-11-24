@@ -89,9 +89,22 @@ class Command(BaseCommand):
             else:
                 customer_greeting = 'Κύριε/Κυρία'
             
-            # Use EXACT same subject and body as verification email
-            subject = 'VERIFICATION TEST - Email Sending Test'
-            plain_message = f'This is a confirmation email for your insurance application {sample_app.application_number} for {sample_app.pet_name}. Your application is being processed and you will receive an update within 48 hours.'
+            # Use proper Greek subject and template
+            subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {sample_app.application_number}'
+            
+            # Prepare context for email template
+            context = {
+                'application': sample_app,
+                'application_number': sample_app.application_number,
+                'customer_greeting': customer_greeting,
+                'pet_name': sample_app.pet_name,
+                'has_second_pet': sample_app.has_second_pet,
+                'second_pet_name': sample_app.second_pet_name if sample_app.has_second_pet else None,
+            }
+            
+            # Render plain text email template with original Greek message
+            from django.template.loader import render_to_string
+            plain_message = render_to_string('emails/customer_confirmation.txt', context)
             
             # Send using EXACT same method as verification email (smtplib directly)
             import smtplib
