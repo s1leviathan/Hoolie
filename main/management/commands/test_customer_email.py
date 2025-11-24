@@ -89,20 +89,9 @@ class Command(BaseCommand):
             else:
                 customer_greeting = 'Κύριε/Κυρία'
             
-            subject = f'Application Confirmation - {sample_app.application_number}'
-            
-            # Prepare context
-            context = {
-                'application': sample_app,
-                'application_number': sample_app.application_number,
-                'customer_greeting': customer_greeting,
-                'pet_name': sample_app.pet_name,
-                'has_second_pet': sample_app.has_second_pet,
-                'second_pet_name': sample_app.second_pet_name if sample_app.has_second_pet else None,
-            }
-            
-            # Render plain text email only (same as verification email that works)
-            plain_message = render_to_string('emails/customer_confirmation.txt', context)
+            # Use EXACT same subject and body as verification email
+            subject = 'VERIFICATION TEST - Email Sending Test'
+            plain_message = f'This is a confirmation email for your insurance application {sample_app.application_number} for {sample_app.pet_name}. Your application is being processed and you will receive an update within 48 hours.'
             
             # Send simple plain text email only (same format as verification email)
             from django.core.mail import send_mail
