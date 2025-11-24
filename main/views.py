@@ -377,6 +377,28 @@ def user_data(request):
         if 'annual' in pricing_data and 'final' not in pricing_data:
             pricing_data['final'] = pricing_data['annual']
     
+    # Apply breed surcharges if passed via URL parameters (from questionnaire)
+    special_breed_5_percent = request.GET.get('special_breed_5_percent') == 'true'
+    special_breed_20_percent = request.GET.get('special_breed_20_percent') == 'true'
+    
+    if pricing_data and 'annual' in pricing_data:
+        base_annual = pricing_data['annual']
+        if special_breed_5_percent:
+            base_annual = base_annual * 1.05  # Add 5% surcharge
+        if special_breed_20_percent:
+            base_annual = base_annual * 1.20  # Add 20% surcharge
+        
+        # Update all pricing fields with surcharge applied
+        if base_annual != pricing_data.get('annual'):
+            original_annual = pricing_data['annual']
+            surcharge_multiplier = base_annual / original_annual
+            pricing_data['annual'] = round(base_annual, 2)
+            if 'six_month' in pricing_data:
+                pricing_data['six_month'] = round(pricing_data['six_month'] * surcharge_multiplier, 2)
+            if 'three_month' in pricing_data:
+                pricing_data['three_month'] = round(pricing_data['three_month'] * surcharge_multiplier, 2)
+            pricing_data['final'] = pricing_data['annual']
+    
     # Get second pet pricing
     second_pet_pricing_data = None
     if second_pet_type and second_pet_program and second_pet_weight_category:
@@ -477,8 +499,73 @@ def handle_application_submission(request):
                         except ValueError:
                             logger.error(f"Could not parse second pet birthdate: {second_birthdate_str}")
         
-        # Calculate base premium
-        base_premium = calculate_total_premium(request.POST)
+        # Calculate base premium from pricing tables
+        pet_type_val = request.POST.get('type', '')
+        program = request.POST.get('program', 'silver')
+        breed = request.POST.get('breed', '')
+        
+        # Extract weight category from breed
+        weight_category = None
+        if breed:
+            if 'έως 10 κιλά' in breed or 'up to 10' in breed.lower():
+                weight_category = '10'
+            elif '11-20 κιλά' in breed or '11-20' in breed:
+                weight_category = '11-20'
+            elif '21-40 κιλά' in breed or '21-40' in breed:
+                weight_category = '21-40'
+            elif '>40 κιλά' in breed or '>40' in breed:
+                weight_category = '>40'
+        
+        # Get base pricing from tables (same as in user_data view)
+        DOG_PRICING = {
+            'silver': {'10': 180, '11-20': 220, '21-40': 280, '>40': 350},
+            'gold': {'10': 240, '11-20': 300, '21-40': 380, '>40': 480},
+            'platinum': {'10': 320, '11-20': 400, '21-40': 500, '>40': 620}
+        }
+        CAT_PRICING = {
+            'silver': {'10': 150, '11-20': 180},
+            'gold': {'10': 200, '11-20': 240},
+            'platinum': {'10': 260, '11-20': 320}
+        }
+        
+        # Get base premium
+        base_premium = 0
+        if pet_type_val == 'dog' and program in DOG_PRICING and weight_category in DOG_PRICING[program]:
+            base_premium = DOG_PRICING[program][weight_category]
+        elif pet_type_val == 'cat' and program in CAT_PRICING and weight_category in CAT_PRICING[program]:
+            base_premium = CAT_PRICING[program][weight_category]
+        
+        # Apply breed surcharges from questionnaire (if available)
+        # Check POST data first (from questionnaire submission)
+        special_breed_5_percent = request.POST.get('special_breed_5_percent') == 'true'
+        special_breed_20_percent = request.POST.get('special_breed_20_percent') == 'true'
+        
+        # Also check session data (stored when questionnaire was submitted)
+        if 'questionnaire_data' in request.session:
+            session_data = request.session['questionnaire_data']
+            if isinstance(session_data, dict):
+                # Check for 5% surcharge in session
+                session_5_percent = session_data.get('special_breed_5_percent')
+                if session_5_percent:
+                    if isinstance(session_5_percent, list):
+                        special_breed_5_percent = 'true' in session_5_percent
+                    else:
+                        special_breed_5_percent = session_5_percent == 'true'
+                # Check for 20% surcharge in session
+                session_20_percent = session_data.get('special_breed_20_percent')
+                if session_20_percent:
+                    if isinstance(session_20_percent, list):
+                        special_breed_20_percent = 'true' in session_20_percent
+                    else:
+                        special_breed_20_percent = session_20_percent == 'true'
+        
+        # Apply surcharges to base premium
+        if special_breed_5_percent:
+            base_premium = base_premium * 1.05  # Add 5% surcharge
+            logger.info(f"Applied 5% breed surcharge. New premium: {base_premium}")
+        if special_breed_20_percent:
+            base_premium = base_premium * 1.20  # Add 20% surcharge
+            logger.info(f"Applied 20% breed surcharge. New premium: {base_premium}")
         
         # Check for affiliate code and apply discount
         affiliate_code_str = request.POST.get('affiliateCode', '').strip().upper()
