@@ -797,6 +797,7 @@ def handle_application_submission(request):
                     del request.session['questionnaire_submitted']
         except Exception as e:
             logger.error(f"Error creating/updating questionnaire for application {application.id}: {e}")
+            import traceback
             logger.error(traceback.format_exc())
             # Even if there's an error, try to create an empty questionnaire so it's visible in admin
             try:
