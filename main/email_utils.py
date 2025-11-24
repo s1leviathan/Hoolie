@@ -99,7 +99,7 @@ def send_customer_confirmation_email(application):
         else:
             customer_greeting = 'Κύριε/Κυρία'  # Fallback if no name
         
-        # Use proper subject for customer confirmation
+        # Use proper Greek subject for customer confirmation
         subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {application.application_number}'
         
         # Prepare context for email template
