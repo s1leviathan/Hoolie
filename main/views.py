@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse, FileResponse, Http404
+from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
@@ -1141,6 +1141,7 @@ def serve_file(request, file_type, file_id):
             try:
                 import boto3
                 from botocore.client import Config
+                from botocore.exceptions import ClientError
                 
                 s3_client = boto3.client(
                     's3',
@@ -1151,9 +1152,39 @@ def serve_file(request, file_type, file_id):
                 )
                 
                 # Get the S3 key (path) of the file
+                # Django storages stores files with AWS_LOCATION prefix (usually 'media/')
                 s3_key = file_obj.file.name
                 
-                # Generate signed URL (valid for 1 hour)
+                # Ensure the key includes the AWS_LOCATION prefix if it's not already there
+                # Django's S3Boto3Storage automatically adds AWS_LOCATION to the key
+                # But file.name might or might not include it depending on storage configuration
+                if hasattr(settings, 'AWS_LOCATION') and settings.AWS_LOCATION:
+                    # If the key doesn't start with the location prefix, add it
+                    if not s3_key.startswith(settings.AWS_LOCATION + '/'):
+                        # Check if it already starts with just the location (no slash)
+                        if not s3_key.startswith(settings.AWS_LOCATION):
+                            s3_key = f"{settings.AWS_LOCATION}/{s3_key}"
+                
+                # Check if file exists in S3 before generating signed URL
+                try:
+                    s3_client.head_object(
+                        Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+                        Key=s3_key
+                    )
+                except ClientError as e:
+                    # File doesn't exist in S3
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    if error_code == '404' or error_code == 'NoSuchKey':
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"File not found in S3: {s3_key} (file_type={file_type}, file_id={file_id})")
+                        raise Http404(f"File not found in storage: {s3_key}")
+                    else:
+                        # Other S3 error, re-raise
+                        raise
+                
+                # File exists, generate signed URL (valid for 1 hour)
+                # Use the corrected s3_key that includes AWS_LOCATION prefix
                 signed_url = s3_client.generate_presigned_url(
                     'get_object',
                     Params={
@@ -1163,15 +1194,32 @@ def serve_file(request, file_type, file_id):
                     ExpiresIn=3600  # 1 hour
                 )
                 return HttpResponseRedirect(signed_url)
+            except Http404:
+                # Re-raise Http404
+                raise
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error generating signed URL for {file_type}/{file_id}: {e}")
-                # Fallback to direct URL
-                s3_url = file_obj.file.url
-                if s3_url.startswith('http://'):
-                    s3_url = s3_url.replace('http://', 'https://', 1)
-                return HttpResponseRedirect(s3_url)
+                import traceback
+                logger.error(traceback.format_exc())
+                # Check if file exists using default_storage (with proper key)
+                # Try with AWS_LOCATION prefix if it exists
+                check_key = file_obj.file.name
+                if hasattr(settings, 'AWS_LOCATION') and settings.AWS_LOCATION:
+                    if not check_key.startswith(settings.AWS_LOCATION + '/'):
+                        if not check_key.startswith(settings.AWS_LOCATION):
+                            check_key = f"{settings.AWS_LOCATION}/{check_key}"
+                
+                if default_storage.exists(check_key):
+                    # File exists, try fallback to direct URL
+                    s3_url = file_obj.file.url
+                    if s3_url.startswith('http://'):
+                        s3_url = s3_url.replace('http://', 'https://', 1)
+                    return HttpResponseRedirect(s3_url)
+                else:
+                    # File doesn't exist
+                    raise Http404(f"File not found: {file_obj.file.name} (checked as: {check_key})")
         else:
             # Using local storage - serve the file directly
             file_path = file_obj.file.path
@@ -1186,3 +1234,8 @@ def serve_file(request, file_type, file_id):
         import traceback
         logger.error(traceback.format_exc())
         raise Http404("File not found")
+
+
+def favicon(request):
+    """Handle favicon requests - return 204 No Content to stop browser requests"""
+    return HttpResponse(status=204)

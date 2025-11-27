@@ -29,4 +29,7 @@ urlpatterns = [
     
     # File serving endpoint
     path('media/<str:file_type>/<int:file_id>/', views.serve_file, name='serve_file'),
+    
+    # Favicon handler
+    path('favicon.ico', views.favicon, name='favicon'),
 ]

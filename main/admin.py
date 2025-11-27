@@ -247,13 +247,31 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         """Display list of uploaded documents with download links"""
         documents = obj.documents.all()
         if documents:
+            from django.core.files.storage import default_storage
             links_html = []
             for doc in documents:
-                url = doc.get_file_url()
-                if url:
-                    links_html.append(
-                        f'<a href="{url}" target="_blank" style="display: inline-block; margin: 2px; padding: 3px 8px; background: #28a745; color: white; text-decoration: none; border-radius: 3px; font-size: 12px;">📎 {doc.original_filename}</a>'
-                    )
+                if doc.file:
+                    try:
+                        # Check if file exists in storage
+                        if default_storage.exists(doc.file.name):
+                            url = doc.get_file_url()
+                            if url:
+                                links_html.append(
+                                    f'<a href="{url}" target="_blank" style="display: inline-block; margin: 2px; padding: 3px 8px; background: #28a745; color: white; text-decoration: none; border-radius: 3px; font-size: 12px;">📎 {doc.original_filename}</a>'
+                                )
+                            else:
+                                links_html.append(
+                                    f'<span style="color: #dc3545; font-size: 12px;">⚠️ {doc.original_filename}</span>'
+                                )
+                        else:
+                            # File doesn't exist in storage
+                            links_html.append(
+                                f'<span style="color: #dc3545; font-size: 12px;">⚠️ {doc.original_filename} <small>(Αρχείο λείπει)</small></span>'
+                            )
+                    except Exception:
+                        links_html.append(
+                            f'<span style="color: #dc3545; font-size: 12px;">⚠️ {doc.original_filename}</span>'
+                        )
                 else:
                     links_html.append(
                         f'<span style="color: #dc3545; font-size: 12px;">⚠️ {doc.original_filename}</span>'
@@ -266,18 +284,43 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         """Display grid of uploaded photos with view links"""
         photos = obj.photos.all()
         if photos:
+            from django.core.files.storage import default_storage
             photos_html = []
             for photo in photos:
-                url = photo.get_file_url()
-                if url:
-                    photos_html.append(
-                        f'<div style="display: inline-block; margin: 5px; text-align: center;">'
-                        f'<a href="{url}" target="_blank" style="display: block;">'
-                        f'<img src="{url}" alt="{photo.original_filename}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #28a745;">'
-                        f'</a>'
-                        f'<small style="display: block; margin-top: 3px; color: #666;">{photo.original_filename}</small>'
-                        f'</div>'
-                    )
+                if photo.file:
+                    try:
+                        # Check if file exists in storage
+                        if default_storage.exists(photo.file.name):
+                            url = photo.get_file_url()
+                            if url:
+                                photos_html.append(
+                                    f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                                    f'<a href="{url}" target="_blank" style="display: block;">'
+                                    f'<img src="{url}" alt="{photo.original_filename}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #28a745;">'
+                                    f'</a>'
+                                    f'<small style="display: block; margin-top: 3px; color: #666;">{photo.original_filename}</small>'
+                                    f'</div>'
+                                )
+                            else:
+                                photos_html.append(
+                                    f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                                    f'<span style="color: #dc3545; font-size: 12px;">⚠️ {photo.original_filename}</span>'
+                                    f'</div>'
+                                )
+                        else:
+                            # File doesn't exist in storage
+                            photos_html.append(
+                                f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                                f'<span style="color: #dc3545; font-size: 12px;">⚠️ {photo.original_filename}</span><br>'
+                                f'<small style="color: #6c757d; font-size: 10px;">Αρχείο λείπει</small>'
+                                f'</div>'
+                            )
+                    except Exception:
+                        photos_html.append(
+                            f'<div style="display: inline-block; margin: 5px; text-align: center;">'
+                            f'<span style="color: #dc3545; font-size: 12px;">⚠️ {photo.original_filename}</span>'
+                            f'</div>'
+                        )
                 else:
                     photos_html.append(
                         f'<div style="display: inline-block; margin: 5px; text-align: center;">'
@@ -893,9 +936,24 @@ class PetDocumentAdmin(admin.ModelAdmin):
     def file_download(self, obj):
         """Link to download/view file"""
         if obj.file:
-            url = obj.get_file_url()
-            if url:
-                return format_html('<a href="{}" target="_blank">📥 Προβολή/Λήψη</a>', url)
+            from django.core.files.storage import default_storage
+            try:
+                # Check if file exists in storage
+                if default_storage.exists(obj.file.name):
+                    url = obj.get_file_url()
+                    if url:
+                        return format_html('<a href="{}" target="_blank">📥 Προβολή/Λήψη</a>', url)
+                else:
+                    return format_html(
+                        '<span style="color: #dc3545;">⚠️ Αρχείο λείπει</span><br>'
+                        '<small style="color: #6c757d;">{}</small>',
+                        obj.file.name
+                    )
+            except Exception as e:
+                return format_html(
+                    '<span style="color: #dc3545;">⚠️ Σφάλμα: {}</span>',
+                    str(e)
+                )
         return '-'
     file_download.short_description = 'Αρχείο'
 
@@ -973,11 +1031,23 @@ class PetPhotoAdmin(admin.ModelAdmin):
     def photo_thumbnail(self, obj):
         """Display photo thumbnail"""
         if obj.file:
-            url = obj.get_file_url()
-            if url:
+            from django.core.files.storage import default_storage
+            try:
+                # Check if file exists in storage
+                if default_storage.exists(obj.file.name):
+                    url = obj.get_file_url()
+                    if url:
+                        return format_html(
+                            '<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;">',
+                            url
+                        )
+                else:
+                    return format_html(
+                        '<span style="color: #dc3545; font-size: 10px;">⚠️ Αρχείο λείπει</span>'
+                    )
+            except Exception:
                 return format_html(
-                    '<img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;">',
-                    url
+                    '<span style="color: #dc3545; font-size: 10px;">⚠️ Σφάλμα</span>'
                 )
         return '-'
     photo_thumbnail.short_description = 'Προεπισκόπηση'
@@ -1014,9 +1084,24 @@ class PetPhotoAdmin(admin.ModelAdmin):
     def photo_view(self, obj):
         """Link to view photo"""
         if obj.file:
-            url = obj.get_file_url()
-            if url:
-                return format_html('<a href="{}" target="_blank">📷 Προβολή</a>', url)
+            from django.core.files.storage import default_storage
+            try:
+                # Check if file exists in storage
+                if default_storage.exists(obj.file.name):
+                    url = obj.get_file_url()
+                    if url:
+                        return format_html('<a href="{}" target="_blank">📷 Προβολή</a>', url)
+                else:
+                    return format_html(
+                        '<span style="color: #dc3545;">⚠️ Αρχείο λείπει</span><br>'
+                        '<small style="color: #6c757d;">{}</small>',
+                        obj.file.name
+                    )
+            except Exception as e:
+                return format_html(
+                    '<span style="color: #dc3545;">⚠️ Σφάλμα: {}</span>',
+                    str(e)
+                )
         return '-'
     photo_view.short_description = 'Φωτογραφία'
 
