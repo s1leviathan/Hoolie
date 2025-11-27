@@ -770,6 +770,13 @@ def handle_application_submission(request):
             is_mixed = breed_type == 'mixed'
             is_crossbreed = breed_type == 'crossbreed'
             
+            # Log what we're about to save
+            logger.info(f"Questionnaire values to save:")
+            logger.info(f"  has_other_insured_pet: {get_bool('has_other_insured_pet')} (raw: {questionnaire_data.get('has_other_insured_pet', 'NOT_FOUND')})")
+            logger.info(f"  has_been_denied_insurance: {get_bool('has_been_denied_insurance')} (raw: {questionnaire_data.get('has_been_denied_insurance', 'NOT_FOUND')})")
+            logger.info(f"  is_healthy: {get_bool('is_healthy')} (raw: {questionnaire_data.get('is_healthy', 'NOT_FOUND')})")
+            logger.info(f"  special_breed_5_percent: {get_bool('special_breed_5_percent')} (raw: {questionnaire_data.get('special_breed_5_percent', 'NOT_FOUND')})")
+            
             questionnaire, created = Questionnaire.objects.get_or_create(
                 application=application,
                 defaults={
