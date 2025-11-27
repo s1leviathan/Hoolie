@@ -178,24 +178,54 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     # Calculate surcharges/discounts for display in ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ section
     surcharges_discounts = []
     
-    # Check for breed surcharges
-    if hasattr(application, 'questionnaire') and application.questionnaire:
-        questionnaire = application.questionnaire
-        if questionnaire.special_breed_5_percent:
-            surcharge_5 = base_final_price * 0.05
-            surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
-        if questionnaire.special_breed_20_percent:
-            surcharge_20 = base_final_price * 0.20
-            surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
+    # Check for breed surcharges - try to get questionnaire
+    try:
+        # Try to access questionnaire via relationship
+        questionnaire = None
+        if hasattr(application, 'questionnaire'):
+            try:
+                questionnaire = application.questionnaire
+            except Exception:
+                # If questionnaire doesn't exist, try to get it directly
+                from .models import Questionnaire
+                try:
+                    questionnaire = Questionnaire.objects.get(application=application)
+                except Questionnaire.DoesNotExist:
+                    questionnaire = None
         
-        # Check for extra features
-        if questionnaire.additional_poisoning_coverage:
-            poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25}
-            poisoning_price = poisoning_prices.get(program, 18)
-            surcharges_discounts.append(f"+{poisoning_price:.2f}€ (Δηλητηρίαση)")
-        
-        if questionnaire.additional_blood_checkup:
-            surcharges_discounts.append(f"+28.00€ (Αιματολογικό Check Up)")
+        if questionnaire:
+            print(f"  🔍 Found questionnaire ID: {questionnaire.id}")
+            print(f"  🔍 special_breed_5_percent: {questionnaire.special_breed_5_percent}")
+            print(f"  🔍 special_breed_20_percent: {questionnaire.special_breed_20_percent}")
+            print(f"  🔍 additional_poisoning_coverage: {questionnaire.additional_poisoning_coverage}")
+            print(f"  🔍 additional_blood_checkup: {questionnaire.additional_blood_checkup}")
+            
+            if questionnaire.special_breed_5_percent:
+                surcharge_5 = base_final_price * 0.05
+                surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
+                print(f"  ✅ Added 5% surcharge: {surcharge_5:.2f}€")
+            
+            if questionnaire.special_breed_20_percent:
+                surcharge_20 = base_final_price * 0.20
+                surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
+                print(f"  ✅ Added 20% surcharge: {surcharge_20:.2f}€")
+            
+            # Check for extra features
+            if questionnaire.additional_poisoning_coverage:
+                poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25}
+                poisoning_price = poisoning_prices.get(program, 18)
+                surcharges_discounts.append(f"+{poisoning_price:.2f}€ (Δηλητηρίαση)")
+                print(f"  ✅ Added poisoning coverage: {poisoning_price:.2f}€")
+            
+            if questionnaire.additional_blood_checkup:
+                surcharges_discounts.append(f"+28.00€ (Αιματολογικό Check Up)")
+                print(f"  ✅ Added blood checkup: 28.00€")
+        else:
+            print(f"  ⚠️ No questionnaire found for application {application.id}")
+    except Exception as e:
+        import traceback
+        print(f"  ❌ Error accessing questionnaire: {e}")
+        print(traceback.format_exc())
     
     # Calculate discount for second pet (if applicable)
     if contract_suffix == "-PET2" and application.has_second_pet:
@@ -206,6 +236,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     
     # Format surcharges/discounts for display
     surcharges_text = "\n".join(surcharges_discounts) if surcharges_discounts else ""
+    print(f"  📋 Surcharges/Discounts text: '{surcharges_text}'")
+    print(f"  📋 Number of surcharges: {len(surcharges_discounts)}")
     
     # Use EXACT IPT from the official pricing table (proportionally adjusted if price changed)
     # If actual price differs from base, adjust IPT proportionally
