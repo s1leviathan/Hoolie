@@ -517,15 +517,16 @@ def handle_application_submission(request):
                 weight_category = '>40'
         
         # Get base pricing from tables (same as in user_data view)
+        # Official pricing table - FINAL PRICES (matches official pricing spreadsheet)
         DOG_PRICING = {
-            'silver': {'10': 180, '11-20': 220, '21-40': 280, '>40': 350},
-            'gold': {'10': 240, '11-20': 300, '21-40': 380, '>40': 480},
-            'platinum': {'10': 320, '11-20': 400, '21-40': 500, '>40': 620}
+            'silver': {'10': 166.75, '11-20': 207.20, '21-40': 234.14, '>40': 254.36},
+            'gold': {'10': 234.14, '11-20': 261.09, '21-40': 288.05, '>40': 308.26},
+            'platinum': {'10': 368.92, '11-20': 389.15, '21-40': 409.36, '>40': 436.32}
         }
         CAT_PRICING = {
-            'silver': {'10': 150, '11-20': 180},
-            'gold': {'10': 200, '11-20': 240},
-            'platinum': {'10': 260, '11-20': 320}
+            'silver': {'10': 113.81, '11-20': 141.02},
+            'gold': {'10': 168.22, '11-20': 188.61},
+            'platinum': {'10': 277.02, '11-20': 311.02}
         }
         
         # Get base premium
