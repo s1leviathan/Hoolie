@@ -900,8 +900,9 @@ def handle_application_submission(request):
                 questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
                 questionnaire.save()
             
-            # Log successful creation
+            # Log successful creation with detailed info
             logger.info(f"Questionnaire {'created' if created else 'updated'} successfully for application {application.id} (Questionnaire ID: {questionnaire.id})")
+            logger.info(f"Questionnaire details - 5%: {questionnaire.special_breed_5_percent}, 20%: {questionnaire.special_breed_20_percent}, poisoning: {questionnaire.additional_poisoning_coverage}, blood: {questionnaire.additional_blood_checkup}")
             
             if 'questionnaire_data' in request.session:
                 del request.session['questionnaire_data']
