@@ -36,7 +36,7 @@ def generate_contract_pdf(application):
     try:
         # If there are two pets, generate separate contracts
         if application.has_second_pet and application.second_pet_name:
-            print(f"🐾 Generating separate contracts for two pets...")
+            logger.info(f"🐾 Generating separate contracts for two pets for application {application.id}")
             
             # Generate contract for first pet
             filename1 = f"contract_{application.contract_number}_pet1_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -48,7 +48,9 @@ def generate_contract_pdf(application):
             
             # Use fillpdf library to generate PDFs
             from .fillpdf_utils import generate_contract_with_fillpdf
+            logger.info(f"Generating contract 1 for application {application.id}")
             contract1_path = generate_contract_with_fillpdf(application, temp_filepath1, pet_number=1)
+            logger.info(f"Generating contract 2 for application {application.id}")
             contract2_path = generate_contract_with_fillpdf(application, temp_filepath2, pet_number=2)
             
             # Upload to S3/local storage
@@ -64,13 +66,15 @@ def generate_contract_pdf(application):
         
         else:
             # Single pet contract
-            print(f"🐾 Generating contract for single pet...")
+            logger.info(f"🐾 Generating contract for single pet for application {application.id}")
             filename = f"contract_{application.contract_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
             temp_filepath = os.path.join(temp_dir, filename)
             
             # Use fillpdf library to generate PDF
             from .fillpdf_utils import generate_contract_with_fillpdf
+            logger.info(f"Calling generate_contract_with_fillpdf for application {application.id}")
             contract_path = generate_contract_with_fillpdf(application, temp_filepath, pet_number=1)
+            logger.info(f"Contract generation completed for application {application.id}: {contract_path}")
             
             # Upload to S3/local storage
             if os.path.exists(contract_path):
