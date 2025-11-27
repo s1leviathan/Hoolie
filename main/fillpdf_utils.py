@@ -84,37 +84,37 @@ def get_pricing_values(application, pet_type, weight_category, program):
     # EXACT pricing breakdown from the official table - NO APPROXIMATIONS!
     DOG_PRICING = {
         'silver': {
-            '10': {'net_premium': 100.16, 'management_fee': 30.05, 'ipt': 19.53, 'final': 166.75},
-            '11-20': {'net_premium': 125.20, 'management_fee': 37.56, 'ipt': 24.41, 'final': 207.20},
-            '21-40': {'net_premium': 141.88, 'management_fee': 42.56, 'ipt': 27.67, 'final': 234.14},
-            '>40': {'net_premium': 154.40, 'management_fee': 46.32, 'ipt': 30.11, 'final': 254.36}
+            '10': {'net_premium': 100.16, 'management_fee': 30.05, 'auxiliary_fund': 0.80, 'ipt': 19.53, 'final': 166.75},
+            '11-20': {'net_premium': 125.20, 'management_fee': 37.56, 'auxiliary_fund': 1.00, 'ipt': 24.41, 'final': 207.20},
+            '21-40': {'net_premium': 141.88, 'management_fee': 42.56, 'auxiliary_fund': 1.13, 'ipt': 27.67, 'final': 234.14},
+            '>40': {'net_premium': 154.40, 'management_fee': 46.32, 'auxiliary_fund': 1.24, 'ipt': 30.11, 'final': 254.36}
         },
         'gold': {
-            '10': {'net_premium': 141.88, 'management_fee': 42.56, 'ipt': 27.67, 'final': 234.14},
-            '11-20': {'net_premium': 158.57, 'management_fee': 47.57, 'ipt': 30.92, 'final': 261.09},
-            '21-40': {'net_premium': 175.27, 'management_fee': 52.58, 'ipt': 34.18, 'final': 288.05},
-            '>40': {'net_premium': 187.78, 'management_fee': 56.33, 'ipt': 36.62, 'final': 308.26}
+            '10': {'net_premium': 141.88, 'management_fee': 42.56, 'auxiliary_fund': 1.13, 'ipt': 27.67, 'final': 234.14},
+            '11-20': {'net_premium': 158.57, 'management_fee': 47.57, 'auxiliary_fund': 1.27, 'ipt': 30.92, 'final': 261.09},
+            '21-40': {'net_premium': 175.27, 'management_fee': 52.58, 'auxiliary_fund': 1.40, 'ipt': 34.18, 'final': 288.05},
+            '>40': {'net_premium': 187.78, 'management_fee': 56.33, 'auxiliary_fund': 1.50, 'ipt': 36.62, 'final': 308.26}
         },
         'platinum': {
-            '10': {'net_premium': 225.34, 'management_fee': 67.60, 'ipt': 43.94, 'final': 368.92},
-            '11-20': {'net_premium': 237.87, 'management_fee': 71.36, 'ipt': 46.38, 'final': 389.15},
-            '21-40': {'net_premium': 250.38, 'management_fee': 75.11, 'ipt': 48.82, 'final': 409.36},
-            '>40': {'net_premium': 267.07, 'management_fee': 80.12, 'ipt': 52.08, 'final': 436.32}
+            '10': {'net_premium': 225.34, 'management_fee': 67.60, 'auxiliary_fund': 1.80, 'ipt': 43.94, 'final': 368.92},
+            '11-20': {'net_premium': 237.87, 'management_fee': 71.36, 'auxiliary_fund': 1.90, 'ipt': 46.38, 'final': 389.15},
+            '21-40': {'net_premium': 250.38, 'management_fee': 75.11, 'auxiliary_fund': 2.00, 'ipt': 48.82, 'final': 409.36},
+            '>40': {'net_premium': 267.07, 'management_fee': 80.12, 'auxiliary_fund': 2.14, 'ipt': 52.08, 'final': 436.32}
         }
     }
     
     CAT_PRICING = {
         'silver': {
-            '10': {'net_premium': 67.37, 'management_fee': 20.21, 'ipt': 13.14, 'final': 113.81},
-            '11-20': {'net_premium': 84.22, 'management_fee': 25.27, 'ipt': 16.42, 'final': 141.02}
+            '10': {'net_premium': 67.37, 'management_fee': 20.21, 'auxiliary_fund': 0.54, 'ipt': 13.14, 'final': 113.81},
+            '11-20': {'net_premium': 84.22, 'management_fee': 25.27, 'auxiliary_fund': 0.67, 'ipt': 16.42, 'final': 141.02}
         },
         'gold': {
-            '10': {'net_premium': 101.07, 'management_fee': 30.32, 'ipt': 19.71, 'final': 168.22},
-            '11-20': {'net_premium': 113.69, 'management_fee': 34.11, 'ipt': 22.17, 'final': 188.61}
+            '10': {'net_premium': 101.07, 'management_fee': 30.32, 'auxiliary_fund': 0.81, 'ipt': 19.71, 'final': 168.22},
+            '11-20': {'net_premium': 113.69, 'management_fee': 34.11, 'auxiliary_fund': 0.91, 'ipt': 22.17, 'final': 188.61}
         },
         'platinum': {
-            '10': {'net_premium': 168.44, 'management_fee': 50.53, 'ipt': 32.84, 'final': 277.02},
-            '11-20': {'net_premium': 189.49, 'management_fee': 56.85, 'ipt': 36.95, 'final': 311.02}
+            '10': {'net_premium': 168.44, 'management_fee': 50.53, 'auxiliary_fund': 1.35, 'ipt': 32.84, 'final': 277.02},
+            '11-20': {'net_premium': 189.49, 'management_fee': 56.85, 'auxiliary_fund': 1.52, 'ipt': 36.95, 'final': 311.02}
         }
     }
     
@@ -135,7 +135,11 @@ def get_pricing_values(application, pet_type, weight_category, program):
     # Get EXACT pricing for the specific program and weight
     if program in pricing_table and mapped_weight in pricing_table[program]:
         pricing_data = pricing_table[program][mapped_weight]
-        return pricing_data['net_premium'], pricing_data['management_fee'], pricing_data['ipt'], pricing_data['final']
+        return (pricing_data['net_premium'], 
+                pricing_data['management_fee'], 
+                pricing_data.get('auxiliary_fund', 0.0),  # ΤΕΑ-ΕΑΠΑΕΕ (0.8%)
+                pricing_data['ipt'], 
+                pricing_data['final'])
     
     # Fallback to calculated values if not found in table
     if application.annual_premium:
@@ -143,10 +147,13 @@ def get_pricing_values(application, pet_type, weight_category, program):
         # Use standard breakdown as fallback
         net_premium = final_price * 0.60  # Approximate from table ratios
         management_fee = final_price * 0.20
+        # Calculate auxiliary fund (0.8% of reference premium)
+        reference_premium = net_premium / 0.6
+        auxiliary_fund = reference_premium * 0.008
         ipt = final_price * 0.15
-        return net_premium, management_fee, ipt, final_price
+        return net_premium, management_fee, auxiliary_fund, ipt, final_price
     
-    return 0.0, 0.0, 0.0, 0.0
+    return 0.0, 0.0, 0.0, 0.0, 0.0
 
 def create_contract_field_mapping(application, pet_name, pet_type_display, pet_breed, 
                                 pet_weight, pet_birthdate, contract_suffix, 
@@ -162,8 +169,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     weight_category = application.pet_weight_category if contract_suffix != "-PET2" else application.second_pet_weight_category
     program = application.program
     
-    # Get EXACT pricing values from the official pricing table
-    correct_net_premium, correct_management_fee, correct_ipt, final_price = get_pricing_values(application, pet_type_code, weight_category, program)
+    # Get EXACT pricing values from the official pricing table (includes auxiliary fund)
+    correct_net_premium, correct_management_fee, auxiliary_fund, correct_ipt, final_price = get_pricing_values(application, pet_type_code, weight_category, program)
     
     # Calculate discount for second pet (if applicable)
     discount_amount = ""
@@ -216,7 +223,7 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         "text_32crsg": "",                                             # Empty
         "text_33tjdu": f"{correct_net_premium:.2f}€",                  # Net Premium from pricing table
         "text_34k": f"{correct_management_fee:.2f}€",               # Management Fee from pricing table
-        "text_35poeh": "",                                             # Empty
+        "text_35poeh": f"{auxiliary_fund:.2f}€",                     # Επικουρικό (ΤΕΑ-ΕΑΠΑΕΕ 0.8%) from pricing table - for display only (already included in final price)
         "text_36sfw": f"{ipt_amount:.2f}€",                           # IPT from pricing table
         "text_37rpnu": f"{final_price:.2f}€",  # EXACT total from official pricing table
     }
@@ -248,6 +255,7 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     print(f"  🔹 Program: {data.get('text_7tbbt', 'N/A')}")
     print(f"  🔹 Net Premium: {data.get('text_33tjdu', 'N/A')}")
     print(f"  🔹 Management Fee: {data.get('text_34k', 'N/A')}")
+    print(f"  🔹 Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ): {data.get('text_35poeh', 'N/A')}")
     print(f"  🔹 Final Price (from table): {final_price:.2f}€")
     print(f"  🔹 IPT: {data.get('text_36sfw', 'N/A')}")
     print(f"  🔹 Total Paid: {data.get('text_37rpnu', 'N/A')}")
