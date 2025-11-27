@@ -714,14 +714,39 @@ def handle_application_submission(request):
             logger.info(f"Creating questionnaire for application {application.id} with {len(questionnaire_data)} fields")
             
             def get_bool(key, default=False):
+                # If key doesn't exist in questionnaire_data, return default (usually False)
+                if key not in questionnaire_data:
+                    return default
+                
                 val = questionnaire_data.get(key, '')
+                
+                # Handle list values (multiple checkboxes with same name)
                 if isinstance(val, list):
+                    # If any value in list is 'true', return True
+                    if 'true' in val or True in val:
+                        return True
+                    # If list has values, take first one
                     val = val[0] if val else ''
-                # Handle multiple checkbox values (when same name appears multiple times)
-                if isinstance(val, list):
-                    val = 'true' if 'true' in val else (val[0] if val else '')
-                # Check for 'true' string, True boolean, or if checkbox was checked (any non-empty value means checked)
-                return val == 'true' or val is True or (isinstance(val, str) and val.lower() in ['true', '1', 'yes', 'on'])
+                
+                # Handle string values
+                if isinstance(val, str):
+                    val_lower = val.lower().strip()
+                    # Explicit 'false' or 'no' means False
+                    if val_lower in ['false', 'no', '0', '']:
+                        return False
+                    # Explicit 'true' or 'yes' means True
+                    if val_lower in ['true', 'yes', '1', 'on']:
+                        return True
+                    # Any non-empty string (for checkboxes) means True
+                    if val_lower:
+                        return True
+                
+                # Handle boolean values
+                if isinstance(val, bool):
+                    return val
+                
+                # If value exists but is not recognized, return default
+                return default
             
             def get_str(key, default=''):
                 val = questionnaire_data.get(key, default)
