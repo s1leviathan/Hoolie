@@ -7,6 +7,10 @@ from django.core.files.base import ContentFile
 def generate_contract_pdf(application):
     """Generate insurance contract PDF(s) using fillpdf library and save to S3/local storage"""
     
+    # Refresh application from database to ensure questionnaire relationship is loaded
+    from .models import InsuranceApplication
+    application = InsuranceApplication.objects.select_related('questionnaire').get(pk=application.pk)
+    
     # Use temporary directory for PDF generation (will be uploaded to S3)
     import tempfile
     temp_dir = tempfile.mkdtemp()
