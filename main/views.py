@@ -684,6 +684,7 @@ def handle_application_submission(request):
             if 'questionnaire_data' in request.session:
                 # Get from session (stored when questionnaire was submitted)
                 session_data = request.session['questionnaire_data']
+                logger.info(f"Retrieved questionnaire data from session with {len(session_data)} keys")
                 # Convert QueryDict-like structure to regular dict
                 for key, value in session_data.items():
                     if isinstance(value, list):
@@ -691,11 +692,14 @@ def handle_application_submission(request):
                         if 'true' in value or True in value:
                             questionnaire_data[key] = 'true'
                         elif len(value) > 0:
+                            # Keep the actual value (could be 'false' for radio buttons)
                             questionnaire_data[key] = value[0]
                         else:
                             questionnaire_data[key] = ''
                     else:
+                        # Keep the value as-is (important for 'false' radio button values)
                         questionnaire_data[key] = value
+                logger.info(f"Processed questionnaire_data has {len(questionnaire_data)} keys: {list(questionnaire_data.keys())[:20]}")
             else:
                 # Fallback: get from POST
                 for key in request.POST.keys():
