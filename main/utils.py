@@ -6,10 +6,28 @@ from django.core.files.base import ContentFile
 
 def generate_contract_pdf(application):
     """Generate insurance contract PDF(s) using fillpdf library and save to S3/local storage"""
+    import logging
+    logger = logging.getLogger(__name__)
     
     # Refresh application from database to ensure questionnaire relationship is loaded
     from .models import InsuranceApplication
+    logger.info(f"Generating contract for application {application.id} (contract: {application.contract_number})")
     application = InsuranceApplication.objects.select_related('questionnaire').get(pk=application.pk)
+    
+    # Check if questionnaire exists
+    try:
+        if hasattr(application, 'questionnaire'):
+            questionnaire = application.questionnaire
+            if questionnaire:
+                logger.info(f"Questionnaire found for application {application.id}: ID={questionnaire.id}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
+            else:
+                logger.warning(f"No questionnaire object found for application {application.id}")
+        else:
+            logger.warning(f"Application {application.id} has no questionnaire attribute")
+    except Exception as e:
+        logger.error(f"Error checking questionnaire for application {application.id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # Use temporary directory for PDF generation (will be uploaded to S3)
     import tempfile
