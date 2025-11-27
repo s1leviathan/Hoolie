@@ -7,15 +7,21 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from fillpdf import fillpdfs
 from datetime import datetime
-from .qr_utils import generate_contract_verification_qr, generate_terms_qr
+# QR utils import - optional (only needed if QR codes are generated)
+try:
+    from .qr_utils import generate_contract_verification_qr, generate_terms_qr
+except ImportError:
+    # QR utils not available - contracts will work without QR codes
+    generate_contract_verification_qr = None
+    generate_terms_qr = None
 
 def generate_contract_with_fillpdf(application, output_path, pet_number=1):
     """Generate contract using fillpdf library - much cleaner approach"""
     
     print(f"  📄 Generating contract with fillpdf (Pet {pet_number})...")
     
-    # Path to the fillable PDF template
-    template_path = os.path.join(settings.BASE_DIR, 'ασφαλιστηριο συμβολαιο κατοικοιδιου (2).pdf')
+    # Path to the fillable PDF template - NEW TEMPLATE
+    template_path = os.path.join(settings.BASE_DIR, 'ΑΣΦΑΛΙΣΤΗΡΙΟ ΣΥΜΒΟΛΑΙΟ ΤΕΛΙΚΟ PET (1) (2).pdf')
     
     if not os.path.exists(template_path):
         raise FileNotFoundError(f"Fillable PDF template not found: {template_path}")
@@ -175,54 +181,60 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     # Use EXACT IPT from the official pricing table
     ipt_amount = correct_ipt
     
-    # Text field mappings (NEW MAPPING as requested)
+    # Text field mappings - NEW TEMPLATE (ΑΣΦΑΛΙΣΤΗΡΙΟ ΣΥΜΒΟΛΑΙΟ ΤΕΛΙΚΟ PET (1) (2).pdf)
+    # Map to new field names while keeping same data structure
     data = {
-        "text_1avcg": application.contract_number or '',                # Contract number only (no suffix)
-        "text_2zncn": application.receipt_number or '',                 # Receipt number
-        "text_3fzya": application.full_name or '',                     # Client name (keeping for compatibility)
-        "text_4terx": application.payment_code or '',                  # Payment code (keeping for compatibility)
+        # Header section
+        "text_1bwie": application.contract_number or '',                # Contract number
+        "text_2pcpc": application.receipt_number or '',                 # Receipt number
+        "text_3ksjz": application.full_name or '',                     # Client name
+        "text_4yiws": application.payment_code or '',                  # Payment code
+        "text_5fgpc": application.contract_start_date.strftime('%d/%m/%Y') if application.contract_start_date else '',  # Start date
+        "text_6zqkn": application.contract_end_date.strftime('%d/%m/%Y') if application.contract_end_date else '',     # End date
+        "text_7tbbt": application.get_program_display_greek() or '',    # Program name
         
-        # NEW MAPPING as requested:
-        "text_5fwyk": application.contract_start_date.strftime('%d/%m/%Y') if application.contract_start_date else '',  # Start date
-        "text_6zhvn": application.contract_end_date.strftime('%d/%m/%Y') if application.contract_end_date else '',     # Expire date
-        "text_7pmeq": application.get_program_display_greek() or '',    # Plan name
-        "text_8nw": application.full_name or '',                       # Client Full Name
-        "text_9lsph": application.afm or '',                           # AFM
-        "text_10yvys": application.phone or '',                        # Phone number
-        "text_11fgkt": application.address or '',                      # Address
-        "text_12lquc": application.postal_code or '',                  # Postal code
-        "text_13pkbb": application.email or '',                        # Email
-        "text_14yllm": pet_name or '',                                 # Pet name
-        "text_15uaiq": pet_type_display or '',                         # Pet type
-        "text_16kzp": pet_breed or '',                                 # Breed
-        "text_17qimv": pet_weight or '',                               # Pet weight category
-        "text_18ukmx": pet_birthdate or '',                            # Pet birthdate
-        "text_19bybh": application.microchip_number or '',             # Microchip number
+        # Client information section
+        "text_8safe": application.full_name or '',                       # Client Full Name
+        "text_9vyoe": application.afm or '',                           # AFM
+        "text_10eqtr": application.phone or '',                        # Phone number
+        "text_11qthp": application.address or '',                      # Address
+        "text_12ul": application.postal_code or '',                  # Postal code
+        "text_13liqu": application.email or '',                        # Email
         
-        # Premium fields as requested:
-        "text_30rqft": "",                                             # Empty always
-        "text_31zccc": discount_amount,                                # Discount for second pet (or empty for first pet)
-        "text_32qodl": "",                                             # Empty
-        "text_33mwnx": "",                                             # Empty
-        "text_34zqyp": f"{correct_net_premium:.2f}€",                  # Net Premium from pricing table
-        "text_35mkby": f"{correct_management_fee:.2f}€",               # Management Fee from pricing table
-        "text_36nvib": "",                                             # Empty
-        "text_37ebjo": f"{ipt_amount:.2f}€",                           # IPT from pricing table
-        "text_38lnih": f"{final_price:.2f}€",  # EXACT total from official pricing table
+        # Pet information section
+        "text_14rclu": pet_name or '',                                 # Pet name
+        "text_15vsin": pet_type_display or '',                         # Pet type
+        "text_16jfkm": pet_breed or '',                                 # Breed
+        "text_17ltlp": pet_weight or '',                               # Pet weight category
+        "text_18yuy": pet_birthdate or '',                            # Pet birthdate
+        "text_19nqjo": application.microchip_number or '',             # Microchip number
+        
+        # Premium breakdown section
+        "text_29bsjj": "",                                             # Empty
+        "text_30vzyv": discount_amount,                                # Discount for second pet (or empty)
+        "text_31mdpf": "",                                             # Empty
+        "text_32crsg": "",                                             # Empty
+        "text_33tjdu": f"{correct_net_premium:.2f}€",                  # Net Premium from pricing table
+        "text_34k": f"{correct_management_fee:.2f}€",               # Management Fee from pricing table
+        "text_35poeh": "",                                             # Empty
+        "text_36sfw": f"{ipt_amount:.2f}€",                           # IPT from pricing table
+        "text_37rpnu": f"{final_price:.2f}€",  # EXACT total from official pricing table
     }
     
-    # Checkbox mappings for coverage options
-    # Each checkbox has its own specific export value (discovered via testing)
+    # Checkbox mappings for coverage options - NEW TEMPLATE
+    # All coverage options are checked for all programs
+    # Export value from PDF: 'Yes_sexk'
     checkbox_data = {
-        # Coverage checkboxes (ΚΑΛΥΠΤΟΜΕΝΟΙ ΚΙΝΔΥΝΟΙ)
-        "checkbox_20eqnd": "Yes_vfmt",  # Ιατροφαρμακευτική Περίθαλψη
-        "checkbox_22jvbr": "Yes_zjqp",  # Διάγνωση με Hoolie AI
-        "checkbox_23crbw": "Yes_zjqp",  # Αποκατάσταση
-        "checkbox_25vepz": "Yes_zjqp",  # Νομική Προστασία Ιδιοκτήτη Κατοικιδίου
-        "checkbox_26erwv": "Yes_zjqp",  # Κάλυψη Αποχαιρετισμού
-        "checkbox_27vlbh": "Yes_zjqp",  # Επείγοντα / Νοσηλείες
-        "checkbox_28usav": "Yes_zjqp",  # Απώλεια / Κλοπή
-        "checkbox_29imtu": "Yes_zjqp",  # Απώλεια Διαβατηρίου
+        # Coverage checkboxes (ΚΑΛΥΠΤΟΜΕΝΟΙ ΚΙΝΔΥΝΟΙ / ΠΡΟΣΘΕΤΕΣ ΠΑΡΟΧΕΣ)
+        "checkbox_20jmec": "Yes_sexk",  # Ιατροφαρμακευτική Περίθαλψη
+        "checkbox_21jvmm": "Yes_sexk",  # (Coverage option - likely Κάλυψη Κατοικιδίου από Ατύχημα και Ασθένεια)
+        "checkbox_22cjxd": "Yes_sexk",  # Διάγνωση με Hoolie AI
+        "checkbox_23cdss": "Yes_sexk",  # Αποκατάσταση
+        "checkbox_24bmgz": "Yes_sexk",  # (Coverage option - likely Απώλεια Διαβατηρίου)
+        "checkbox_25yhjf": "Yes_sexk",  # Νομική Προστασία Ιδιοκτήτη Κατοικιδίου
+        "checkbox_26wldx": "Yes_sexk",  # Κάλυψη Αποχαιρετισμού
+        "checkbox_27sj": "Yes_sexk",  # Επείγοντα / Νοσηλείες
+        "checkbox_28okyh": "Yes_sexk",  # Απώλεια / Κλοπή
     }
     
     # Combine text and checkbox data
@@ -230,15 +242,15 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     
     # Log the mapping for debugging
     print(f"  📋 Field mapping created with {len(data)} fields")
-    print(f"  🔹 Contract: {data.get('text_1avcg', 'N/A')}")
-    print(f"  🔹 Client: {data.get('text_8nw', 'N/A')}")
-    print(f"  🔹 Pet: {data.get('text_14yllm', 'N/A')} ({data.get('text_15uaiq', 'N/A')})")
-    print(f"  🔹 Program: {data.get('text_7pmeq', 'N/A')}")
-    print(f"  🔹 Net Premium: {data.get('text_34zqyp', 'N/A')}")
-    print(f"  🔹 Management Fee: {data.get('text_35mkby', 'N/A')}")
+    print(f"  🔹 Contract: {data.get('text_1bwie', 'N/A')}")
+    print(f"  🔹 Client: {data.get('text_8safe', 'N/A')}")
+    print(f"  🔹 Pet: {data.get('text_14rclu', 'N/A')} ({data.get('text_15vsin', 'N/A')})")
+    print(f"  🔹 Program: {data.get('text_7tbbt', 'N/A')}")
+    print(f"  🔹 Net Premium: {data.get('text_33tjdu', 'N/A')}")
+    print(f"  🔹 Management Fee: {data.get('text_34k', 'N/A')}")
     print(f"  🔹 Final Price (from table): {final_price:.2f}€")
-    print(f"  🔹 IPT: {data.get('text_37ebjo', 'N/A')}")
-    print(f"  🔹 Total Paid: {data.get('text_38lnih', 'N/A')}")
+    print(f"  🔹 IPT: {data.get('text_36sfw', 'N/A')}")
+    print(f"  🔹 Total Paid: {data.get('text_37rpnu', 'N/A')}")
     if discount_amount:
         print(f"  🔹 Discount: {discount_amount}")
     
