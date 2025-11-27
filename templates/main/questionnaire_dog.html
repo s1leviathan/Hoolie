@@ -7,7 +7,7 @@
 <section class="hero-section">
     <div class="container">
         <div class="hero-content">
-            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--brand-primary);">
+            <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem; color: white;">
                 Ερωτηματολόγιο Ασφάλισης Σκύλου 📋
             </h1>
             
@@ -337,6 +337,35 @@
                                 <label>Αν ΝΑΙ, παρακαλώ αναφέρετε παρακάτω ποια/ποιες:</label>
                                 <textarea name="has_hereditary_disease_details" rows="3" placeholder="Αναφέρετε τις κληρονομικές ασθένειες"></textarea>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 2.3: Additional Coverage Options -->
+                <div class="questionnaire-section">
+                    <h2 class="section-title">💊 Πρόσθετες Καλύψεις</h2>
+                    
+                    <div class="additional-coverage-group">
+                        <div class="coverage-item">
+                            <label class="checkbox-label coverage-label">
+                                <input type="checkbox" name="additional_poisoning_coverage" value="true">
+                                <span>
+                                    <strong>Δηλητηρίαση:</strong> 
+                                    <span class="coverage-price" id="poisoning-price">
+                                        +18€ (Silver), +20€ (Gold), +25€ (Platinum)
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <div class="coverage-item">
+                            <label class="checkbox-label coverage-label">
+                                <input type="checkbox" name="additional_blood_checkup" value="true">
+                                <span>
+                                    <strong>Αιματολογικό Check Up:</strong> 
+                                    <span class="coverage-price">+28€ (όλα τα προγράμματα)</span>
+                                </span>
+                            </label>
                         </div>
                     </div>
                 </div>

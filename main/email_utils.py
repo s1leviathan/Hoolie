@@ -99,13 +99,19 @@ def send_customer_confirmation_email(application):
         else:
             customer_greeting = 'Κύριε/Κυρία'  # Fallback if no name
         
+        # Use the same number that admin sees (contract_number, or application_number as fallback)
+        display_number = application.contract_number or application.application_number
+        
         # Use proper Greek subject for customer confirmation
-        subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {application.application_number}'
+        subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {display_number}'
+        
+        # Use the same number that admin sees (contract_number, or application_number as fallback)
+        display_number = application.contract_number or application.application_number
         
         # Prepare context for email template
         context = {
             'application': application,
-            'application_number': application.application_number,
+            'application_number': display_number,  # Use contract_number (same as admin) or application_number
             'customer_greeting': customer_greeting,
             'pet_name': application.pet_name,
             'has_second_pet': application.has_second_pet,

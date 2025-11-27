@@ -25,17 +25,16 @@
                 </span>
             </h1>
             
-            <p class="hero-subtitle" style="font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9;">
+            <p class="hero-subtitle" style="font-size: 1.3rem; margin-bottom: 1rem; opacity: 0.9;">
                 Η αίτησή σας για ασφάλιση <span id="pet-name-in-subtitle">του κατοικιδιού σας</span> υποβλήθηκε με επιτυχία!
             </p>
             
-            <!-- Application Number Display -->
+            <!-- Application Number Display - Right under success message -->
             {% if application_number %}
-            <div class="application-number-card" style="background: linear-gradient(135deg, #5ac8bd 0%, #4a9e94 100%); border-radius: 20px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 10px 30px rgba(90, 200, 189, 0.3);">
-                <div style="text-align: center; color: white;">
-                    <p style="font-size: 1rem; margin-bottom: 0.5rem; opacity: 0.9;">Αριθμός Αίτησης</p>
-                    <h2 style="font-size: 2.5rem; font-weight: 700; margin: 0; letter-spacing: 2px;">{{ application_number }}</h2>
-                </div>
+            <div class="application-number-display" style="margin-bottom: 2rem;">
+                <p style="font-size: 1.1rem; color: rgba(255, 255, 255, 0.9); margin-bottom: 0.5rem;">
+                    Αριθμός Αίτησης: <strong style="color: #ffffff; font-size: 1.3rem; letter-spacing: 1px;">{{ application_number }}</strong>
+                </p>
             </div>
             {% endif %}
             

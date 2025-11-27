@@ -170,23 +170,50 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     program = application.program
     
     # Get EXACT pricing values from the official pricing table (includes auxiliary fund)
-    correct_net_premium, correct_management_fee, auxiliary_fund, correct_ipt, final_price = get_pricing_values(application, pet_type_code, weight_category, program)
+    correct_net_premium, correct_management_fee, auxiliary_fund, correct_ipt, base_final_price = get_pricing_values(application, pet_type_code, weight_category, program)
+    
+    # Use the ACTUAL final price from application (includes surcharges and extra features)
+    actual_final_price = float(application.annual_premium) if application.annual_premium else base_final_price
+    
+    # Calculate surcharges/discounts for display in ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ section
+    surcharges_discounts = []
+    
+    # Check for breed surcharges
+    if hasattr(application, 'questionnaire') and application.questionnaire:
+        questionnaire = application.questionnaire
+        if questionnaire.special_breed_5_percent:
+            surcharge_5 = base_final_price * 0.05
+            surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
+        if questionnaire.special_breed_20_percent:
+            surcharge_20 = base_final_price * 0.20
+            surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
+        
+        # Check for extra features
+        if questionnaire.additional_poisoning_coverage:
+            poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25}
+            poisoning_price = poisoning_prices.get(program, 18)
+            surcharges_discounts.append(f"+{poisoning_price:.2f}€ (Δηλητηρίαση)")
+        
+        if questionnaire.additional_blood_checkup:
+            surcharges_discounts.append(f"+28.00€ (Αιματολογικό Check Up)")
     
     # Calculate discount for second pet (if applicable)
-    discount_amount = ""
     if contract_suffix == "-PET2" and application.has_second_pet:
-        # SIMPLE: Take ΤΕΛΙΚΗ ΤΙΜΗ of second pet, apply -5% discount, show the difference
-        
-        # final_price = what the user actually pays (discounted price)
-        # original_price = full price before 5% discount
-        original_price = final_price / 0.95  # Reverse the 5% discount to get original
-        discount = original_price - final_price  # The discount amount
-        
-        # Format the discount amount as requested
-        discount_amount = f"-{discount:.2f}€"
+        # Calculate discount amount
+        original_price = actual_final_price / 0.95  # Reverse the 5% discount
+        discount = original_price - actual_final_price
+        surcharges_discounts.append(f"-{discount:.2f}€ (2ο κατοικίδιο)")
     
-    # Use EXACT IPT from the official pricing table
-    ipt_amount = correct_ipt
+    # Format surcharges/discounts for display
+    surcharges_text = "\n".join(surcharges_discounts) if surcharges_discounts else ""
+    
+    # Use EXACT IPT from the official pricing table (proportionally adjusted if price changed)
+    # If actual price differs from base, adjust IPT proportionally
+    if actual_final_price != base_final_price and base_final_price > 0:
+        price_multiplier = actual_final_price / base_final_price
+        ipt_amount = correct_ipt * price_multiplier
+    else:
+        ipt_amount = correct_ipt
     
     # Text field mappings - NEW TEMPLATE (ΑΣΦΑΛΙΣΤΗΡΙΟ ΣΥΜΒΟΛΑΙΟ ΤΕΛΙΚΟ PET (1) (2).pdf)
     # Map to new field names while keeping same data structure
@@ -218,14 +245,14 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         
         # Premium breakdown section
         "text_29bsjj": "",                                             # Empty
-        "text_30vzyv": discount_amount,                                # Discount for second pet (or empty)
+        "text_30vzyv": surcharges_text,                                # ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ (surcharges/discounts)
         "text_31mdpf": "",                                             # Empty
         "text_32crsg": "",                                             # Empty
         "text_33tjdu": f"{correct_net_premium:.2f}€",                  # Net Premium from pricing table
         "text_34k": f"{correct_management_fee:.2f}€",               # Management Fee from pricing table
         "text_35poeh": f"{auxiliary_fund:.2f}€",                     # Επικουρικό (ΤΕΑ-ΕΑΠΑΕΕ 0.8%) from pricing table - for display only (already included in final price)
-        "text_36sfw": f"{ipt_amount:.2f}€",                           # IPT from pricing table
-        "text_37rpnu": f"{final_price:.2f}€",  # EXACT total from official pricing table
+        "text_36sfw": f"{ipt_amount:.2f}€",                           # IPT (adjusted if surcharges applied)
+        "text_37rpnu": f"{actual_final_price:.2f}€",  # ACTUAL final price (includes surcharges and extra features)
     }
     
     # Checkbox mappings for coverage options - NEW TEMPLATE

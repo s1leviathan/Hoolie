@@ -587,6 +587,30 @@ def handle_application_submission(request):
         base_premium = round(base_premium, 2)
         logger.info(f"Final premium after breed surcharges: {base_premium} (was {initial_premium})")
         
+        # Add extra features (poisoning coverage and blood checkup)
+        extra_features_total = 0
+        additional_poisoning = request.POST.get('additional_poisoning_coverage') == 'true'
+        additional_blood_checkup = request.POST.get('additional_blood_checkup') == 'true'
+        
+        if additional_poisoning:
+            # Poisoning coverage prices by program
+            poisoning_prices = {
+                'silver': 18,
+                'gold': 20,
+                'platinum': 25
+            }
+            poisoning_price = poisoning_prices.get(program, 18)
+            extra_features_total += poisoning_price
+            logger.info(f"Added poisoning coverage: +{poisoning_price}€")
+        
+        if additional_blood_checkup:
+            # Blood checkup is 28€ for all programs
+            extra_features_total += 28
+            logger.info(f"Added blood checkup: +28€")
+        
+        base_premium += extra_features_total
+        logger.info(f"Final premium after extra features: {base_premium}")
+        
         # Check for affiliate code and apply discount
         affiliate_code_str = request.POST.get('affiliateCode', '').strip().upper()
         discount_applied = 0
@@ -662,18 +686,29 @@ def handle_application_submission(request):
                 session_data = request.session['questionnaire_data']
                 # Convert QueryDict-like structure to regular dict
                 for key, value in session_data.items():
-                    if isinstance(value, list) and len(value) > 0:
-                        questionnaire_data[key] = value[0]
+                    if isinstance(value, list):
+                        # For checkboxes with same name, if any is 'true', consider it True
+                        if 'true' in value or True in value:
+                            questionnaire_data[key] = 'true'
+                        elif len(value) > 0:
+                            questionnaire_data[key] = value[0]
+                        else:
+                            questionnaire_data[key] = ''
                     else:
                         questionnaire_data[key] = value
             else:
                 # Fallback: get from POST
                 for key in request.POST.keys():
                     values = request.POST.getlist(key)
-                    if len(values) == 1:
+                    # For checkboxes with same name (like special_breed_5_percent), if any is 'true', consider it True
+                    if 'true' in values or True in values:
+                        questionnaire_data[key] = 'true'
+                    elif len(values) == 1:
                         questionnaire_data[key] = values[0]
+                    elif len(values) > 1:
+                        questionnaire_data[key] = values  # Keep as list for processing
                     else:
-                        questionnaire_data[key] = values
+                        questionnaire_data[key] = ''
             
             # Log questionnaire data for debugging
             logger.info(f"Creating questionnaire for application {application.id} with {len(questionnaire_data)} fields")
@@ -682,7 +717,11 @@ def handle_application_submission(request):
                 val = questionnaire_data.get(key, '')
                 if isinstance(val, list):
                     val = val[0] if val else ''
-                return val == 'true' or val is True
+                # Handle multiple checkbox values (when same name appears multiple times)
+                if isinstance(val, list):
+                    val = 'true' if 'true' in val else (val[0] if val else '')
+                # Check for 'true' string, True boolean, or if checkbox was checked (any non-empty value means checked)
+                return val == 'true' or val is True or (isinstance(val, str) and val.lower() in ['true', '1', 'yes', 'on'])
             
             def get_str(key, default=''):
                 val = questionnaire_data.get(key, default)
@@ -750,9 +789,45 @@ def handle_application_submission(request):
             )
             
             if not created:
+                # Update all fields if questionnaire already exists
                 questionnaire.has_other_insured_pet = get_bool('has_other_insured_pet')
                 questionnaire.has_been_denied_insurance = get_bool('has_been_denied_insurance')
                 questionnaire.has_special_terms_imposed = get_bool('has_special_terms_imposed')
+                questionnaire.pet_colors = get_str('pet_colors')
+                questionnaire.pet_weight = get_str('pet_weight')
+                questionnaire.is_purebred = is_purebred
+                questionnaire.is_mixed = is_mixed
+                questionnaire.is_crossbreed = is_crossbreed
+                questionnaire.pet_breed_or_crossbreed = get_str('pet_breed_or_crossbreed')
+                questionnaire.special_breed_5_percent = get_bool('special_breed_5_percent') if is_dog else False
+                questionnaire.special_breed_20_percent = get_bool('special_breed_20_percent') if is_dog else False
+                questionnaire.is_healthy = get_bool('is_healthy')
+                questionnaire.is_healthy_details = get_str('is_healthy_details')
+                questionnaire.has_injury_illness_3_years = get_bool('has_injury_illness_3_years')
+                questionnaire.has_injury_illness_details = get_str('has_injury_illness_3_years_details')
+                questionnaire.has_surgical_procedure = get_bool('has_surgical_procedure')
+                questionnaire.has_surgical_procedure_details = get_str('has_surgical_procedure_details')
+                questionnaire.has_examination_findings = get_bool('has_examination_findings')
+                questionnaire.has_examination_findings_details = get_str('has_examination_findings_details')
+                questionnaire.is_sterilized = get_bool('is_sterilized')
+                questionnaire.is_vaccinated_leishmaniasis = get_bool('is_vaccinated_leishmaniasis') if is_dog else False
+                questionnaire.follows_vaccination_program = get_bool('follows_vaccination_program')
+                questionnaire.follows_vaccination_program_details = get_str('follows_vaccination_program_details')
+                questionnaire.has_hereditary_disease = get_bool('has_hereditary_disease')
+                questionnaire.has_hereditary_disease_details = get_str('has_hereditary_disease_details')
+                questionnaire.program = get_str('program') or request.POST.get('program', '')
+                questionnaire.additional_poisoning_coverage = get_bool('additional_poisoning_coverage')
+                questionnaire.additional_blood_checkup = get_bool('additional_blood_checkup')
+                questionnaire.desired_start_date = desired_start_date
+                questionnaire.payment_method = get_str('payment_method')
+                questionnaire.payment_frequency = get_str('payment_frequency') or request.POST.get('payment_frequency', '')
+                questionnaire.consent_terms_conditions = get_bool('consent_terms_conditions')
+                questionnaire.consent_info_document = get_bool('consent_info_document')
+                questionnaire.consent_email_notifications = get_bool('consent_email_notifications')
+                questionnaire.consent_marketing = get_bool('consent_marketing')
+                questionnaire.consent_data_processing = get_bool('consent_data_processing')
+                questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
+                questionnaire.save()
                 questionnaire.pet_colors = get_str('pet_colors')
                 questionnaire.pet_weight = get_str('pet_weight')
                 questionnaire.is_purebred = is_purebred
@@ -971,7 +1046,32 @@ def contact_info(request):
 
 def thank_you(request):
     """Thank you page after successful submission"""
-    return render(request, 'main/thank_you.html')
+    application_id = request.GET.get('application_id')
+    application = None
+    application_number = None
+    
+    if application_id:
+        try:
+            from .models import InsuranceApplication
+            application = InsuranceApplication.objects.get(id=application_id)
+            application_number = application.application_number
+        except InsuranceApplication.DoesNotExist:
+            pass
+    
+    # Also check URL parameter for application_number
+    if not application_number:
+        application_number = request.GET.get('application_number')
+    
+    context = {
+        'application': application,
+        'application_number': application_number,
+        'pet_name': application.pet_name if application else '',
+        'pet_type': application.pet_type if application else '',
+        'email': application.email if application else '',
+        'full_name': application.full_name if application else '',
+    }
+    
+    return render(request, 'main/thank_you.html', context)
 
 @csrf_exempt
 def upload_pet_document(request):
