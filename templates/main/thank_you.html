@@ -59,7 +59,7 @@
                         <div class="step-icon">⏳</div>
                         <div class="step-content">
                             <h4>Επεξεργασία Αίτησης</h4>
-                            <p>Η αίτησή σας με αριθμό <strong>{% if application_number %}{{ application_number }}{% else %}HPI10001{% endif %}</strong> βρίσκεται σε επεξεργασία και θα ελεγχθεί από το τμήμα Underwriting</p>
+                            <p>Η αίτησή σας με αριθμό <strong>{% if application %}{{ application.contract_number|default:application.application_number }}{% elif application_number %}{{ application_number }}{% else %}HPI10001{% endif %}</strong> βρίσκεται σε επεξεργασία και θα ελεγχθεί από το τμήμα Underwriting</p>
                         </div>
                     </div>
                     

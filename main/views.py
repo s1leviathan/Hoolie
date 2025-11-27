@@ -1062,9 +1062,16 @@ def thank_you(request):
     if not application_number:
         application_number = request.GET.get('application_number')
     
+    # Use contract_number (same as admin and email) or application_number as fallback
+    display_number = None
+    if application:
+        display_number = application.contract_number or application.application_number
+    elif application_number:
+        display_number = application_number
+    
     context = {
         'application': application,
-        'application_number': application_number,
+        'application_number': display_number,  # This will be contract_number or application_number
         'pet_name': application.pet_name if application else '',
         'pet_type': application.pet_type if application else '',
         'email': application.email if application else '',
