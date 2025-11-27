@@ -283,7 +283,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     print(f"  🔹 Net Premium: {data.get('text_33tjdu', 'N/A')}")
     print(f"  🔹 Management Fee: {data.get('text_34k', 'N/A')}")
     print(f"  🔹 Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ): {data.get('text_35poeh', 'N/A')}")
-    print(f"  🔹 Final Price (from table): {final_price:.2f}€")
+    print(f"  🔹 Final Price (from table): {base_final_price:.2f}€")
+    print(f"  🔹 Actual Final Price (with surcharges): {actual_final_price:.2f}€")
     print(f"  🔹 IPT: {data.get('text_36sfw', 'N/A')}")
     print(f"  🔹 Total Paid: {data.get('text_37rpnu', 'N/A')}")
     if discount_amount:
