@@ -287,8 +287,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     print(f"  🔹 Actual Final Price (with surcharges): {actual_final_price:.2f}€")
     print(f"  🔹 IPT: {data.get('text_36sfw', 'N/A')}")
     print(f"  🔹 Total Paid: {data.get('text_37rpnu', 'N/A')}")
-    if discount_amount:
-        print(f"  🔹 Discount: {discount_amount}")
+    if surcharges_text:
+        print(f"  🔹 Surcharges/Discounts: {surcharges_text}")
     
     return data
 
