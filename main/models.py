@@ -489,6 +489,10 @@ class Questionnaire(models.Model):
         verbose_name_plural = 'Questionnaires'
     
     def __str__(self):
-        if self.application:
-            return f"Questionnaire for {self.application.application_number or self.application.contract_number}"
+        try:
+            if self.application:
+                app_id = self.application.application_number or self.application.contract_number or f"ID: {self.application.pk}"
+                return f"Questionnaire for {app_id}"
+        except Exception:
+            pass
         return f"Questionnaire {self.id}"

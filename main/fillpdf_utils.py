@@ -20,7 +20,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
     
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"  📄 Generating contract with fillpdf (Pet {pet_number}) for application {application.id}...")
+    logger.info(f"  [PDF] Generating contract with fillpdf (Pet {pet_number}) for application {application.id}...")
     
     # Path to the fillable PDF template - NEW TEMPLATE
     template_path = os.path.join(settings.BASE_DIR, 'ΑΣΦΑΛΙΣΤΗΡΙΟ ΣΥΜΒΟΛΑΙΟ ΤΕΛΙΚΟ PET (1) (2).pdf')
@@ -36,7 +36,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         pet_weight = application.get_weight_display(application.second_pet_weight_category) if application.second_pet_weight_category else ''
         pet_birthdate = application.second_pet_birthdate.strftime('%d/%m/%Y') if application.second_pet_birthdate else ''
         contract_suffix = "-PET2"
-        logger.info(f"  📋 Using Pet 2 data: {pet_name} ({pet_type_display})")
+        logger.info(f"  [INFO] Using Pet 2 data: {pet_name} ({pet_type_display})")
     else:
         pet_name = application.pet_name
         pet_type_display = application.get_pet_type_display_greek()
@@ -44,7 +44,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         pet_weight = application.get_weight_display(application.pet_weight_category) if application.pet_weight_category else ''
         pet_birthdate = application.pet_birthdate.strftime('%d/%m/%Y') if application.pet_birthdate else ''
         contract_suffix = "-PET1" if application.has_second_pet else ""
-        logger.info(f"  📋 Using Pet 1 data: {pet_name} ({pet_type_display})")
+        logger.info(f"  [INFO] Using Pet 1 data: {pet_name} ({pet_type_display})")
     
     # Calculate premium breakdown
     if application.annual_premium:
@@ -64,7 +64,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
     
     try:
         # Fill the PDF using fillpdf
-        logger.info(f"  🔧 Filling PDF form with {len(data)} fields...")
+        logger.info(f"  [FILL] Filling PDF form with {len(data)} fields...")
         
         fillpdfs.write_fillable_pdf(
             template_path,
@@ -73,11 +73,11 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             flatten=True,  # Make fields non-editable (baked into PDF)
         )
         
-        logger.info(f"  ✅ Contract generated successfully: {output_path}")
+        logger.info(f"  [OK] Contract generated successfully: {output_path}")
         return output_path
         
     except Exception as e:
-        logger.error(f"  ❌ Error generating contract with fillpdf: {e}")
+        logger.error(f"  [ERROR] Error generating contract with fillpdf: {e}")
         raise
 
 def get_pricing_values(application, pet_type, weight_category, program):
@@ -165,6 +165,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     Based on the Greek insurance contract template structure.
     Field names correspond to the actual form field names in the PDF.
     """
+    import logging
+    logger = logging.getLogger(__name__)
     
     # Get the correct pricing values based on weight category and program
     pet_type_code = 'dog' if 'Σκύλος' in pet_type_display else 'cat'
@@ -202,31 +204,32 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
             logger.info(f"  🔍 additional_poisoning_coverage: {questionnaire.additional_poisoning_coverage}")
             logger.info(f"  🔍 additional_blood_checkup: {questionnaire.additional_blood_checkup}")
             
+            # Breed surcharges first (5% and 20%)
             if questionnaire.special_breed_5_percent:
                 surcharge_5 = base_final_price * 0.05
                 surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
-                logger.info(f"  ✅ Added 5% surcharge: {surcharge_5:.2f}€")
+                logger.info(f"  [OK] Added 5% surcharge: {surcharge_5:.2f}€")
             
             if questionnaire.special_breed_20_percent:
                 surcharge_20 = base_final_price * 0.20
                 surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
-                logger.info(f"  ✅ Added 20% surcharge: {surcharge_20:.2f}€")
+                logger.info(f"  [OK] Added 20% surcharge: {surcharge_20:.2f}€")
             
-            # Check for extra features
+            # Add-ons below breed surcharges (poisoning coverage and blood checkup)
             if questionnaire.additional_poisoning_coverage:
-                poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25}
+                poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
                 poisoning_price = poisoning_prices.get(program, 18)
                 surcharges_discounts.append(f"+{poisoning_price:.2f}€ (Δηλητηρίαση)")
-                logger.info(f"  ✅ Added poisoning coverage: {poisoning_price:.2f}€")
+                logger.info(f"  [OK] Added poisoning coverage: {poisoning_price:.2f}€")
             
             if questionnaire.additional_blood_checkup:
                 surcharges_discounts.append(f"+28.00€ (Αιματολογικό Check Up)")
-                logger.info(f"  ✅ Added blood checkup: 28.00€")
+                logger.info(f"  [OK] Added blood checkup: 28.00€")
         else:
             logger.warning(f"  ⚠️ No questionnaire found for application {application.id}")
     except Exception as e:
         import traceback
-        logger.error(f"  ❌ Error accessing questionnaire: {e}")
+        logger.error(f"  [ERROR] Error accessing questionnaire: {e}")
         logger.error(traceback.format_exc())
     
     # Calculate discount for second pet (if applicable)
@@ -238,8 +241,8 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     
     # Format surcharges/discounts for display
     surcharges_text = "\n".join(surcharges_discounts) if surcharges_discounts else ""
-    logger.info(f"  📋 Surcharges/Discounts text: '{surcharges_text}'")
-    logger.info(f"  📋 Number of surcharges: {len(surcharges_discounts)}")
+    logger.info(f"  [INFO] Surcharges/Discounts text: '{surcharges_text}'")
+    logger.info(f"  [INFO] Number of surcharges: {len(surcharges_discounts)}")
     
     # Use EXACT IPT from the official pricing table (proportionally adjusted if price changed)
     # If actual price differs from base, adjust IPT proportionally
@@ -254,9 +257,9 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     data = {
         # Header section
         "text_1bwie": application.contract_number or '',                # Contract number
-        "text_2pcpc": application.receipt_number or '',                 # Receipt number
+        "text_2pcpc": '',                                              # Receipt number - not used (no active payment system)
         "text_3ksjz": application.full_name or '',                     # Client name
-        "text_4yiws": application.payment_code or '',                  # Payment code
+        "text_4yiws": '',                                              # Payment code - not used (no active payment system)
         "text_5fgpc": application.contract_start_date.strftime('%d/%m/%Y') if application.contract_start_date else '',  # Start date
         "text_6zqkn": application.contract_end_date.strftime('%d/%m/%Y') if application.contract_end_date else '',     # End date
         "text_7tbbt": application.get_program_display_greek() or '',    # Program name
@@ -309,20 +312,20 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     data.update(checkbox_data)
     
     # Log the mapping for debugging
-    print(f"  📋 Field mapping created with {len(data)} fields")
-    print(f"  🔹 Contract: {data.get('text_1bwie', 'N/A')}")
-    print(f"  🔹 Client: {data.get('text_8safe', 'N/A')}")
-    print(f"  🔹 Pet: {data.get('text_14rclu', 'N/A')} ({data.get('text_15vsin', 'N/A')})")
-    print(f"  🔹 Program: {data.get('text_7tbbt', 'N/A')}")
-    print(f"  🔹 Net Premium: {data.get('text_33tjdu', 'N/A')}")
-    print(f"  🔹 Management Fee: {data.get('text_34k', 'N/A')}")
-    print(f"  🔹 Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ): {data.get('text_35poeh', 'N/A')}")
-    print(f"  🔹 Final Price (from table): {base_final_price:.2f}€")
-    print(f"  🔹 Actual Final Price (with surcharges): {actual_final_price:.2f}€")
-    print(f"  🔹 IPT: {data.get('text_36sfw', 'N/A')}")
-    print(f"  🔹 Total Paid: {data.get('text_37rpnu', 'N/A')}")
+    print(f"  [INFO] Field mapping created with {len(data)} fields")
+    print(f"  [*] Contract: {data.get('text_1bwie', 'N/A')}")
+    print(f"  [*] Client: {data.get('text_8safe', 'N/A')}")
+    print(f"  [*] Pet: {data.get('text_14rclu', 'N/A')} ({data.get('text_15vsin', 'N/A')})")
+    print(f"  [*] Program: {data.get('text_7tbbt', 'N/A')}")
+    print(f"  [*] Net Premium: {data.get('text_33tjdu', 'N/A')}")
+    print(f"  [*] Management Fee: {data.get('text_34k', 'N/A')}")
+    print(f"  [*] Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ): {data.get('text_35poeh', 'N/A')}")
+    print(f"  [*] Final Price (from table): {base_final_price:.2f}€")
+    print(f"  [*] Actual Final Price (with surcharges): {actual_final_price:.2f}€")
+    print(f"  [*] IPT: {data.get('text_36sfw', 'N/A')}")
+    print(f"  [*] Total Paid: {data.get('text_37rpnu', 'N/A')}")
     if surcharges_text:
-        print(f"  🔹 Surcharges/Discounts: {surcharges_text}")
+        print(f"  [*] Surcharges/Discounts: {surcharges_text}")
     
     return data
 
@@ -355,8 +358,8 @@ def test_fillpdf_generation():
             data_dict=test_data,
             flatten=True,
         )
-        print(f"✅ Test PDF generated: {output_path}")
+        print(f"[OK] Test PDF generated: {output_path}")
         return True
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"[ERROR] Test failed: {e}")
         return False

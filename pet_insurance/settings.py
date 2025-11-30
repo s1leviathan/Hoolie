@@ -197,6 +197,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'main.views': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
 

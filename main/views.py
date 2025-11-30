@@ -317,46 +317,40 @@ def user_data(request):
         elif '>40 κιλά' in second_pet_breed:
             second_pet_weight_category = '>40'
         
-    # Pricing tables (same as in frontend)
+    # Pricing tables (MUST match frontend JavaScript exactly)
     DOG_PRICING = {
         'silver': {
-            '10': {'annual': 180, 'six_month': 95, 'three_month': 50},
-            '11-20': {'annual': 220, 'six_month': 115, 'three_month': 60},
-            '21-40': {'annual': 280, 'six_month': 145, 'three_month': 75},
-            '>40': {'annual': 350, 'six_month': 180, 'three_month': 95}
+            '10': {'annual': 166.75, 'six_month': 87.54, 'three_month': 45.86},
+            '11-20': {'annual': 207.20, 'six_month': 108.78, 'three_month': 56.98},
+            '21-40': {'annual': 234.14, 'six_month': 122.92, 'three_month': 64.39},
+            '>40': {'annual': 254.36, 'six_month': 133.54, 'three_month': 69.95}
         },
         'gold': {
-            '10': {'annual': 240, 'six_month': 125, 'three_month': 65},
-            '11-20': {'annual': 300, 'six_month': 155, 'three_month': 80},
-            '21-40': {'annual': 380, 'six_month': 195, 'three_month': 100},
-            '>40': {'annual': 480, 'six_month': 245, 'three_month': 125}
+            '10': {'annual': 234.14, 'six_month': 122.92, 'three_month': 64.39},
+            '11-20': {'annual': 261.09, 'six_month': 137.07, 'three_month': 71.80},
+            '21-40': {'annual': 288.05, 'six_month': 151.23, 'three_month': 79.21},
+            '>40': {'annual': 308.26, 'six_month': 161.84, 'three_month': 84.77}
         },
         'platinum': {
-            '10': {'annual': 320, 'six_month': 165, 'three_month': 85},
-            '11-20': {'annual': 400, 'six_month': 205, 'three_month': 105},
-            '21-40': {'annual': 500, 'six_month': 255, 'three_month': 130},
-            '>40': {'annual': 620, 'six_month': 315, 'three_month': 160}
+            '10': {'annual': 368.92, 'six_month': 193.69, 'three_month': 101.45},
+            '11-20': {'annual': 389.15, 'six_month': 204.30, 'three_month': 107.02},
+            '21-40': {'annual': 409.36, 'six_month': 214.91, 'three_month': 112.57},
+            '>40': {'annual': 436.32, 'six_month': 229.07, 'three_month': 119.99}
         }
     }
     
     CAT_PRICING = {
         'silver': {
-            '10': {'annual': 150, 'six_month': 78, 'three_month': 40},
-            '11-20': {'annual': 180, 'six_month': 93, 'three_month': 48},
-            '21-40': {'annual': 220, 'six_month': 113, 'three_month': 58},
-            '>40': {'annual': 280, 'six_month': 143, 'three_month': 73}
+            '10': {'annual': 113.81, 'six_month': 59.75, 'three_month': 31.30},
+            '11-20': {'annual': 141.02, 'six_month': 74.03, 'three_month': 38.78}
         },
         'gold': {
-            '10': {'annual': 200, 'six_month': 103, 'three_month': 53},
-            '11-20': {'annual': 240, 'six_month': 123, 'three_month': 63},
-            '21-40': {'annual': 300, 'six_month': 153, 'three_month': 78},
-            '>40': {'annual': 380, 'six_month': 193, 'three_month': 98}
+            '10': {'annual': 168.22, 'six_month': 88.32, 'three_month': 46.26},
+            '11-20': {'annual': 188.61, 'six_month': 99.02, 'three_month': 51.87}
         },
         'platinum': {
-            '10': {'annual': 260, 'six_month': 133, 'three_month': 68},
-            '11-20': {'annual': 320, 'six_month': 163, 'three_month': 83},
-            '21-40': {'annual': 400, 'six_month': 203, 'three_month': 103},
-            '>40': {'annual': 500, 'six_month': 253, 'three_month': 128}
+            '10': {'annual': 277.02, 'six_month': 145.44, 'three_month': 76.18},
+            '11-20': {'annual': 311.02, 'six_month': 163.28, 'three_month': 85.53}
         }
     }
     
@@ -377,27 +371,103 @@ def user_data(request):
         if 'annual' in pricing_data and 'final' not in pricing_data:
             pricing_data['final'] = pricing_data['annual']
     
-    # Apply breed surcharges if passed via URL parameters (from questionnaire)
-    special_breed_5_percent = request.GET.get('special_breed_5_percent') == 'true'
-    special_breed_20_percent = request.GET.get('special_breed_20_percent') == 'true'
+    # Get breed surcharges and add-ons from session (stored when questionnaire was submitted)
+    special_breed_5_percent = False
+    special_breed_20_percent = False
+    additional_poisoning_coverage = False
+    additional_blood_checkup = False
+    
+    # Check URL parameters first (for direct access)
+    if request.GET.get('special_breed_5_percent') == 'true':
+        special_breed_5_percent = True
+    if request.GET.get('special_breed_20_percent') == 'true':
+        special_breed_20_percent = True
+    if request.GET.get('additional_poisoning_coverage') == 'true':
+        additional_poisoning_coverage = True
+    if request.GET.get('additional_blood_checkup') == 'true':
+        additional_blood_checkup = True
+    
+    # Also check session data (stored when questionnaire was submitted)
+    session_data = {}
+    if 'questionnaire_data' in request.session:
+        session_data = request.session['questionnaire_data']
+        if isinstance(session_data, dict):
+            # Check for breed surcharges
+            session_5_percent = session_data.get('special_breed_5_percent')
+            if session_5_percent:
+                if isinstance(session_5_percent, list):
+                    special_breed_5_percent = 'true' in session_5_percent or True in [v == 'true' for v in session_5_percent]
+                else:
+                    special_breed_5_percent = session_5_percent == 'true' or special_breed_5_percent
+            
+            session_20_percent = session_data.get('special_breed_20_percent')
+            if session_20_percent:
+                if isinstance(session_20_percent, list):
+                    special_breed_20_percent = 'true' in session_20_percent or True in [v == 'true' for v in session_20_percent]
+                else:
+                    special_breed_20_percent = session_20_percent == 'true' or special_breed_20_percent
+            
+            # Check for add-ons
+            session_poisoning = session_data.get('additional_poisoning_coverage')
+            if session_poisoning:
+                additional_poisoning_coverage = session_poisoning == 'true' or additional_poisoning_coverage
+            
+            session_blood = session_data.get('additional_blood_checkup')
+            if session_blood:
+                additional_blood_checkup = session_blood == 'true' or additional_blood_checkup
+    
+    # Calculate base price with breed surcharges
+    base_price_breakdown = {
+        'base_price': 0,
+        'breed_surcharge_5_percent': 0,
+        'breed_surcharge_20_percent': 0,
+        'poisoning_coverage': 0,
+        'blood_checkup': 0,
+        'total': 0
+    }
     
     if pricing_data and 'annual' in pricing_data:
         base_annual = pricing_data['annual']
-        if special_breed_5_percent:
-            base_annual = base_annual * 1.05  # Add 5% surcharge
-        if special_breed_20_percent:
-            base_annual = base_annual * 1.20  # Add 20% surcharge
+        original_base = base_annual
+        base_price_breakdown['base_price'] = original_base
         
-        # Update all pricing fields with surcharge applied
-        if base_annual != pricing_data.get('annual'):
-            original_annual = pricing_data['annual']
-            surcharge_multiplier = base_annual / original_annual
+        # Apply breed surcharges (cumulative - matching handle_application_submission logic)
+        if special_breed_5_percent:
+            surcharge_5 = base_annual * 0.05
+            base_annual = base_annual * 1.05
+            base_price_breakdown['breed_surcharge_5_percent'] = round(surcharge_5, 2)
+        
+        if special_breed_20_percent:
+            # Calculate 20% on the current price (after 5% if applied)
+            surcharge_20 = base_annual * 0.20
+            base_annual = base_annual * 1.20
+            base_price_breakdown['breed_surcharge_20_percent'] = round(surcharge_20, 2)
+        
+        # Calculate add-on prices based on program
+        if additional_poisoning_coverage:
+            poisoning_prices = {
+                'silver': 18,
+                'gold': 20,
+                'platinum': 25
+            }
+            base_price_breakdown['poisoning_coverage'] = poisoning_prices.get(program, 18)
+            base_annual += base_price_breakdown['poisoning_coverage']
+        
+        if additional_blood_checkup:
+            base_price_breakdown['blood_checkup'] = 28  # Same for all programs
+            base_annual += base_price_breakdown['blood_checkup']
+        
+        # Update all pricing fields with surcharges and add-ons applied
+        if base_annual != original_base:
+            surcharge_multiplier = base_annual / original_base
             pricing_data['annual'] = round(base_annual, 2)
             if 'six_month' in pricing_data:
                 pricing_data['six_month'] = round(pricing_data['six_month'] * surcharge_multiplier, 2)
             if 'three_month' in pricing_data:
                 pricing_data['three_month'] = round(pricing_data['three_month'] * surcharge_multiplier, 2)
             pricing_data['final'] = pricing_data['annual']
+        
+        base_price_breakdown['total'] = pricing_data['annual']
     
     # Get second pet pricing
     second_pet_pricing_data = None
@@ -430,14 +500,47 @@ def user_data(request):
         'second_pet_weight_category': second_pet_weight_category,
         'second_pet_pricing_data': second_pet_pricing_data,
         
-        # User data for pre-filling
-        'user_full_name': request.GET.get('user_full_name', ''),
-        'user_afm': request.GET.get('user_afm', ''),
-        'user_phone': request.GET.get('user_phone', ''),
-        'user_address': request.GET.get('user_address', ''),
-        'user_postal_code': request.GET.get('user_postal_code', ''),
-        'user_email': request.GET.get('user_email', ''),
+        # Price breakdown data
+        'price_breakdown': base_price_breakdown,
+        'special_breed_5_percent': special_breed_5_percent,
+        'special_breed_20_percent': special_breed_20_percent,
+        'additional_poisoning_coverage': additional_poisoning_coverage,
+        'additional_blood_checkup': additional_blood_checkup,
+        
+        # User data for pre-filling - check session first (from questionnaire), then URL params
+        'user_full_name': '',
+        'user_afm': '',
+        'user_phone': '',
+        'user_address': '',
+        'user_postal_code': '',
+        'user_email': '',
+        'user_microchip': request.GET.get('user_microchip', ''),
     }
+    
+    # Get user data from session (stored when questionnaire was submitted)
+    # session_data is already defined above if questionnaire_data exists
+    if session_data and isinstance(session_data, dict):
+        # Extract user data from session, handling both list and string values
+        def get_session_value(key, default=''):
+            value = session_data.get(key, default)
+            if isinstance(value, list):
+                return value[0] if value else default
+            return value if value else default
+        
+        context['user_full_name'] = get_session_value('fullName', request.GET.get('user_full_name', ''))
+        context['user_afm'] = get_session_value('afm', request.GET.get('user_afm', ''))
+        context['user_phone'] = get_session_value('phone', request.GET.get('user_phone', ''))
+        context['user_address'] = get_session_value('address', request.GET.get('user_address', ''))
+        context['user_postal_code'] = get_session_value('postalCode', request.GET.get('user_postal_code', ''))
+        context['user_email'] = get_session_value('email', request.GET.get('user_email', ''))
+    else:
+        # Fallback to URL parameters
+        context['user_full_name'] = request.GET.get('user_full_name', '')
+        context['user_afm'] = request.GET.get('user_afm', '')
+        context['user_phone'] = request.GET.get('user_phone', '')
+        context['user_address'] = request.GET.get('user_address', '')
+        context['user_postal_code'] = request.GET.get('user_postal_code', '')
+        context['user_email'] = request.GET.get('user_email', '')
     
     return render(request, 'main/user_data.html', context)
 
@@ -662,12 +765,16 @@ def handle_application_submission(request):
             program=request.POST.get('program', ''),
             health_status=request.POST.get('health_status', ''),
             health_conditions=request.POST.get('conditions', ''),
-            second_pet_health_status=request.POST.get('secondPetHealth', ''),
+            second_pet_health_status=request.POST.get('secondPetHealth', '') or '',
+            second_pet_health_conditions=request.POST.get('secondPetHealthConditions', '') or '',
             
             # Pricing (with discount applied if code was used)
             annual_premium=base_premium,
             affiliate_code=affiliate_code_str if affiliate_code_str else None,
             discount_applied=discount_applied,
+            
+            # Contract PDF (will be generated later)
+            contract_pdf_path='',
             
             # Status
             status='submitted'
@@ -679,10 +786,12 @@ def handle_application_submission(request):
             from .models import Questionnaire
             from datetime import datetime
             
-            # Get questionnaire data from session or POST
+            # Get questionnaire data from ALL sources: session, POST, and URL params
+            # Priority: POST > Session > URL params (POST is most recent)
             questionnaire_data = {}
+            
+            # First, get from session (stored when questionnaire was submitted)
             if 'questionnaire_data' in request.session:
-                # Get from session (stored when questionnaire was submitted)
                 session_data = request.session['questionnaire_data']
                 logger.info(f"Retrieved questionnaire data from session with {len(session_data)} keys")
                 # Convert QueryDict-like structure to regular dict
@@ -699,28 +808,45 @@ def handle_application_submission(request):
                     else:
                         # Keep the value as-is (important for 'false' radio button values)
                         questionnaire_data[key] = value
-                logger.info(f"Processed questionnaire_data has {len(questionnaire_data)} keys: {list(questionnaire_data.keys())[:20]}")
-            else:
-                # Fallback: get from POST
-                for key in request.POST.keys():
-                    values = request.POST.getlist(key)
-                    # For checkboxes with same name (like special_breed_5_percent), if any is 'true', consider it True
-                    if 'true' in values or True in values:
-                        questionnaire_data[key] = 'true'
-                    elif len(values) == 1:
-                        questionnaire_data[key] = values[0]
-                    elif len(values) > 1:
-                        questionnaire_data[key] = values  # Keep as list for processing
-                    else:
-                        questionnaire_data[key] = ''
+                logger.info(f"Processed session questionnaire_data has {len(questionnaire_data)} keys: {list(questionnaire_data.keys())[:20]}")
+            
+            # Then, merge POST data (overrides session data - POST is more recent)
+            for key in request.POST.keys():
+                values = request.POST.getlist(key)
+                # For checkboxes with same name (like special_breed_5_percent), if any is 'true', consider it True
+                if 'true' in values or True in values:
+                    questionnaire_data[key] = 'true'
+                elif len(values) == 1:
+                    questionnaire_data[key] = values[0]
+                elif len(values) > 1:
+                    questionnaire_data[key] = values  # Keep as list for processing
+                else:
+                    questionnaire_data[key] = ''
+            
+            # Also check URL parameters for any missing fields
+            for key in request.GET.keys():
+                if key not in questionnaire_data or not questionnaire_data[key]:
+                    questionnaire_data[key] = request.GET.get(key, '')
+            
+            logger.info(f"Final merged questionnaire_data has {len(questionnaire_data)} keys from all sources")
+            logger.info(f"Sample questionnaire_data keys: {list(questionnaire_data.keys())[:30]}")
             
             # Log questionnaire data for debugging
             logger.info(f"Creating questionnaire for application {application.id} with {len(questionnaire_data)} fields")
             
+            # If questionnaire_data is empty, log a warning
+            if not questionnaire_data or len(questionnaire_data) < 5:
+                logger.warning(f"WARNING: Questionnaire data is very sparse! Only {len(questionnaire_data)} fields found.")
+                logger.warning(f"POST keys: {list(request.POST.keys())[:30]}")
+                logger.warning(f"Session has questionnaire_data: {'questionnaire_data' in request.session}")
+                if 'questionnaire_data' in request.session:
+                    session_keys = list(request.session['questionnaire_data'].keys()) if isinstance(request.session['questionnaire_data'], dict) else []
+                    logger.warning(f"Session questionnaire_data keys: {session_keys[:30]}")
+            
             def get_bool(key, default=False):
                 # If key doesn't exist in questionnaire_data, return default (usually False)
                 if key not in questionnaire_data:
-                    return default
+                    return bool(default)  # Ensure it's always a boolean
                 
                 val = questionnaire_data.get(key, '')
                 
@@ -744,13 +870,19 @@ def handle_application_submission(request):
                     # Any non-empty string (for checkboxes) means True
                     if val_lower:
                         return True
+                    # Empty string means False
+                    return False
                 
                 # Handle boolean values
                 if isinstance(val, bool):
                     return val
                 
-                # If value exists but is not recognized, return default
-                return default
+                # Handle None - return default as boolean
+                if val is None:
+                    return bool(default)
+                
+                # If value exists but is not recognized, return default as boolean
+                return bool(default)
             
             def get_str(key, default=''):
                 val = questionnaire_data.get(key, default)
@@ -769,135 +901,81 @@ def handle_application_submission(request):
             pet_type_val = request.POST.get('type', '') or get_str('type', '')
             is_dog = pet_type_val == 'dog'
             
+            # Check for breed type - can come from breed_type field OR individual checkboxes
             breed_type = get_str('breed_type', '')
-            is_purebred = breed_type == 'purebred'
-            is_mixed = breed_type == 'mixed'
-            is_crossbreed = breed_type == 'crossbreed'
+            if breed_type:
+                is_purebred = breed_type == 'purebred'
+                is_mixed = breed_type == 'mixed'
+                is_crossbreed = breed_type == 'crossbreed'
+            else:
+                # Use individual checkbox fields
+                is_purebred = get_bool('is_purebred')
+                is_mixed = get_bool('is_mixed')
+                is_crossbreed = get_bool('is_crossbreed')
             
             # Log what we're about to save
             logger.info(f"Questionnaire values to save:")
+            logger.info(f"  Total fields in questionnaire_data: {len(questionnaire_data)}")
+            logger.info(f"  Sample keys: {list(questionnaire_data.keys())[:30]}")
             logger.info(f"  has_other_insured_pet: {get_bool('has_other_insured_pet')} (raw: {questionnaire_data.get('has_other_insured_pet', 'NOT_FOUND')})")
             logger.info(f"  has_been_denied_insurance: {get_bool('has_been_denied_insurance')} (raw: {questionnaire_data.get('has_been_denied_insurance', 'NOT_FOUND')})")
             logger.info(f"  is_healthy: {get_bool('is_healthy')} (raw: {questionnaire_data.get('is_healthy', 'NOT_FOUND')})")
             logger.info(f"  special_breed_5_percent: {get_bool('special_breed_5_percent')} (raw: {questionnaire_data.get('special_breed_5_percent', 'NOT_FOUND')})")
+            logger.info(f"  program: {get_str('program')} or POST: {request.POST.get('program', 'NONE')} or GET: {request.GET.get('program', 'NONE')}")
+            logger.info(f"  payment_frequency: {get_str('payment_frequency')} or POST: {request.POST.get('payment_frequency', 'NONE')}")
+            logger.info(f"  payment_method: {get_str('payment_method')} or POST: {request.POST.get('payment_method', 'NONE')}")
+            
+            # Build all questionnaire fields from all sources
+            questionnaire_defaults = {
+                'has_other_insured_pet': get_bool('has_other_insured_pet'),
+                'has_been_denied_insurance': get_bool('has_been_denied_insurance'),
+                'has_special_terms_imposed': get_bool('has_special_terms_imposed'),
+                'pet_colors': get_str('pet_colors'),
+                'pet_weight': get_str('pet_weight'),
+                'is_purebred': is_purebred,
+                'is_mixed': is_mixed,
+                'is_crossbreed': is_crossbreed,
+                'special_breed_5_percent': get_bool('special_breed_5_percent') if is_dog else False,
+                'special_breed_20_percent': get_bool('special_breed_20_percent') if is_dog else False,
+                'is_healthy': get_bool('is_healthy'),  # Get actual value, don't default
+                'is_healthy_details': get_str('is_healthy_details'),
+                'has_injury_illness_3_years': get_bool('has_injury_illness_3_years'),
+                'has_injury_illness_details': get_str('has_injury_illness_details'),
+                'has_surgical_procedure': get_bool('has_surgical_procedure'),
+                'has_surgical_procedure_details': get_str('has_surgical_procedure_details'),
+                'has_examination_findings': get_bool('has_examination_findings'),
+                'has_examination_findings_details': get_str('has_examination_findings_details'),
+                'is_sterilized': get_bool('is_sterilized'),
+                'is_vaccinated_leishmaniasis': get_bool('is_vaccinated_leishmaniasis') if is_dog else False,
+                'follows_vaccination_program': get_bool('follows_vaccination_program'),  # Get actual value
+                'follows_vaccination_program_details': get_str('follows_vaccination_program_details'),
+                'has_hereditary_disease': get_bool('has_hereditary_disease'),
+                'has_hereditary_disease_details': get_str('has_hereditary_disease_details'),
+                'program': get_str('program') or request.POST.get('program', '') or request.GET.get('program', ''),
+                'additional_poisoning_coverage': get_bool('additional_poisoning_coverage'),
+                'additional_blood_checkup': get_bool('additional_blood_checkup'),
+                'desired_start_date': desired_start_date,
+                'payment_method': get_str('payment_method') or request.POST.get('payment_method', '') or request.GET.get('payment_method', ''),
+                'payment_frequency': get_str('payment_frequency') or request.POST.get('payment_frequency', '') or request.GET.get('payment_frequency', ''),
+                'consent_terms_conditions': get_bool('consent_terms_conditions'),
+                'consent_info_document': get_bool('consent_info_document'),
+                'consent_email_notifications': get_bool('consent_email_notifications'),
+                'consent_marketing': get_bool('consent_marketing'),
+                'consent_data_processing': get_bool('consent_data_processing'),
+                'consent_pet_gov_platform': get_bool('consent_pet_gov_platform'),
+            }
+            
+            logger.info(f"Saving questionnaire with program: {questionnaire_defaults['program']}, payment_frequency: {questionnaire_defaults['payment_frequency']}, payment_method: {questionnaire_defaults['payment_method']}")
             
             questionnaire, created = Questionnaire.objects.get_or_create(
                 application=application,
-                defaults={
-                    'has_other_insured_pet': get_bool('has_other_insured_pet'),
-                    'has_been_denied_insurance': get_bool('has_been_denied_insurance'),
-                    'has_special_terms_imposed': get_bool('has_special_terms_imposed'),
-                    'pet_colors': get_str('pet_colors'),
-                    'pet_weight': get_str('pet_weight'),
-                    'is_purebred': is_purebred,
-                    'is_mixed': is_mixed,
-                    'is_crossbreed': is_crossbreed,
-                    'pet_breed_or_crossbreed': get_str('pet_breed_or_crossbreed'),
-                    'special_breed_5_percent': get_bool('special_breed_5_percent') if is_dog else False,
-                    'special_breed_20_percent': get_bool('special_breed_20_percent') if is_dog else False,
-                    'is_healthy': get_bool('is_healthy'),
-                    'is_healthy_details': get_str('is_healthy_details'),
-                    'has_injury_illness_3_years': get_bool('has_injury_illness_3_years'),
-                    'has_injury_illness_details': get_str('has_injury_illness_3_years_details'),
-                    'has_surgical_procedure': get_bool('has_surgical_procedure'),
-                    'has_surgical_procedure_details': get_str('has_surgical_procedure_details'),
-                    'has_examination_findings': get_bool('has_examination_findings'),
-                    'has_examination_findings_details': get_str('has_examination_findings_details'),
-                    'is_sterilized': get_bool('is_sterilized'),
-                    'is_vaccinated_leishmaniasis': get_bool('is_vaccinated_leishmaniasis') if is_dog else False,
-                    'follows_vaccination_program': get_bool('follows_vaccination_program'),
-                    'follows_vaccination_program_details': get_str('follows_vaccination_program_details'),
-                    'has_hereditary_disease': get_bool('has_hereditary_disease'),
-                    'has_hereditary_disease_details': get_str('has_hereditary_disease_details'),
-                    'program': get_str('program') or request.POST.get('program', ''),
-                    'additional_poisoning_coverage': get_bool('additional_poisoning_coverage'),
-                    'additional_blood_checkup': get_bool('additional_blood_checkup'),
-                    'desired_start_date': desired_start_date,
-                    'payment_method': get_str('payment_method'),
-                    'payment_frequency': get_str('payment_frequency') or request.POST.get('payment_frequency', ''),
-                    'consent_terms_conditions': get_bool('consent_terms_conditions'),
-                    'consent_info_document': get_bool('consent_info_document'),
-                    'consent_email_notifications': get_bool('consent_email_notifications'),
-                    'consent_marketing': get_bool('consent_marketing'),
-                    'consent_data_processing': get_bool('consent_data_processing'),
-                    'consent_pet_gov_platform': get_bool('consent_pet_gov_platform'),
-                }
+                defaults=questionnaire_defaults
             )
             
             if not created:
-                # Update all fields if questionnaire already exists
-                questionnaire.has_other_insured_pet = get_bool('has_other_insured_pet')
-                questionnaire.has_been_denied_insurance = get_bool('has_been_denied_insurance')
-                questionnaire.has_special_terms_imposed = get_bool('has_special_terms_imposed')
-                questionnaire.pet_colors = get_str('pet_colors')
-                questionnaire.pet_weight = get_str('pet_weight')
-                questionnaire.is_purebred = is_purebred
-                questionnaire.is_mixed = is_mixed
-                questionnaire.is_crossbreed = is_crossbreed
-                questionnaire.pet_breed_or_crossbreed = get_str('pet_breed_or_crossbreed')
-                questionnaire.special_breed_5_percent = get_bool('special_breed_5_percent') if is_dog else False
-                questionnaire.special_breed_20_percent = get_bool('special_breed_20_percent') if is_dog else False
-                questionnaire.is_healthy = get_bool('is_healthy')
-                questionnaire.is_healthy_details = get_str('is_healthy_details')
-                questionnaire.has_injury_illness_3_years = get_bool('has_injury_illness_3_years')
-                questionnaire.has_injury_illness_details = get_str('has_injury_illness_3_years_details')
-                questionnaire.has_surgical_procedure = get_bool('has_surgical_procedure')
-                questionnaire.has_surgical_procedure_details = get_str('has_surgical_procedure_details')
-                questionnaire.has_examination_findings = get_bool('has_examination_findings')
-                questionnaire.has_examination_findings_details = get_str('has_examination_findings_details')
-                questionnaire.is_sterilized = get_bool('is_sterilized')
-                questionnaire.is_vaccinated_leishmaniasis = get_bool('is_vaccinated_leishmaniasis') if is_dog else False
-                questionnaire.follows_vaccination_program = get_bool('follows_vaccination_program')
-                questionnaire.follows_vaccination_program_details = get_str('follows_vaccination_program_details')
-                questionnaire.has_hereditary_disease = get_bool('has_hereditary_disease')
-                questionnaire.has_hereditary_disease_details = get_str('has_hereditary_disease_details')
-                questionnaire.program = get_str('program') or request.POST.get('program', '')
-                questionnaire.additional_poisoning_coverage = get_bool('additional_poisoning_coverage')
-                questionnaire.additional_blood_checkup = get_bool('additional_blood_checkup')
-                questionnaire.desired_start_date = desired_start_date
-                questionnaire.payment_method = get_str('payment_method')
-                questionnaire.payment_frequency = get_str('payment_frequency') or request.POST.get('payment_frequency', '')
-                questionnaire.consent_terms_conditions = get_bool('consent_terms_conditions')
-                questionnaire.consent_info_document = get_bool('consent_info_document')
-                questionnaire.consent_email_notifications = get_bool('consent_email_notifications')
-                questionnaire.consent_marketing = get_bool('consent_marketing')
-                questionnaire.consent_data_processing = get_bool('consent_data_processing')
-                questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
-                questionnaire.save()
-                questionnaire.pet_colors = get_str('pet_colors')
-                questionnaire.pet_weight = get_str('pet_weight')
-                questionnaire.is_purebred = is_purebred
-                questionnaire.is_mixed = is_mixed
-                questionnaire.is_crossbreed = is_crossbreed
-                questionnaire.pet_breed_or_crossbreed = get_str('pet_breed_or_crossbreed')
-                questionnaire.special_breed_5_percent = get_bool('special_breed_5_percent') if is_dog else False
-                questionnaire.special_breed_20_percent = get_bool('special_breed_20_percent') if is_dog else False
-                questionnaire.is_healthy = get_bool('is_healthy')
-                questionnaire.is_healthy_details = get_str('is_healthy_details')
-                questionnaire.has_injury_illness_3_years = get_bool('has_injury_illness_3_years')
-                questionnaire.has_injury_illness_details = get_str('has_injury_illness_3_years_details')
-                questionnaire.has_surgical_procedure = get_bool('has_surgical_procedure')
-                questionnaire.has_surgical_procedure_details = get_str('has_surgical_procedure_details')
-                questionnaire.has_examination_findings = get_bool('has_examination_findings')
-                questionnaire.has_examination_findings_details = get_str('has_examination_findings_details')
-                questionnaire.is_sterilized = get_bool('is_sterilized')
-                questionnaire.is_vaccinated_leishmaniasis = get_bool('is_vaccinated_leishmaniasis') if is_dog else False
-                questionnaire.follows_vaccination_program = get_bool('follows_vaccination_program')
-                questionnaire.follows_vaccination_program_details = get_str('follows_vaccination_program_details')
-                questionnaire.has_hereditary_disease = get_bool('has_hereditary_disease')
-                questionnaire.has_hereditary_disease_details = get_str('has_hereditary_disease_details')
-                questionnaire.program = get_str('program') or request.POST.get('program', '')
-                questionnaire.additional_poisoning_coverage = get_bool('additional_poisoning_coverage')
-                questionnaire.additional_blood_checkup = get_bool('additional_blood_checkup')
-                questionnaire.desired_start_date = desired_start_date
-                questionnaire.payment_method = get_str('payment_method')
-                questionnaire.payment_frequency = get_str('payment_frequency') or request.POST.get('payment_frequency', '')
-                questionnaire.consent_terms_conditions = get_bool('consent_terms_conditions')
-                questionnaire.consent_info_document = get_bool('consent_info_document')
-                questionnaire.consent_email_notifications = get_bool('consent_email_notifications')
-                questionnaire.consent_marketing = get_bool('consent_marketing')
-                questionnaire.consent_data_processing = get_bool('consent_data_processing')
-                questionnaire.consent_pet_gov_platform = get_bool('consent_pet_gov_platform')
+                # Update all fields if questionnaire already exists - use the same defaults dict
+                for key, value in questionnaire_defaults.items():
+                    setattr(questionnaire, key, value)
                 questionnaire.save()
             
             # Log successful creation with detailed info
@@ -1120,21 +1198,136 @@ def thank_you(request):
 @csrf_exempt
 def upload_pet_document(request):
     """Handle pet document upload via AJAX"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Upload request received - Method: {request.method}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    
     if request.method == 'POST':
         from .models import PetDocument
         
         try:
+            logger.info(f"POST data keys: {list(request.POST.keys())}")
+            logger.info(f"FILES keys: {list(request.FILES.keys())}")
+            
             uploaded_file = request.FILES.get('file')
             if not uploaded_file:
+                logger.warning("No file provided in request")
                 return JsonResponse({'success': False, 'message': 'No file provided'})
             
+            logger.info(f"File received: {uploaded_file.name}, Size: {uploaded_file.size}, Type: {uploaded_file.content_type}")
+            
             # Create PetDocument record with file
-            document = PetDocument.objects.create(
-                file=uploaded_file,
-                original_filename=uploaded_file.name,
-                file_type=uploaded_file.content_type or 'application/octet-stream',
-                file_size=uploaded_file.size
+            # Handle legacy columns with NOT NULL constraints in local DB
+            from django.db import connection
+            from django.utils import timezone
+            from django.core.files.storage import default_storage
+            
+            # Check table structure for NOT NULL columns
+            with connection.cursor() as cursor:
+                cursor.execute("PRAGMA table_info(main_petdocument)")
+                table_info = cursor.fetchall()
+                notnull_cols = {row[1]: row[3] == 1 for row in table_info}
+            
+            # Check if we have legacy NOT NULL columns that aren't in model
+            has_legacy_notnull = (
+                notnull_cols.get('document_type', False) or
+                (notnull_cols.get('pet_name', False) and not request.POST.get('pet_name')) or
+                (notnull_cols.get('pet_type', False) and not request.POST.get('pet_type')) or
+                notnull_cols.get('is_verified', False) or
+                notnull_cols.get('user_id', False)
             )
+            
+            if has_legacy_notnull:
+                # Use raw SQL to insert with all required legacy columns
+                file_path = default_storage.save(f'pet_documents/{uploaded_file.name}', uploaded_file)
+                now = timezone.now()
+                pet_name = request.POST.get('pet_name', '') or ''
+                pet_type = request.POST.get('pet_type', '') or ''
+                
+                with connection.cursor() as cursor:
+                    # Build INSERT with all required columns
+                    columns = ['file', 'original_filename', 'file_type', 'file_size', 'created_at', 'updated_at']
+                    values = [file_path, uploaded_file.name, uploaded_file.content_type or 'application/octet-stream', uploaded_file.size, now, now]
+                    placeholders = ['?' for _ in columns]
+                    
+                    # Add legacy columns if they exist and are NOT NULL
+                    if 'document_type' in notnull_cols and notnull_cols['document_type']:
+                        columns.append('document_type')
+                        values.append('upload')
+                        placeholders.append('?')
+                    
+                    if 'pet_name' in notnull_cols and notnull_cols['pet_name']:
+                        columns.append('pet_name')
+                        values.append(pet_name)
+                        placeholders.append('?')
+                    
+                    if 'pet_type' in notnull_cols and notnull_cols['pet_type']:
+                        columns.append('pet_type')
+                        values.append(pet_type)
+                        placeholders.append('?')
+                    
+                    if 'uploaded_at' in notnull_cols:
+                        columns.append('uploaded_at')
+                        values.append(now)
+                        placeholders.append('?')
+                    
+                    if 'is_verified' in notnull_cols and notnull_cols['is_verified']:
+                        columns.append('is_verified')
+                        values.append(0)  # False in SQLite
+                        placeholders.append('?')
+                    
+                    if 'user_id' in notnull_cols and notnull_cols['user_id']:
+                        # user_id is NOT NULL - provide a default
+                        user_id = None
+                        if hasattr(request, 'user') and request.user.is_authenticated:
+                            user_id = request.user.id
+                        else:
+                            # Get or create a default system user for uploads
+                            try:
+                                from django.contrib.auth.models import User
+                                default_user, created = User.objects.get_or_create(
+                                    username='upload_system',
+                                    defaults={
+                                        'email': 'system@hoolie.gr',
+                                        'is_active': False,
+                                        'is_staff': False
+                                    }
+                                )
+                                user_id = default_user.id
+                                if created:
+                                    logger.info(f"Created default system user for uploads: {user_id}")
+                            except Exception as e:
+                                logger.error(f"Could not get/create default user: {e}")
+                                # Fallback: try to use first user or ID 1
+                                try:
+                                    first_user = User.objects.first()
+                                    user_id = first_user.id if first_user else 1
+                                except:
+                                    user_id = 1
+                        
+                        columns.append('user_id')
+                        values.append(user_id)
+                        placeholders.append('?')
+                    
+                    sql = f"INSERT INTO main_petdocument ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+                    cursor.execute(sql, values)
+                    doc_id = cursor.lastrowid
+                
+                # Get the document object
+                document = PetDocument.objects.get(id=doc_id)
+                logger.info(f"Created document via raw SQL to handle legacy columns: {document.id}")
+            else:
+                # Normal creation if no legacy NOT NULL constraints
+                document = PetDocument.objects.create(
+                    file=uploaded_file,
+                    original_filename=uploaded_file.name,
+                    file_type=uploaded_file.content_type or 'application/octet-stream',
+                    file_size=uploaded_file.size
+                )
+            
+            logger.info(f"Document created successfully - ID: {document.id}, Path: {document.file.name}")
             
             # Store document ID in session for later linking to application
             if 'uploaded_document_ids' not in request.session:
@@ -1142,41 +1335,122 @@ def upload_pet_document(request):
             request.session['uploaded_document_ids'].append(document.id)
             request.session.modified = True
             
+            file_url = document.get_file_url()
+            logger.info(f"File URL generated: {file_url}")
+            
             return JsonResponse({
                 'success': True,
                 'document_id': document.id,
-                'file_url': document.get_file_url(),
+                'file_url': file_url,
                 'file_name': document.original_filename,
                 'file_size': document.file_size
             })
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error uploading document: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return JsonResponse({'success': False, 'message': str(e)})
     
+    logger.warning(f"Method not allowed: {request.method}")
     return JsonResponse({'success': False, 'message': 'Method not allowed'})
 
 @csrf_exempt
 def upload_pet_photo(request):
     """Handle pet photo upload via AJAX"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Photo upload request received - Method: {request.method}")
+    
     if request.method == 'POST':
         from .models import PetPhoto
         
         try:
+            logger.info(f"POST data keys: {list(request.POST.keys())}")
+            logger.info(f"FILES keys: {list(request.FILES.keys())}")
+            
             uploaded_file = request.FILES.get('file')
             if not uploaded_file:
+                logger.warning("No file provided in photo upload request")
                 return JsonResponse({'success': False, 'message': 'No file provided'})
             
+            logger.info(f"Photo received: {uploaded_file.name}, Size: {uploaded_file.size}, Type: {uploaded_file.content_type}")
+            
             # Create PetPhoto record with file
-            photo = PetPhoto.objects.create(
-                file=uploaded_file,
-                original_filename=uploaded_file.name,
-                file_type=uploaded_file.content_type or 'image/jpeg',
-                file_size=uploaded_file.size
-            )
+            # Handle legacy columns if they exist (same as PetDocument)
+            from django.db import connection
+            from django.utils import timezone
+            from django.core.files.storage import default_storage
+            
+            # Check if PetPhoto table exists and has legacy NOT NULL columns
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("PRAGMA table_info(main_petphoto)")
+                    table_info = cursor.fetchall()
+                    notnull_cols = {row[1]: row[3] == 1 for row in table_info}
+                    has_legacy = any(col in notnull_cols and notnull_cols[col] for col in ['document_type', 'is_verified', 'user_id'])
+            except:
+                has_legacy = False
+                notnull_cols = {}
+            
+            if has_legacy:
+                # Use raw SQL for photo upload too if needed
+                file_path = default_storage.save(f'pet_photos/{uploaded_file.name}', uploaded_file)
+                now = timezone.now()
+                pet_name = request.POST.get('pet_name', '') or ''
+                pet_type = request.POST.get('pet_type', '') or ''
+                
+                with connection.cursor() as cursor:
+                    columns = ['file', 'original_filename', 'file_type', 'file_size', 'created_at', 'updated_at', 'uploaded_at']
+                    values = [file_path, uploaded_file.name, uploaded_file.content_type or 'image/jpeg', uploaded_file.size, now, now, now]
+                    placeholders = ['?' for _ in columns]
+                    
+                    # Add legacy columns if needed (same logic as PetDocument)
+                    if 'document_type' in notnull_cols and notnull_cols['document_type']:
+                        columns.append('document_type')
+                        values.append('photo')
+                        placeholders.append('?')
+                    if 'pet_name' in notnull_cols and notnull_cols['pet_name']:
+                        columns.append('pet_name')
+                        values.append(pet_name)
+                        placeholders.append('?')
+                    if 'pet_type' in notnull_cols and notnull_cols['pet_type']:
+                        columns.append('pet_type')
+                        values.append(pet_type)
+                        placeholders.append('?')
+                    if 'is_verified' in notnull_cols and notnull_cols['is_verified']:
+                        columns.append('is_verified')
+                        values.append(0)
+                        placeholders.append('?')
+                    if 'user_id' in notnull_cols and notnull_cols['user_id']:
+                        from django.contrib.auth.models import User
+                        try:
+                            default_user, _ = User.objects.get_or_create(
+                                username='upload_system',
+                                defaults={'email': 'system@hoolie.gr', 'is_active': False, 'is_staff': False}
+                            )
+                            columns.append('user_id')
+                            values.append(default_user.id)
+                            placeholders.append('?')
+                        except:
+                            pass
+                    
+                    sql = f"INSERT INTO main_petphoto ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+                    cursor.execute(sql, values)
+                    photo_id = cursor.lastrowid
+                
+                photo = PetPhoto.objects.get(id=photo_id)
+                logger.info(f"Created photo via raw SQL: {photo.id}")
+            else:
+                # Normal creation
+                photo = PetPhoto.objects.create(
+                    file=uploaded_file,
+                    original_filename=uploaded_file.name,
+                    file_type=uploaded_file.content_type or 'image/jpeg',
+                    file_size=uploaded_file.size
+                )
+            
+            logger.info(f"Photo created successfully - ID: {photo.id}, Path: {photo.file.name}")
             
             # Store photo ID in session for later linking to application
             if 'uploaded_photo_ids' not in request.session:
@@ -1184,21 +1458,23 @@ def upload_pet_photo(request):
             request.session['uploaded_photo_ids'].append(photo.id)
             request.session.modified = True
             
+            file_url = photo.get_file_url()
+            logger.info(f"Photo URL generated: {file_url}")
+            
             return JsonResponse({
                 'success': True,
                 'photo_id': photo.id,
-                'file_url': photo.get_file_url(),
+                'file_url': file_url,
                 'file_name': photo.original_filename,
                 'file_size': photo.file_size
             })
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error uploading photo: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return JsonResponse({'success': False, 'message': str(e)})
     
+    logger.warning(f"Method not allowed: {request.method}")
     return JsonResponse({'success': False, 'message': 'Method not allowed'})
 
 @require_http_methods(["POST"])

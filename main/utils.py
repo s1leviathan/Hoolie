@@ -36,7 +36,7 @@ def generate_contract_pdf(application):
     try:
         # If there are two pets, generate separate contracts
         if application.has_second_pet and application.second_pet_name:
-            logger.info(f"🐾 Generating separate contracts for two pets for application {application.id}")
+            logger.info(f"[PET] Generating separate contracts for two pets for application {application.id}")
             
             # Generate contract for first pet
             filename1 = f"contract_{application.contract_number}_pet1_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -66,7 +66,7 @@ def generate_contract_pdf(application):
         
         else:
             # Single pet contract
-            logger.info(f"🐾 Generating contract for single pet for application {application.id}")
+            logger.info(f"[PET] Generating contract for single pet for application {application.id}")
             filename = f"contract_{application.contract_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
             temp_filepath = os.path.join(temp_dir, filename)
             

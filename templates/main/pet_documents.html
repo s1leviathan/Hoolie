@@ -41,7 +41,7 @@
                             <div class="upload-icon-large">📄</div>
                             <p class="upload-text">Σύρετε τα έγγραφα εδώ</p>
                             <p class="upload-subtext">ή</p>
-                            <button type="button" class="btn-upload" onclick="document.getElementById('documentInput').click()">
+                            <button type="button" class="btn-upload" id="documentUploadBtn">
                                 Επιλέξτε Αρχεία
                             </button>
                             <p class="upload-hint">Μέγιστο μέγεθος: 10MB ανά αρχείο<br>Αποδεκτά: PDF, JPG, PNG, DOC, DOCX</p>
@@ -76,7 +76,7 @@
                             <div class="upload-icon-large">📷</div>
                             <p class="upload-text">Σύρετε τις φωτογραφίες εδώ</p>
                             <p class="upload-subtext">ή</p>
-                            <button type="button" class="btn-upload" onclick="document.getElementById('photoInput').click()">
+                            <button type="button" class="btn-upload" id="photoUploadBtn">
                                 Επιλέξτε Φωτογραφίες
                             </button>
                             <p class="upload-hint">Μέγιστο μέγεθος: 10MB ανά φωτογραφία<br>Αποδεκτά: JPG, PNG, WEBP<br><strong>Απαιτείται: τουλάχιστον 5 φωτογραφίες</strong></p>
@@ -354,9 +354,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup file input
     const fileInput = document.getElementById('documentInput');
     const uploadArea = document.getElementById('uploadArea');
+    const documentUploadBtn = document.getElementById('documentUploadBtn');
     
-    // Click to upload
-    uploadArea.addEventListener('click', () => {
+    // Button click handler - direct and immediate
+    documentUploadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        fileInput.click();
+    });
+    
+    // Click to upload on upload area (but not if clicking the button directly)
+    uploadArea.addEventListener('click', (e) => {
+        // Don't trigger if clicking the button (button handles its own click)
+        if (e.target.classList.contains('btn-upload') || e.target.closest('.btn-upload')) {
+            return;
+        }
         fileInput.click();
     });
     
@@ -387,9 +399,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup photo input
     const photoInput = document.getElementById('photoInput');
     const photoUploadArea = document.getElementById('photoUploadArea');
+    const photoUploadBtn = document.getElementById('photoUploadBtn');
     
-    // Click to upload photos
-    photoUploadArea.addEventListener('click', () => {
+    // Button click handler - direct and immediate
+    photoUploadBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        photoInput.click();
+    });
+    
+    // Click to upload photos on upload area (but not if clicking the button directly)
+    photoUploadArea.addEventListener('click', (e) => {
+        // Don't trigger if clicking the button (button handles its own click)
+        if (e.target.classList.contains('btn-upload') || e.target.closest('.btn-upload')) {
+            return;
+        }
         photoInput.click();
     });
     
@@ -456,33 +480,63 @@ function uploadFileToServer(file) {
     formData.append('pet_name', petName);
     formData.append('pet_type', petType);
     
-    // Get CSRF token
-    const csrfToken = getCookie('csrftoken');
+    // Get CSRF token - try multiple methods (but not required since view uses @csrf_exempt)
+    let csrfToken = getCookie('csrftoken');
+    if (!csrfToken) {
+        // Try to get from meta tag if available
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        if (metaToken) {
+            csrfToken = metaToken.getAttribute('content');
+        }
+    }
+    
+    // Note: CSRF token is optional since the view uses @csrf_exempt
+    // But we'll still try to send it if available
     
     // Show uploading status
     showStatus('info', `Ανέβασμα ${file.name}...`);
     
     // Upload to server
-    fetch('{% url "main:upload_pet_document" %}', {
+    const uploadUrl = '{% url "main:upload_pet_document" %}';
+    console.log('Uploading to:', uploadUrl);
+    console.log('File:', file.name, 'Size:', file.size, 'Type:', file.type);
+    
+    // Build headers - only include CSRF token if available
+    const headers = {};
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(uploadUrl, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': csrfToken
-        }
+        headers: headers,
+        credentials: 'same-origin'  // Include cookies
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response OK:', response.ok);
+        
         // Check if response is OK
         if (!response.ok) {
             // Try to parse error response
-            return response.json().then(data => {
-                throw new Error(data.error || `Server error: ${response.status}`);
-            }).catch(() => {
-                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            return response.text().then(text => {
+                console.error('Error response text:', text);
+                try {
+                    const data = JSON.parse(text);
+                    throw new Error(data.message || data.error || `Server error: ${response.status}`);
+                } catch (e) {
+                    if (e instanceof Error && e.message.includes('Server error')) {
+                        throw e;
+                    }
+                    throw new Error(`Server error: ${response.status} ${response.statusText}. Response: ${text.substring(0, 200)}`);
+                }
             });
         }
         return response.json();
     })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success === true || data.success === 'true') {
             // Add to uploaded files list with server response
             // Ensure file.type is preserved
@@ -498,11 +552,18 @@ function uploadFileToServer(file) {
             updateContinueButton();
             showStatus('success', data.message || 'Το αρχείο ανέβηκε επιτυχώς');
         } else {
-            showStatus('error', data.error || 'Σφάλμα κατά το ανέβασμα');
+            showStatus('error', data.message || data.error || 'Σφάλμα κατά το ανέβασμα');
         }
     })
     .catch(error => {
         console.error('Upload error:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            file: file.name,
+            fileSize: file.size,
+            fileType: file.type
+        });
         showStatus('error', error.message || 'Σφάλμα κατά το ανέβασμα του αρχείου');
     });
 }
@@ -635,19 +696,30 @@ function uploadPhotoToServer(file) {
     formData.append('pet_name', petName);
     formData.append('pet_type', petType);
     
-    // Get CSRF token
-    const csrfToken = getCookie('csrftoken');
+    // Get CSRF token - optional since view uses @csrf_exempt
+    let csrfToken = getCookie('csrftoken');
+    if (!csrfToken) {
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        if (metaToken) {
+            csrfToken = metaToken.getAttribute('content');
+        }
+    }
     
     // Show uploading status
     showPhotoStatus('info', `Ανέβασμα ${file.name}...`);
+    
+    // Build headers - only include CSRF token if available
+    const headers = {};
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
     
     // Upload to server
     fetch('{% url "main:upload_pet_photo" %}', {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-CSRFToken': csrfToken
-        }
+        headers: headers,
+        credentials: 'same-origin'
     })
     .then(response => {
         // Check if response is OK

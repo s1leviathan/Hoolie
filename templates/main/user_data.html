@@ -78,34 +78,38 @@
                             <!-- Personal Information -->
                             <div class="form-group full-width">
                                 <label for="fullName">Ονοματεπώνυμο: <span class="required">*</span></label>
-                                <input type="text" id="fullName" name="fullName" value="{{ user_full_name }}" required>
+                                <input type="text" id="fullName" name="fullName" value="{{ user_full_name }}" {% if user_full_name %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required>
+                                {% if user_full_name %}<small class="form-hint" style="color: #666;">Συμπληρώθηκε από το ερωτηματολόγιο</small>{% endif %}
                             </div>
                             
                             <div class="form-group">
                                 <label for="afm">Α.Φ.Μ.: <span class="required">*</span></label>
-                                <input type="text" id="afm" name="afm" value="{{ user_afm }}" required maxlength="9" pattern="[0-9]{9}">
-                                <small class="form-hint">9 ψηφία</small>
+                                <input type="text" id="afm" name="afm" value="{{ user_afm }}" {% if user_afm %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required maxlength="9" pattern="[0-9]{9}">
+                                <small class="form-hint">{% if user_afm %}Συμπληρώθηκε από το ερωτηματολόγιο{% else %}9 ψηφία{% endif %}</small>
                             </div>
                             
                             <div class="form-group">
                                 <label for="phone">Τηλέφωνο: <span class="required">*</span></label>
-                                <input type="tel" id="phone" name="phone" value="{{ user_phone }}" required>
+                                <input type="tel" id="phone" name="phone" value="{{ user_phone }}" {% if user_phone %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required>
+                                {% if user_phone %}<small class="form-hint" style="color: #666;">Συμπληρώθηκε από το ερωτηματολόγιο</small>{% endif %}
                             </div>
                             
                             <div class="form-group">
                                 <label for="address">Διεύθυνση: <span class="required">*</span></label>
-                                <input type="text" id="address" name="address" value="{{ user_address }}" required>
+                                <input type="text" id="address" name="address" value="{{ user_address }}" {% if user_address %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required>
+                                {% if user_address %}<small class="form-hint" style="color: #666;">Συμπληρώθηκε από το ερωτηματολόγιο</small>{% endif %}
                             </div>
                             
                             <div class="form-group">
                                 <label for="postalCode">Τ.Κ.: <span class="required">*</span></label>
-                                <input type="text" id="postalCode" name="postalCode" value="{{ user_postal_code }}" required maxlength="5" pattern="[0-9]{5}">
-                                <small class="form-hint">5 ψηφία</small>
+                                <input type="text" id="postalCode" name="postalCode" value="{{ user_postal_code }}" {% if user_postal_code %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required maxlength="5" pattern="[0-9]{5}">
+                                <small class="form-hint">{% if user_postal_code %}Συμπληρώθηκε από το ερωτηματολόγιο{% else %}5 ψηφία{% endif %}</small>
                             </div>
                             
                             <div class="form-group">
                                 <label for="email">Email: <span class="required">*</span></label>
-                                <input type="email" id="email" name="email" value="{{ user_email }}" required>
+                                <input type="email" id="email" name="email" value="{{ user_email }}" {% if user_email %}readonly style="background-color: #f5f5f5; cursor: not-allowed;"{% endif %} required>
+                                {% if user_email %}<small class="form-hint" style="color: #666;">Συμπληρώθηκε από το ερωτηματολόγιο</small>{% endif %}
                             </div>
                             
                             <div class="form-group full-width">
@@ -119,6 +123,28 @@
                         <div class="pricing-section" id="pricingSection">
                             <h3>💰 Τιμολόγηση Ασφάλισης</h3>
                             
+                            <!-- Special Breed Display (Read-only if selected in questionnaire) -->
+                            {% if special_breed_5_percent or special_breed_20_percent %}
+                            <div class="special-breed-display-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 10px; border: 2px solid #ffc107;">
+                                <h4 style="margin-bottom: 0.75rem; color: #856404; font-size: 1.1rem;">🐕 Ειδική Ράτσα - Επασφάλιστρο</h4>
+                                <div style="color: #856404; font-size: 0.95rem;">
+                                    {% if special_breed_5_percent %}
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong>✓ Επασφάλιστρο 5%:</strong> 
+                                        <span style="margin-left: 0.5rem;">Cane Corso, Dogo Argentino, ή Rottweiler</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if special_breed_20_percent %}
+                                    <div>
+                                        <strong>✓ Επασφάλιστρο 20%:</strong> 
+                                        <span style="margin-left: 0.5rem;">Pit Bull, French Bulldog, English Bulldog, ή Chow Chow</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <small style="color: #856404; font-style: italic; display: block; margin-top: 0.5rem;">Συμπληρώθηκε από το ερωτηματολόγιο</small>
+                            </div>
+                            {% endif %}
+                            
                             <!-- Program Selector -->
                             <div class="program-selector-section" style="margin-bottom: 1.5rem; padding: 1rem; background: #f9f9f9; border-radius: 10px;">
                                 <label for="programSelector" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">Αλλαγή Προγράμματος:</label>
@@ -128,6 +154,53 @@
                                     <option value="platinum">Platinum Dynasty (5.000€)</option>
                                 </select>
                                 <input type="hidden" id="selectedProgram" name="selectedProgram" value="{{ program }}">
+                            </div>
+                            
+                            <!-- Price Breakdown Section -->
+                            <div class="price-breakdown-section" style="margin-bottom: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 10px; border: 1px solid #dee2e6;">
+                                {% if price_breakdown and price_breakdown.base_price > 0 %}
+                                <h4 style="margin-bottom: 1rem; color: #333; font-size: 1.2rem;">📊 Ανάλυση Τιμής</h4>
+                                
+                                <div class="breakdown-list" style="margin-bottom: 1rem;">
+                                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                                        <span style="color: #333;">Βασική Τιμή Ασφάλισης:</span>
+                                        <strong style="color: #333;">{{ price_breakdown.base_price|floatformat:2 }}€</strong>
+                                    </div>
+                                    
+                                    {% if price_breakdown.breed_surcharge_5_percent > 0 %}
+                                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                                        <span style="color: #856404;">Επασφάλιστρο Ράτσας (5%):</span>
+                                        <strong style="color: #856404;">+{{ price_breakdown.breed_surcharge_5_percent|floatformat:2 }}€</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if price_breakdown.breed_surcharge_20_percent > 0 %}
+                                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                                        <span style="color: #856404;">Επασφάλιστρο Ράτσας (20%):</span>
+                                        <strong style="color: #856404;">+{{ price_breakdown.breed_surcharge_20_percent|floatformat:2 }}€</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if price_breakdown.poisoning_coverage > 0 %}
+                                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                                        <span style="color: #0c5460;">Πρόσθετη Κάλυψη Δηλητηρίασης:</span>
+                                        <strong style="color: #0c5460;">+{{ price_breakdown.poisoning_coverage|floatformat:2 }}€</strong>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if price_breakdown.blood_checkup > 0 %}
+                                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                                        <span style="color: #0c5460;">Αιματολογικό Check Up:</span>
+                                        <strong style="color: #0c5460;">+{{ price_breakdown.blood_checkup|floatformat:2 }}€</strong>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="breakdown-total" style="display: flex; justify-content: space-between; padding: 1rem; background: #fff; border-radius: 5px; border: 2px solid #5AC8CD;">
+                                    <span style="font-size: 1.2rem; font-weight: 600; color: #333;">Συνολική Τιμή:</span>
+                                    <strong style="font-size: 1.3rem; color: #5AC8CD;">{{ price_breakdown.total|floatformat:2 }}€</strong>
+                                </div>
+                                {% endif %}
                             </div>
                             
                             <div class="pricing-card">
@@ -286,8 +359,8 @@
                         <!-- Submit Button -->
                         <div class="form-actions">
                             <button type="submit" class="submit-btn">
-                                <span class="btn-icon">✅</span>
-                                Ολοκλήρωση Ασφάλισης
+                                <span class="btn-icon">📋</span>
+                                Λήψη Προσφοράς
                             </button>
                         </div>
                     </form>
@@ -337,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Set selected program
-    let currentProgram = program || 'gold'; // Default to gold if not set
+    let selectedProgramValue = program || 'gold'; // Default to gold if not set
     if (program) {
         const programSelector = document.getElementById('programSelector');
         if (programSelector) {
@@ -355,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (programSelector) {
         programSelector.addEventListener('change', function() {
             const newProgram = this.value;
-            currentProgram = newProgram;
+            selectedProgramValue = newProgram;
             const selectedProgramInput = document.getElementById('selectedProgram');
             if (selectedProgramInput) {
                 selectedProgramInput.value = newProgram;
@@ -421,13 +494,45 @@ document.addEventListener('DOMContentLoaded', function() {
         let newPricing = null;
         
         if (petType === 'dog' && pricingTables.DOG_PRICING[newProgram] && pricingTables.DOG_PRICING[newProgram][weightCategory]) {
-            newPricing = pricingTables.DOG_PRICING[newProgram][weightCategory];
+            newPricing = Object.assign({}, pricingTables.DOG_PRICING[newProgram][weightCategory]);
         } else if (petType === 'cat' && pricingTables.CAT_PRICING[newProgram] && pricingTables.CAT_PRICING[newProgram][weightCategory]) {
-            newPricing = pricingTables.CAT_PRICING[newProgram][weightCategory];
+            newPricing = Object.assign({}, pricingTables.CAT_PRICING[newProgram][weightCategory]);
         }
         
         if (newPricing) {
+            // Apply breed surcharges
+            let baseAnnual = newPricing.final || newPricing.annual || 0;
+            if (hasBreed5Percent) {
+                baseAnnual = baseAnnual * 1.05;
+            }
+            if (hasBreed20Percent) {
+                baseAnnual = baseAnnual * 1.20;
+            }
+            
+            // Apply add-ons
+            const poisoningPrices = {silver: 18, gold: 20, platinum: 25};
+            if (hasPoisoningCoverage) {
+                baseAnnual += poisoningPrices[newProgram] || 18;
+            }
+            if (hasBloodCheckup) {
+                baseAnnual += 28;
+            }
+            
+            // Update pricing with surcharges and add-ons
+            const multiplier = baseAnnual / (newPricing.final || newPricing.annual || 1);
+            newPricing.annual = Math.round(baseAnnual * 100) / 100;
+            newPricing.final = newPricing.annual;
+            if (newPricing.six_month) {
+                newPricing.six_month = Math.round(newPricing.six_month * multiplier * 100) / 100;
+            }
+            if (newPricing.three_month) {
+                newPricing.three_month = Math.round(newPricing.three_month * multiplier * 100) / 100;
+            }
+            
             firstPetPricingData = newPricing;
+            
+            // Update price breakdown section
+            updatePriceBreakdown(newPricing, newProgram);
             
             // Check if there's a second pet
             {% if second_pet_name %}
@@ -443,6 +548,121 @@ document.addEventListener('DOMContentLoaded', function() {
             {% endif %}
             
             animatePricingUpdate();
+        }
+    }
+    
+    function updatePriceBreakdown(pricing, program) {
+        // Get the base price from pricing tables (before surcharges and add-ons)
+        const urlParams = new URLSearchParams(window.location.search);
+        const petType = urlParams.get('type');
+        const breed = urlParams.get('breed');
+        
+        // Get weight category from breed
+        let weightCategory = null;
+        if (breed && typeof breed === 'string') {
+            if (breed.includes('έως 10 κιλά')) {
+                weightCategory = '10';
+            } else if (breed.includes('11-20 κιλά')) {
+                weightCategory = '11-20';
+            } else if (breed.includes('21-40 κιλά')) {
+                weightCategory = '21-40';
+            } else if (breed.includes('>40 κιλά')) {
+                weightCategory = '>40';
+            }
+        }
+        
+        if (!petType || !program || !weightCategory) {
+            return;
+        }
+        
+        const pricingTables = getPricingTables();
+        let basePrice = 0;
+        
+        if (petType === 'dog' && pricingTables.DOG_PRICING[program] && pricingTables.DOG_PRICING[program][weightCategory]) {
+            basePrice = pricingTables.DOG_PRICING[program][weightCategory].final || pricingTables.DOG_PRICING[program][weightCategory].annual || 0;
+        } else if (petType === 'cat' && pricingTables.CAT_PRICING[program] && pricingTables.CAT_PRICING[program][weightCategory]) {
+            basePrice = pricingTables.CAT_PRICING[program][weightCategory].final || pricingTables.CAT_PRICING[program][weightCategory].annual || 0;
+        }
+        
+        // Calculate surcharges from base price
+        let breed5Surcharge = 0;
+        let breed20Surcharge = 0;
+        let priceAfter5Percent = basePrice;
+        
+        if (hasBreed5Percent) {
+            breed5Surcharge = Math.round(basePrice * 0.05 * 100) / 100;
+            priceAfter5Percent = basePrice * 1.05;
+        }
+        
+        if (hasBreed20Percent) {
+            breed20Surcharge = Math.round(priceAfter5Percent * 0.20 * 100) / 100;
+        }
+        
+        // Calculate add-ons
+        const poisoningPrices = {silver: 18, gold: 20, platinum: 25};
+        const poisoningCoverage = hasPoisoningCoverage ? (poisoningPrices[program] || 18) : 0;
+        const bloodCheckup = hasBloodCheckup ? 28 : 0;
+        
+        // Total is the final price from pricing object
+        const totalPrice = pricing.final || pricing.annual || 0;
+        
+        // Update the breakdown display
+        const breakdownSection = document.querySelector('.price-breakdown-section');
+        if (breakdownSection) {
+            let breakdownHTML = `
+                <h4 style="margin-bottom: 1rem; color: #333; font-size: 1.2rem;">📊 Ανάλυση Τιμής</h4>
+                <div class="breakdown-list" style="margin-bottom: 1rem;">
+                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #333;">Βασική Τιμή Ασφάλισης:</span>
+                        <strong style="color: #333;">${basePrice.toFixed(2)}€</strong>
+                    </div>
+            `;
+            
+            if (breed5Surcharge > 0) {
+                breakdownHTML += `
+                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #856404;">Επασφάλιστρο Ράτσας (5%):</span>
+                        <strong style="color: #856404;">+${breed5Surcharge.toFixed(2)}€</strong>
+                    </div>
+                `;
+            }
+            
+            if (breed20Surcharge > 0) {
+                breakdownHTML += `
+                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #856404;">Επασφάλιστρο Ράτσας (20%):</span>
+                        <strong style="color: #856404;">+${breed20Surcharge.toFixed(2)}€</strong>
+                    </div>
+                `;
+            }
+            
+            if (poisoningCoverage > 0) {
+                breakdownHTML += `
+                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #0c5460;">Πρόσθετη Κάλυψη Δηλητηρίασης:</span>
+                        <strong style="color: #0c5460;">+${poisoningCoverage.toFixed(2)}€</strong>
+                    </div>
+                `;
+            }
+            
+            if (bloodCheckup > 0) {
+                breakdownHTML += `
+                    <div class="breakdown-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef;">
+                        <span style="color: #0c5460;">Αιματολογικό Check Up:</span>
+                        <strong style="color: #0c5460;">+${bloodCheckup.toFixed(2)}€</strong>
+                    </div>
+                `;
+            }
+            
+            breakdownHTML += `
+                </div>
+                <div class="breakdown-total" style="display: flex; justify-content: space-between; padding: 1rem; background: #fff; border-radius: 5px; border: 2px solid #5AC8CD;">
+                    <span style="font-size: 1.2rem; font-weight: 600; color: #333;">Συνολική Τιμή:</span>
+                    <strong style="font-size: 1.3rem; color: #5AC8CD;">${totalPrice.toFixed(2)}€</strong>
+                </div>
+            `;
+            
+            breakdownSection.innerHTML = breakdownHTML;
         }
     }
     
@@ -485,6 +705,13 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if pricing_data %}
     const pricingData = {{ pricing_data|safe }};
     firstPetPricingData = pricingData; // Store for later use
+    
+    // Store add-ons and breed surcharges for recalculation
+    const hasPoisoningCoverage = {% if additional_poisoning_coverage %}true{% else %}false{% endif %};
+    const hasBloodCheckup = {% if additional_blood_checkup %}true{% else %}false{% endif %};
+    const hasBreed5Percent = {% if special_breed_5_percent %}true{% else %}false{% endif %};
+    const hasBreed20Percent = {% if special_breed_20_percent %}true{% else %}false{% endif %};
+    const initialProgram = '{{ program }}';
     
     {% if second_pet_pricing_data %}
     const secondPetPricingData = {{ second_pet_pricing_data|safe }};
@@ -721,6 +948,15 @@ function setupFormValidation() {
                 userData[key] = value;
             }
             
+            // Validate email
+            const email = userData.email || '';
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                showErrorMessage('Παρακαλούμε εισαγάγετε έγκυρο email');
+                document.getElementById('email').focus();
+                return;
+            }
+            
             // Get all parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
             
@@ -736,34 +972,124 @@ function setupFormValidation() {
             const paymentFrequency = document.getElementById('selectedPaymentFrequency')?.value || 'annual';
             const paymentAmount = document.getElementById('selectedPaymentAmount')?.value || '';
             
-            // Navigate to contact info page with all data
-            const params = new URLSearchParams({
-                type: urlParams.get('type') || '',
-                gender: urlParams.get('gender') || '',
-                birthdate: urlParams.get('birthdate') || '',
-                breed: urlParams.get('breed') || '',
-                name: urlParams.get('name') || '',
-                health_status: urlParams.get('health_status') || '',
-                conditions: urlParams.get('conditions') || '',
-                program: selectedProgram,
-                payment_frequency: paymentFrequency,
-                payment_amount: paymentAmount,
-                fullName: userData.fullName || '',
-                afm: userData.afm || '',
-                phone: userData.phone || '',
-                address: userData.address || '',
-                postalCode: userData.postalCode || '',
-                email: userData.email || '',
-                microchip: userData.microchip || '',
-                affiliateCode: affiliateCode
+            // Get CSRF token
+            let csrfToken = getCookie('csrftoken');
+            if (!csrfToken) {
+                const metaToken = document.querySelector('meta[name=csrf-token]');
+                if (metaToken) {
+                    csrfToken = metaToken.getAttribute('content');
+                } else {
+                    const csrfInput = document.querySelector('input[name=csrfmiddlewaretoken]');
+                    if (csrfInput) {
+                        csrfToken = csrfInput.value;
+                    }
+                }
+            }
+            
+            if (!csrfToken) {
+                showErrorMessage('Σφάλμα: Δεν βρέθηκε CSRF token. Παρακαλώ ανανεώστε τη σελίδα.');
+                return;
+            }
+            
+            // Prepare form data for submission
+            const submissionData = new FormData();
+            submissionData.append('csrfmiddlewaretoken', csrfToken);
+            
+            // Add all form fields
+            const fields = {
+                'type': urlParams.get('type') || '',
+                'gender': urlParams.get('gender') || '',
+                'birthdate': urlParams.get('birthdate') || '',
+                'breed': urlParams.get('breed') || '',
+                'name': urlParams.get('name') || '',
+                'health_status': urlParams.get('health_status') || '',
+                'conditions': urlParams.get('conditions') || '',
+                'program': selectedProgram,
+                'fullName': userData.fullName || '',
+                'afm': userData.afm || '',
+                'phone': userData.phone || '',
+                'address': userData.address || '',
+                'postalCode': userData.postalCode || '',
+                'email': email,
+                'microchip': userData.microchip || '',
+                'affiliateCode': affiliateCode,
+                'payment_frequency': paymentFrequency,
+                'payment_amount': paymentAmount,
+                // Include questionnaire fields from context/session
+                'additional_poisoning_coverage': hasPoisoningCoverage ? 'true' : 'false',
+                'additional_blood_checkup': hasBloodCheckup ? 'true' : 'false',
+                'special_breed_5_percent': hasBreed5Percent ? 'true' : 'false',
+                'special_breed_20_percent': hasBreed20Percent ? 'true' : 'false'
+            };
+            
+            // Add second pet data if exists
+            const secondPetName = urlParams.get('secondPetName');
+            if (secondPetName) {
+                submissionData.append('secondPetName', secondPetName);
+                submissionData.append('secondPetType', urlParams.get('secondPetType') || '');
+                submissionData.append('secondPetGender', urlParams.get('secondPetGender') || '');
+                submissionData.append('secondPetBirthdate', urlParams.get('secondPetBirthdate') || '');
+                submissionData.append('secondPetBreed', urlParams.get('secondPetBreed') || '');
+                submissionData.append('secondPetWeight', urlParams.get('secondPetWeight') || '');
+                submissionData.append('secondPetHealth', urlParams.get('secondPetHealthStatus') || '');
+            }
+            
+            for (const [key, value] of Object.entries(fields)) {
+                if (value) {
+                    submissionData.append(key, value);
+                }
+            }
+            
+            // Also include all questionnaire fields from session if available
+            // This ensures all questionnaire data is submitted even if session is used
+            // The backend will merge session + POST data, but including in POST ensures it's saved
+            // Note: The backend already gets data from session, but this ensures it's in POST too
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="btn-icon">⏳</span>Υποβολή...';
+            
+            // Submit directly to handle_application_submission
+            fetch('{% url "main:handle_application_submission" %}', {
+                method: 'POST',
+                body: submissionData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Server error: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Η αίτηση υποβλήθηκε επιτυχώς!');
+                    // Redirect to thank you page
+                    setTimeout(() => {
+                        if (data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        } else {
+                            window.location.href = '{% url "main:thank_you" %}?application_id=' + (data.application_id || '');
+                        }
+                    }, 1500);
+                } else {
+                    showErrorMessage(data.message || 'Σφάλμα κατά την υποβολή της αίτησης');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorMessage('Σφάλμα κατά την υποβολή της αίτησης. Παρακαλώ δοκιμάστε ξανά.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
             });
-            
-            // Show success message and redirect
-            showSuccessMessage('Τα στοιχεία σας καταχωρήθηκαν επιτυχώς!');
-            
-            setTimeout(() => {
-                window.location.href = `{% url 'main:contact_info' %}?${params.toString()}`;
-            }, 1500);
         } else {
             // Show error message
             showErrorMessage('Παρακαλούμε συμπληρώστε όλα τα υποχρεωτικά πεδία');
@@ -1216,6 +1542,22 @@ function selectPaymentFrequency(frequency, amount) {
 
 function goBack() {
     window.history.back();
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 </script>
 {% endblock %}
