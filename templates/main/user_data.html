@@ -701,17 +701,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     {% endif %}
 
-    // Load pricing data from Django context
-    {% if pricing_data %}
-    const pricingData = {{ pricing_data|safe }};
-    firstPetPricingData = pricingData; // Store for later use
-    
-    // Store add-ons and breed surcharges for recalculation
+    // Store add-ons and breed surcharges for recalculation (always define, even if pricing_data not available)
     const hasPoisoningCoverage = {% if additional_poisoning_coverage %}true{% else %}false{% endif %};
     const hasBloodCheckup = {% if additional_blood_checkup %}true{% else %}false{% endif %};
     const hasBreed5Percent = {% if special_breed_5_percent %}true{% else %}false{% endif %};
     const hasBreed20Percent = {% if special_breed_20_percent %}true{% else %}false{% endif %};
-    const initialProgram = '{{ program }}';
+    const initialProgram = '{{ program|default:"" }}';
+    
+    // Load pricing data from Django context
+    {% if pricing_data %}
+    const pricingData = {{ pricing_data|safe }};
+    firstPetPricingData = pricingData; // Store for later use
     
     {% if second_pet_pricing_data %}
     const secondPetPricingData = {{ second_pet_pricing_data|safe }};
