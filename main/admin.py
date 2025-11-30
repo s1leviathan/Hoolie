@@ -48,8 +48,6 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     
     readonly_fields = [
         'contract_number',
-        'receipt_number', 
-        'payment_code',
         'created_at',
         'updated_at',
         'contract_start_date',
@@ -66,13 +64,13 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             'fields': (
                 'application_number',
                 'contract_number',
-                'receipt_number',
-                'payment_code',
+                ('receipt_number', 'payment_code'),  # Editable fields - can be added manually
                 'status',
                 'contract_generated',
                 'contract_pdf_link',
                 'contract_pdf_path'
-            )
+            ),
+            'description': '💡 Σημείωση: Οι κωδικοί πληρωμής και απόδειξης μπορούν να προστεθούν χειροκίνητα αργότερα.'
         }),
         ('📅 Ημερομηνίες', {
             'fields': (
@@ -146,53 +144,71 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     
     def pet_type_display(self, obj):
         """Display pet type with emoji"""
-        if obj.pet_type == 'dog':
-            return "🐕 Σκύλος"
-        elif obj.pet_type == 'cat':
-            return "🐱 Γάτα"
-        return obj.pet_type
+        try:
+            if not obj:
+                return '-'
+            if obj.pet_type == 'dog':
+                return "🐕 Σκύλος"
+            elif obj.pet_type == 'cat':
+                return "🐱 Γάτα"
+            return obj.pet_type or '-'
+        except Exception:
+            return '-'
     pet_type_display.short_description = 'Είδος'
     
     def program_display(self, obj):
         """Display program with color coding"""
-        colors = {
-            'silver': '#C0C0C0',
-            'gold': '#FFD700', 
-            'platinum': '#E5E4E2'
-        }
-        color = colors.get(obj.program, '#000')
-        program_names = {
-            'silver': 'Ασημένιο',
-            'gold': 'Χρυσό',
-            'platinum': 'Πλατινένιο'
-        }
-        name = program_names.get(obj.program, obj.program)
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">🏆 {}</span>',
-            color, name
-        )
+        try:
+            if not obj:
+                return '-'
+            colors = {
+                'silver': '#C0C0C0',
+                'gold': '#FFD700', 
+                'platinum': '#E5E4E2'
+            }
+            color = colors.get(obj.program, '#000')
+            program_names = {
+                'silver': 'Ασημένιο',
+                'gold': 'Χρυσό',
+                'platinum': 'Πλατινένιο'
+            }
+            name = program_names.get(obj.program, obj.program or '-')
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">🏆 {}</span>',
+                color, name
+            )
+        except Exception:
+            return '-'
     program_display.short_description = 'Πρόγραμμα'
     
     def status_display(self, obj):
         """Display status with color coding"""
-        colors = {
-            'draft': '#6c757d',
-            'submitted': '#007bff',
-            'approved': '#28a745',
-            'rejected': '#dc3545',
-            'active': '#17a2b8',
-            'expired': '#6f42c1'
-        }
-        color = colors.get(obj.status, '#000')
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">●</span> {}',
-            color, obj.get_status_display()
-        )
+        try:
+            if not obj:
+                return '-'
+            colors = {
+                'draft': '#6c757d',
+                'submitted': '#007bff',
+                'approved': '#28a745',
+                'rejected': '#dc3545',
+                'active': '#17a2b8',
+                'expired': '#6f42c1'
+            }
+            color = colors.get(obj.status, '#000')
+            status_text = obj.get_status_display() if hasattr(obj, 'get_status_display') else (obj.status or '-')
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">●</span> {}',
+                color, status_text
+            )
+        except Exception:
+            return '-'
     status_display.short_description = 'Κατάσταση'
     
     def affiliate_code_display(self, obj):
         """Display affiliate code with ambassador/partner name and discount if applied"""
-        if obj.affiliate_code:
+        try:
+            if not obj or not obj.affiliate_code:
+                return '-'
             # Try to get the AmbassadorCode object to show the name
             try:
                 ambassador_code = AmbassadorCode.objects.get(code=obj.affiliate_code)
@@ -209,11 +225,15 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 display_text = f'🎁 {obj.affiliate_code}'
             
             # Add discount if applied
-            if obj.discount_applied > 0:
+            if hasattr(obj, 'discount_applied') and obj.discount_applied > 0:
                 display_text += f'<br><small style="color: #28a745; font-weight: bold;">Έκπτωση: -{obj.discount_applied}€</small>'
             
             return format_html(display_text)
-        return '-'
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in affiliate_code_display: {e}")
+            return '-'
     affiliate_code_display.short_description = 'Κωδικός Συνεργάτη'
     
     def contract_pdf_link(self, obj):
@@ -498,6 +518,81 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             
         except InsuranceApplication.DoesNotExist:
             raise Http404("Η αίτηση δεν βρέθηκε")
+    
+    def save_model(self, request, obj, form, change):
+        """Override save to automatically regenerate contract when relevant fields change"""
+        if change:  # Only check for changes on existing objects
+            # Get the original object from database
+            original_obj = InsuranceApplication.objects.get(pk=obj.pk)
+            
+            # Define contract-relevant fields that should trigger regeneration
+            contract_relevant_fields = [
+                # User information
+                'full_name', 'afm', 'phone', 'address', 'postal_code', 'email',
+                # Pet 1 information
+                'pet_name', 'pet_type', 'pet_breed', 'pet_birthdate', 
+                'pet_weight_category', 'microchip_number',
+                # Pet 2 information
+                'has_second_pet', 'second_pet_name', 'second_pet_type', 
+                'second_pet_breed', 'second_pet_birthdate', 'second_pet_weight_category',
+                # Insurance details
+                'program', 'annual_premium', 'six_month_premium', 'three_month_premium',
+                'contract_start_date', 'contract_end_date',
+                # Status (might affect contract validity)
+                'status'
+            ]
+            
+            # Check if any contract-relevant field has changed
+            fields_changed = False
+            for field_name in contract_relevant_fields:
+                original_value = getattr(original_obj, field_name, None)
+                new_value = getattr(obj, field_name, None)
+                if original_value != new_value:
+                    fields_changed = True
+                    break
+            
+            # Save the object first
+            super().save_model(request, obj, form, change)
+            
+            # Regenerate contract if relevant fields changed and contract was previously generated
+            if fields_changed and original_obj.contract_generated:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Contract-relevant fields changed for application {obj.id}, regenerating contract...")
+                
+                try:
+                    from .utils import generate_contract_pdf
+                    from django.contrib import messages
+                    
+                    # Generate new contract (will have unique timestamp in filename)
+                    pdf_paths = generate_contract_pdf(obj)
+                    
+                    if pdf_paths and len(pdf_paths) > 0:
+                        # Update with new contract path (always a list)
+                        obj.contract_pdf_path = pdf_paths[0]  # Store first contract path
+                        obj.contract_generated = True
+                        obj.save(update_fields=['contract_pdf_path', 'contract_generated'])
+                        
+                        logger.info(f"Contract regenerated successfully for application {obj.id}")
+                        try:
+                            messages.success(request, 'Το συμβόλαιο αναδημιουργήθηκε αυτόματα λόγω αλλαγών στα στοιχεία.')
+                        except:
+                            # Messages middleware not available (e.g., in tests)
+                            pass
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error regenerating contract for application {obj.id}: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    try:
+                        messages.error(request, f'Σφάλμα κατά την αναδημιουργία του συμβολαίου: {str(e)}')
+                    except:
+                        # Messages middleware not available (e.g., in tests)
+                        pass
+        else:
+            # New object - just save normally
+            super().save_model(request, obj, form, change)
     
     def has_add_permission(self, request):
         """Disable manual addition - only through the application flow"""
@@ -1130,22 +1225,90 @@ class QuestionnaireAdmin(admin.ModelAdmin):
     ]
     
     search_fields = [
-        'application__application_number',
-        'application__contract_number',
-        'application__full_name',
-        'application__email',
-        'application__pet_name'
+        'id',  # Allow searching by questionnaire ID
     ]
+    
+    def get_search_results(self, request, queryset, search_term):
+        """Custom search that handles application relationships safely"""
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        if search_term:
+            # Also search in related application fields
+            from django.db.models import Q
+            application_filters = Q(
+                application__application_number__icontains=search_term
+            ) | Q(
+                application__contract_number__icontains=search_term
+            ) | Q(
+                application__full_name__icontains=search_term
+            ) | Q(
+                application__email__icontains=search_term
+            ) | Q(
+                application__pet_name__icontains=search_term
+            )
+            queryset = queryset.filter(application_filters)
+            use_distinct = True
+        return queryset, use_distinct
     
     readonly_fields = [
         'created_at',
-        'updated_at'
+        'updated_at',
+        # Application fields (read-only, displayed for reference)
+        'application_contract_number',
+        # 'application_receipt_number',  # Hidden - no active payment system
+        # 'application_payment_code',     # Hidden - no active payment system
+        'application_full_name',
+        'price_breakdown_display',
+        'application_phone',
+        'application_email',
+        'application_address',
+        'application_postal_code',
+        'application_afm',
+        'application_annual_premium',
+        'application_six_month_premium',
+        'application_three_month_premium',
+        'application_program',
+        'application_pet_name',
+        'application_pet_type',
+        'application_pet_breed',
+        'application_pet_birthdate',
+        'application_microchip',
     ]
     
     fieldsets = (
         ('📋 Σύνδεση με Αίτηση', {
             'fields': (
                 'application',
+                'application_contract_number',
+                # 'application_receipt_number',  # Hidden - no active payment system
+                # 'application_payment_code',     # Hidden - no active payment system
+            )
+        }),
+        ('👤 Στοιχεία Επικοινωνίας', {
+            'fields': (
+                'application_full_name',
+                'application_afm',
+                'application_phone',
+                'application_email',
+                'application_address',
+                'application_postal_code',
+            )
+        }),
+        ('🐾 Στοιχεία Κατοικίδιου (από Αίτηση)', {
+            'fields': (
+                'application_pet_name',
+                'application_pet_type',
+                'application_pet_breed',
+                'application_pet_birthdate',
+                'application_microchip',
+            )
+        }),
+        ('💰 Τιμολόγηση (από Αίτηση)', {
+            'fields': (
+                'application_program',
+                'application_annual_premium',
+                'application_six_month_premium',
+                'application_three_month_premium',
+                'price_breakdown_display',
             )
         }),
         ('1.1 Ερωτηματολόγιο Συμβαλλόμενου', {
@@ -1223,54 +1386,509 @@ class QuestionnaireAdmin(admin.ModelAdmin):
     
     def application_link(self, obj):
         """Link to the related application"""
-        if obj.application:
-            url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
-            return format_html('<a href="{}">{}</a>', url, obj.application.application_number or obj.application.contract_number)
+        try:
+            if not obj:
+                return '-'
+            # Check if application exists and is not None
+            if hasattr(obj, 'application') and obj.application:
+                try:
+                    url = reverse('admin:main_insuranceapplication_change', args=[obj.application.pk])
+                    app_number = obj.application.application_number or obj.application.contract_number or f'ID: {obj.application.pk}'
+                    return format_html('<a href="{}">{}</a>', url, app_number)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error creating application link: {e}")
+                    return format_html('<span style="color: #dc3545;">Error: Application not found</span>')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in application_link: {e}")
+            return format_html('<span style="color: #dc3545;">Error</span>')
         return '-'
     application_link.short_description = 'Αίτηση'
     
     def program_display(self, obj):
         """Display program"""
-        programs = {
-            'silver': 'Silver',
-            'gold': 'Gold',
-            'platinum': 'Platinum',
-            'dynasty': 'Dynasty'
-        }
-        return programs.get(obj.program, obj.program or '-')
+        try:
+            if not obj:
+                return '-'
+            programs = {
+                'silver': 'Silver',
+                'gold': 'Gold',
+                'platinum': 'Platinum',
+                'dynasty': 'Dynasty'
+            }
+            return programs.get(obj.program, obj.program or '-')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in program_display: {e}")
+            return '-'
     program_display.short_description = 'Πρόγραμμα'
     
     def payment_method_display(self, obj):
         """Display payment method"""
-        methods = {
-            'card': 'Κάρτα',
-            'bank_deposit': 'Τραπεζική Κατάθεση',
-            'cash': 'Μετρητά'
-        }
-        return methods.get(obj.payment_method, obj.payment_method or '-')
+        try:
+            if not obj:
+                return '-'
+            methods = {
+                'card': 'Κάρτα',
+                'bank_deposit': 'Τραπεζική Κατάθεση',
+                'cash': 'Μετρητά'
+            }
+            return methods.get(obj.payment_method, obj.payment_method or '-')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in payment_method_display: {e}")
+            return '-'
     payment_method_display.short_description = 'Τρόπος Πληρωμής'
     
     def payment_frequency_display(self, obj):
         """Display payment frequency"""
-        frequencies = {
-            'annual': 'Ετήσια',
-            'six_month': 'Εξάμηνη',
-            'three_month': 'Τριμηνιαία'
-        }
-        return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
+        try:
+            if not obj:
+                return '-'
+            frequencies = {
+                'annual': 'Ετήσια',
+                'six_month': 'Εξάμηνη',
+                'three_month': 'Τριμηνιαία'
+            }
+            return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in payment_frequency_display: {e}")
+            return '-'
     payment_frequency_display.short_description = 'Συχνότητα'
     
     def breed_surcharge_display(self, obj):
         """Display breed surcharges"""
-        surcharges = []
-        if obj.special_breed_5_percent:
-            surcharges.append('5%')
-        if obj.special_breed_20_percent:
-            surcharges.append('20%')
-        if surcharges:
-            return format_html('<span style="color: #dc3545; font-weight: bold;">{}</span>', ' + '.join(surcharges))
-        return format_html('<span style="color: #6c757d;">-</span>')
+        try:
+            if not obj:
+                return '-'
+            surcharges = []
+            if obj.special_breed_5_percent:
+                surcharges.append('5%')
+            if obj.special_breed_20_percent:
+                surcharges.append('20%')
+            if surcharges:
+                return format_html('<span style="color: #dc3545; font-weight: bold;">{}</span>', ' + '.join(surcharges))
+            return format_html('<span style="color: #6c757d;">-</span>')
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in breed_surcharge_display: {e}")
+            return format_html('<span style="color: #dc3545;">Error</span>')
     breed_surcharge_display.short_description = 'Επασφάλιστρο Ράτσας'
+    
+    # Application field display methods (read-only, from related InsuranceApplication)
+    def application_contract_number(self, obj):
+        """Display contract number from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.contract_number or '-'
+        except:
+            pass
+        return '-'
+    application_contract_number.short_description = 'Αριθμός Συμβολαίου'
+    
+    def application_receipt_number(self, obj):
+        """Display receipt number from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.receipt_number or '-'
+        except:
+            pass
+        return '-'
+    application_receipt_number.short_description = 'Αριθμός Απόδειξης'
+    
+    def application_payment_code(self, obj):
+        """Display payment code from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.payment_code or '-'
+        except:
+            pass
+        return '-'
+    application_payment_code.short_description = 'Κωδικός Πληρωμής'
+    
+    def application_full_name(self, obj):
+        """Display full name from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.full_name or '-'
+        except:
+            pass
+        return '-'
+    application_full_name.short_description = 'Ονοματεπώνυμο'
+    
+    def application_phone(self, obj):
+        """Display phone from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.phone or '-'
+        except:
+            pass
+        return '-'
+    application_phone.short_description = 'Τηλέφωνο'
+    
+    def application_email(self, obj):
+        """Display email from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.email or '-'
+        except:
+            pass
+        return '-'
+    application_email.short_description = 'Email'
+    
+    def application_address(self, obj):
+        """Display address from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.address or '-'
+        except:
+            pass
+        return '-'
+    application_address.short_description = 'Διεύθυνση'
+    
+    def application_postal_code(self, obj):
+        """Display postal code from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.postal_code or '-'
+        except:
+            pass
+        return '-'
+    application_postal_code.short_description = 'Ταχυδρομικός Κώδικας'
+    
+    def application_afm(self, obj):
+        """Display AFM from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.afm or '-'
+        except:
+            pass
+        return '-'
+    application_afm.short_description = 'Α.Φ.Μ.'
+    
+    def application_annual_premium(self, obj):
+        """Display annual premium from application"""
+        try:
+            if obj and obj.application and obj.application.annual_premium:
+                return f"{obj.application.annual_premium:.2f}€"
+        except:
+            pass
+        return '-'
+    application_annual_premium.short_description = 'Ετήσια Πληρωμή'
+    
+    def application_six_month_premium(self, obj):
+        """Display six month premium from application"""
+        try:
+            if obj and obj.application and obj.application.six_month_premium:
+                return f"{obj.application.six_month_premium:.2f}€"
+        except:
+            pass
+        return '-'
+    application_six_month_premium.short_description = 'Εξάμηνη Πληρωμή'
+    
+    def application_three_month_premium(self, obj):
+        """Display three month premium from application"""
+        try:
+            if obj and obj.application and obj.application.three_month_premium:
+                return f"{obj.application.three_month_premium:.2f}€"
+        except:
+            pass
+        return '-'
+    application_three_month_premium.short_description = 'Τριμηνιαία Πληρωμή'
+    
+    def price_breakdown_display(self, obj):
+        """Display detailed price breakdown with add-ons and surcharges"""
+        try:
+            if not obj or not obj.application:
+                return '-'
+            
+            app = obj.application
+            questionnaire = obj
+            
+            # Get the base price from pricing table (without surcharges)
+            # Use the same pricing table as fillpdf_utils.py
+            pet_type = app.pet_type
+            weight_category = app.pet_weight_category or ''
+            program = app.program
+            
+            # EXACT pricing breakdown from the official table
+            DOG_PRICING = {
+                'silver': {
+                    '10': {'final': 166.75},
+                    '11-20': {'final': 207.20},
+                    '21-40': {'final': 234.14},
+                    '>40': {'final': 254.36}
+                },
+                'gold': {
+                    '10': {'final': 234.14},
+                    '11-20': {'final': 261.09},
+                    '21-40': {'final': 288.05},
+                    '>40': {'final': 308.26}
+                },
+                'platinum': {
+                    '10': {'final': 368.92},
+                    '11-20': {'final': 389.15},
+                    '21-40': {'final': 409.36},
+                    '>40': {'final': 436.32}
+                }
+            }
+            
+            CAT_PRICING = {
+                'silver': {
+                    '10': {'final': 113.81},
+                    '11-20': {'final': 141.02}
+                },
+                'gold': {
+                    '10': {'final': 168.22},
+                    '11-20': {'final': 188.61}
+                },
+                'platinum': {
+                    '10': {'final': 277.02},
+                    '11-20': {'final': 311.02}
+                }
+            }
+            
+            # Map weight categories
+            weight_mapping = {
+                'up_10': '10',
+                '10_25': '11-20', 
+                '25_40': '21-40',
+                'over_40': '>40'
+            }
+            
+            # Get the correct pricing table
+            pricing_table = DOG_PRICING if pet_type == 'dog' else CAT_PRICING
+            mapped_weight = weight_mapping.get(weight_category, weight_category)
+            
+            # Get base price from table
+            base_final_price = 0
+            if program in pricing_table and mapped_weight in pricing_table[program]:
+                base_final_price = pricing_table[program][mapped_weight]['final']
+            
+            if base_final_price == 0:
+                # Fallback: reverse calculate from annual_premium
+                # annual_premium already includes surcharges, so we need to reverse calculate
+                stored_premium = float(app.annual_premium) if app.annual_premium else 0
+                if stored_premium > 0:
+                    # Estimate base by subtracting known add-ons
+                    estimated_base = stored_premium
+                    if questionnaire.additional_poisoning_coverage:
+                        poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
+                        estimated_base -= poisoning_prices.get(program, 18)
+                    if questionnaire.additional_blood_checkup:
+                        estimated_base -= 28.00
+                    # Reverse calculate breed surcharges (20% is applied after 5%, so reverse in reverse order)
+                    if questionnaire.special_breed_20_percent:
+                        estimated_base = estimated_base / 1.20
+                    if questionnaire.special_breed_5_percent:
+                        estimated_base = estimated_base / 1.05
+                    base_final_price = estimated_base
+            
+            # Calculate breakdown
+            breakdown = []
+            breakdown.append(f"Βασική Τιμή: {base_final_price:.2f}€")
+            
+            total = base_final_price
+            
+            # Breed surcharges (20% is applied on price AFTER 5% surcharge, not on base)
+            if questionnaire.special_breed_5_percent:
+                surcharge_5 = base_final_price * 0.05
+                breakdown.append(f"+ Επασφάλιστρο 5%: {surcharge_5:.2f}€")
+                total = total * 1.05  # Apply 5% surcharge
+            
+            if questionnaire.special_breed_20_percent:
+                # 20% is applied on the price after 5% surcharge (if applicable)
+                surcharge_20 = total * 0.20
+                breakdown.append(f"+ Επασφάλιστρο 20%: {surcharge_20:.2f}€")
+                total = total * 1.20  # Apply 20% surcharge
+            
+            # Add-ons (fixed prices)
+            if questionnaire.additional_poisoning_coverage:
+                poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
+                poisoning_price = poisoning_prices.get(program, 18)
+                breakdown.append(f"+ Δηλητηρίαση: {poisoning_price:.2f}€")
+                total += poisoning_price
+            
+            if questionnaire.additional_blood_checkup:
+                breakdown.append(f"+ Αιματολογικό Check Up: 28.00€")
+                total += 28.00
+            
+            # Round total to 2 decimal places (matching views.py calculation)
+            total = round(total, 2)
+            
+            breakdown.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            breakdown.append(f"ΣΥΝΟΛΟ: {total:.2f}€")
+            
+            # Show stored annual_premium for comparison
+            if app.annual_premium:
+                stored_premium = float(app.annual_premium)
+                if abs(stored_premium - total) > 0.01:  # Allow small rounding differences
+                    breakdown.append(f"<br><small style='color: #6c757d;'>Αποθηκευμένη τιμή: {stored_premium:.2f}€</small>")
+            
+            return format_html('<br>'.join(breakdown))
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in price_breakdown_display: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return format_html('<span style="color: #dc3545;">Error: {}</span>'.format(str(e)))
+    price_breakdown_display.short_description = 'Ανάλυση Τιμής'
+    
+    def application_program(self, obj):
+        """Display program from application"""
+        try:
+            if obj and obj.application:
+                program_map = {
+                    'silver': 'Ασημένιο',
+                    'gold': 'Χρυσό',
+                    'platinum': 'Πλατινένιο',
+                    'dynasty': 'Dynasty'
+                }
+                return program_map.get(obj.application.program, obj.application.program) or '-'
+        except:
+            pass
+        return '-'
+    application_program.short_description = 'Πρόγραμμα (από Αίτηση)'
+    
+    def application_pet_name(self, obj):
+        """Display pet name from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.pet_name or '-'
+        except:
+            pass
+        return '-'
+    application_pet_name.short_description = 'Όνομα Κατοικίδιου'
+    
+    def application_pet_type(self, obj):
+        """Display pet type from application"""
+        try:
+            if obj and obj.application:
+                pet_type_map = {'dog': 'Σκύλος', 'cat': 'Γάτα'}
+                return pet_type_map.get(obj.application.pet_type, obj.application.pet_type) or '-'
+        except:
+            pass
+        return '-'
+    application_pet_type.short_description = 'Είδος'
+    
+    def application_pet_breed(self, obj):
+        """Display pet breed from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.pet_breed or '-'
+        except:
+            pass
+        return '-'
+    application_pet_breed.short_description = 'Ράτσα'
+    
+    def application_pet_birthdate(self, obj):
+        """Display pet birthdate from application"""
+        try:
+            if obj and obj.application and obj.application.pet_birthdate:
+                return obj.application.pet_birthdate.strftime('%d/%m/%Y')
+        except:
+            pass
+        return '-'
+    application_pet_birthdate.short_description = 'Ημερομηνία Γέννησης'
+    
+    def application_microchip(self, obj):
+        """Display microchip number from application"""
+        try:
+            if obj and obj.application:
+                return obj.application.microchip_number or '-'
+        except:
+            pass
+        return '-'
+    application_microchip.short_description = 'Αριθμός Microchip'
+    
+    def save_model(self, request, obj, form, change):
+        """Override save to automatically regenerate contract when questionnaire fields affecting pricing change"""
+        if change and obj.application:  # Only check for changes on existing questionnaires with applications
+            # Get the original object from database
+            original_obj = Questionnaire.objects.get(pk=obj.pk)
+            
+            # Define questionnaire fields that affect contract pricing/content
+            contract_relevant_fields = [
+                # Breed surcharges (affect pricing)
+                'special_breed_5_percent', 'special_breed_20_percent',
+                # Add-ons (affect pricing)
+                'additional_poisoning_coverage', 'additional_blood_checkup',
+                # Program selection (affects pricing)
+                'program',
+                # Pet information that might affect contract
+                'pet_colors', 'pet_weight', 'is_purebred', 'is_mixed', 'is_crossbreed',
+                # Health information that might be in contract
+                'is_healthy', 'has_injury_illness_3_years', 'has_surgical_procedure',
+                'has_examination_findings', 'is_sterilized',
+                # Payment details
+                'payment_method', 'payment_frequency',
+                # Desired start date
+                'desired_start_date'
+            ]
+            
+            # Check if any contract-relevant field has changed
+            fields_changed = False
+            for field_name in contract_relevant_fields:
+                original_value = getattr(original_obj, field_name, None)
+                new_value = getattr(obj, field_name, None)
+                if original_value != new_value:
+                    fields_changed = True
+                    break
+            
+            # Save the questionnaire first
+            super().save_model(request, obj, form, change)
+            
+            # Regenerate contract if relevant fields changed and application has a contract
+            if fields_changed and obj.application and hasattr(obj.application, 'contract_generated') and obj.application.contract_generated:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Questionnaire fields changed for application {obj.application.id}, regenerating contract...")
+                
+                try:
+                    from .utils import generate_contract_pdf
+                    from django.contrib import messages
+                    
+                    # Refresh application to get latest data
+                    application = obj.application
+                    
+                    # Generate new contract (will have unique timestamp in filename)
+                    pdf_paths = generate_contract_pdf(application)
+                    
+                    if pdf_paths and len(pdf_paths) > 0:
+                        # Update with new contract path (always a list)
+                        application.contract_pdf_path = pdf_paths[0]  # Store first contract path
+                        application.contract_generated = True
+                        application.save(update_fields=['contract_pdf_path', 'contract_generated'])
+                        
+                        logger.info(f"Contract regenerated successfully for application {application.id} due to questionnaire changes")
+                        try:
+                            messages.success(request, 'Το συμβόλαιο αναδημιουργήθηκε αυτόματα λόγω αλλαγών στο ερωτηματολόγιο.')
+                        except:
+                            # Messages middleware not available (e.g., in tests)
+                            pass
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error regenerating contract for application {obj.application.id}: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    try:
+                        messages.error(request, f'Σφάλμα κατά την αναδημιουργία του συμβολαίου: {str(e)}')
+                    except:
+                        # Messages middleware not available (e.g., in tests)
+                        pass
+        else:
+            # New questionnaire or no application - just save normally
+            super().save_model(request, obj, form, change)
     
     def has_add_permission(self, request):
         """Disable manual addition - questionnaires are created through the application flow"""
