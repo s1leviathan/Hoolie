@@ -205,15 +205,20 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
             logger.info(f"  🔍 additional_blood_checkup: {questionnaire.additional_blood_checkup}")
             
             # Breed surcharges first (5% and 20%)
+            # Calculate 20% on price AFTER 5% is applied (if 5% is active)
+            price_after_surcharges = base_final_price
+            
             if questionnaire.special_breed_5_percent:
                 surcharge_5 = base_final_price * 0.05
+                price_after_surcharges = base_final_price * 1.05
                 surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
                 logger.info(f"  [OK] Added 5% surcharge: {surcharge_5:.2f}€")
             
             if questionnaire.special_breed_20_percent:
-                surcharge_20 = base_final_price * 0.20
+                # Calculate 20% on the price AFTER 5% surcharge (if 5% was applied)
+                surcharge_20 = price_after_surcharges * 0.20
                 surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
-                logger.info(f"  [OK] Added 20% surcharge: {surcharge_20:.2f}€")
+                logger.info(f"  [OK] Added 20% surcharge: {surcharge_20:.2f}€ (calculated on price after 5%: {price_after_surcharges:.2f}€)")
             
             # Add-ons below breed surcharges (poisoning coverage and blood checkup)
             if questionnaire.additional_poisoning_coverage:
