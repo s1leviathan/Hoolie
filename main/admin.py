@@ -554,6 +554,22 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             # Save the object first
             super().save_model(request, obj, form, change)
             
+            # Recalculate premium if pricing-related fields changed
+            pricing_fields = ['program', 'pet_weight_category', 'pet_type']
+            pricing_changed = any(
+                getattr(original_obj, field, None) != getattr(obj, field, None)
+                for field in pricing_fields
+            )
+            
+            if pricing_changed:
+                from .utils import recalculate_application_premium
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Pricing fields changed in application, recalculating premium for application {obj.id}")
+                recalculate_application_premium(obj)
+                # Refresh object after recalculation
+                obj.refresh_from_db()
+            
             # Regenerate contract if relevant fields changed and contract was previously generated
             if fields_changed and original_obj.contract_generated:
                 import logging
