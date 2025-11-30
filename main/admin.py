@@ -1860,6 +1860,21 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                     # Refresh application to get latest data
                     application = obj.application
                     
+                    # Recalculate premium if pricing-related fields changed
+                    pricing_fields = ['special_breed_5_percent', 'special_breed_20_percent', 
+                                    'additional_poisoning_coverage', 'additional_blood_checkup', 'program']
+                    pricing_changed = any(
+                        getattr(original_obj, field, None) != getattr(obj, field, None)
+                        for field in pricing_fields
+                    )
+                    
+                    if pricing_changed:
+                        from .utils import recalculate_application_premium
+                        logger.info(f"Pricing fields changed, recalculating premium for application {application.id}")
+                        recalculate_application_premium(application)
+                        # Refresh application after recalculation
+                        application.refresh_from_db()
+                    
                     # Generate new contract (will have unique timestamp in filename)
                     pdf_paths = generate_contract_pdf(application)
                     

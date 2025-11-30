@@ -3,6 +3,119 @@ from datetime import datetime
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from decimal import Decimal
+
+def recalculate_application_premium(application):
+    """Recalculate application premium based on current questionnaire values"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Get questionnaire
+        questionnaire = None
+        if hasattr(application, 'questionnaire'):
+            try:
+                questionnaire = application.questionnaire
+            except:
+                from .models import Questionnaire
+                try:
+                    questionnaire = Questionnaire.objects.get(application=application)
+                except Questionnaire.DoesNotExist:
+                    questionnaire = None
+        
+        if not questionnaire:
+            logger.warning(f"No questionnaire found for application {application.id}, cannot recalculate premium")
+            return
+        
+        # Get base price from pricing table
+        DOG_PRICING = {
+            'silver': {'10': 166.75, '11-20': 207.20, '21-40': 234.14, '>40': 254.36},
+            'gold': {'10': 234.14, '11-20': 261.09, '21-40': 288.05, '>40': 308.26},
+            'platinum': {'10': 368.92, '11-20': 389.15, '21-40': 409.36, '>40': 436.32}
+        }
+        CAT_PRICING = {
+            'silver': {'10': 113.81, '11-20': 141.02},
+            'gold': {'10': 168.22, '11-20': 188.61},
+            'platinum': {'10': 277.02, '11-20': 311.02}
+        }
+        
+        # Map weight categories
+        weight_mapping = {
+            'up_10': '10',
+            '10_25': '11-20',
+            '25_40': '21-40',
+            'over_40': '>40'
+        }
+        
+        pet_type = application.pet_type
+        weight_category = application.pet_weight_category or ''
+        program = application.program
+        
+        mapped_weight = weight_mapping.get(weight_category, weight_category)
+        
+        # Get base premium
+        base_premium = 0
+        if pet_type == 'dog' and program in DOG_PRICING and mapped_weight in DOG_PRICING[program]:
+            base_premium = DOG_PRICING[program][mapped_weight]
+        elif pet_type == 'cat' and program in CAT_PRICING and mapped_weight in CAT_PRICING[program]:
+            base_premium = CAT_PRICING[program][mapped_weight]
+        
+        if base_premium == 0:
+            logger.warning(f"Could not find base premium for {pet_type}, {program}, {mapped_weight}")
+            return
+        
+        logger.info(f"Recalculating premium for application {application.id}: base={base_premium}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
+        
+        # Apply breed surcharges (cumulative)
+        if questionnaire.special_breed_5_percent:
+            base_premium = base_premium * 1.05
+            logger.info(f"Applied 5% surcharge: {base_premium:.2f}")
+        
+        if questionnaire.special_breed_20_percent:
+            base_premium = base_premium * 1.20
+            logger.info(f"Applied 20% surcharge: {base_premium:.2f}")
+        
+        # Add add-ons
+        if questionnaire.additional_poisoning_coverage:
+            poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
+            poisoning_price = poisoning_prices.get(program, 18)
+            base_premium += poisoning_price
+            logger.info(f"Added poisoning coverage: +{poisoning_price}€")
+        
+        if questionnaire.additional_blood_checkup:
+            base_premium += 28
+            logger.info(f"Added blood checkup: +28€")
+        
+        # Round to 2 decimal places
+        base_premium = round(base_premium, 2)
+        
+        # Calculate other payment frequencies (proportional)
+        # Get original ratios if they exist
+        if application.annual_premium and application.annual_premium > 0:
+            original_annual = float(application.annual_premium)
+            multiplier = base_premium / original_annual if original_annual > 0 else 1.0
+        else:
+            # Estimate ratios (typical: annual = 1.0, six_month = 0.55, three_month = 0.30)
+            multiplier = 1.0
+        
+        # Update premiums
+        application.annual_premium = Decimal(str(base_premium))
+        
+        if application.six_month_premium:
+            application.six_month_premium = Decimal(str(round(float(application.six_month_premium) * multiplier, 2)))
+        
+        if application.three_month_premium:
+            application.three_month_premium = Decimal(str(round(float(application.three_month_premium) * multiplier, 2)))
+        
+        application.save(update_fields=['annual_premium', 'six_month_premium', 'three_month_premium'])
+        logger.info(f"Updated premiums for application {application.id}: annual={base_premium}")
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error recalculating premium for application {application.id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 def generate_contract_pdf(application):
     """Generate insurance contract PDF(s) using fillpdf library and save to S3/local storage"""
