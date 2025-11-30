@@ -182,6 +182,10 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     # Calculate surcharges/discounts for display in ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ section
     surcharges_discounts = []
     
+    # Initialize add-on fields (for the 2 fields beneath in PDF)
+    addon_poisoning = ""
+    addon_blood = ""
+    
     # Check for breed surcharges - try to get questionnaire
     try:
         # Try to access questionnaire via relationship
@@ -199,37 +203,43 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         
         if questionnaire:
             logger.info(f"  🔍 Found questionnaire ID: {questionnaire.id}")
-            logger.info(f"  🔍 special_breed_5_percent: {questionnaire.special_breed_5_percent}")
-            logger.info(f"  🔍 special_breed_20_percent: {questionnaire.special_breed_20_percent}")
-            logger.info(f"  🔍 additional_poisoning_coverage: {questionnaire.additional_poisoning_coverage}")
-            logger.info(f"  🔍 additional_blood_checkup: {questionnaire.additional_blood_checkup}")
+            logger.info(f"  🔍 special_breed_5_percent: {questionnaire.special_breed_5_percent} (type: {type(questionnaire.special_breed_5_percent)})")
+            logger.info(f"  🔍 special_breed_20_percent: {questionnaire.special_breed_20_percent} (type: {type(questionnaire.special_breed_20_percent)})")
+            logger.info(f"  🔍 additional_poisoning_coverage: {questionnaire.additional_poisoning_coverage} (type: {type(questionnaire.additional_poisoning_coverage)})")
+            logger.info(f"  🔍 additional_blood_checkup: {questionnaire.additional_blood_checkup} (type: {type(questionnaire.additional_blood_checkup)})")
             
             # Breed surcharges first (5% and 20%)
+            # Only show the ones that are actually True
             # Calculate 20% on price AFTER 5% is applied (if 5% is active)
             price_after_surcharges = base_final_price
             
-            if questionnaire.special_breed_5_percent:
+            # Check if 5% is actually True (not just truthy)
+            if questionnaire.special_breed_5_percent is True:
                 surcharge_5 = base_final_price * 0.05
                 price_after_surcharges = base_final_price * 1.05
                 surcharges_discounts.append(f"+{surcharge_5:.2f}€ (Επασφάλιστρο 5%)")
                 logger.info(f"  [OK] Added 5% surcharge: {surcharge_5:.2f}€")
             
-            if questionnaire.special_breed_20_percent:
+            # Check if 20% is actually True (not just truthy) - only if it's selected
+            if questionnaire.special_breed_20_percent is True:
                 # Calculate 20% on the price AFTER 5% surcharge (if 5% was applied)
                 surcharge_20 = price_after_surcharges * 0.20
                 surcharges_discounts.append(f"+{surcharge_20:.2f}€ (Επασφάλιστρο 20%)")
                 logger.info(f"  [OK] Added 20% surcharge: {surcharge_20:.2f}€ (calculated on price after 5%: {price_after_surcharges:.2f}€)")
             
             # Add-ons below breed surcharges (poisoning coverage and blood checkup)
-            if questionnaire.additional_poisoning_coverage:
+            # Store separately for the 2 fields beneath in PDF (text_31mdpf and text_32crsg)
+            if questionnaire.additional_poisoning_coverage is True:
                 poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
                 poisoning_price = poisoning_prices.get(program, 18)
-                surcharges_discounts.append(f"+{poisoning_price:.2f}€ (Δηλητηρίαση)")
-                logger.info(f"  [OK] Added poisoning coverage: {poisoning_price:.2f}€")
+                addon_poisoning = f"+{poisoning_price:.2f}€ (Δηλητηρίαση)"
+                # Don't add to surcharges_discounts - goes in separate field text_31mdpf
+                logger.info(f"  [OK] Added poisoning coverage: {poisoning_price:.2f}€ (will go in text_31mdpf)")
             
-            if questionnaire.additional_blood_checkup:
-                surcharges_discounts.append(f"+28.00€ (Αιματολογικό Check Up)")
-                logger.info(f"  [OK] Added blood checkup: 28.00€")
+            if questionnaire.additional_blood_checkup is True:
+                addon_blood = f"+28.00€ (Αιματολογικό Check Up)"
+                # Don't add to surcharges_discounts - goes in separate field text_32crsg
+                logger.info(f"  [OK] Added blood checkup: 28.00€ (will go in text_32crsg)")
         else:
             logger.warning(f"  ⚠️ No questionnaire found for application {application.id}")
     except Exception as e:
@@ -287,9 +297,9 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         
         # Premium breakdown section
         "text_29bsjj": "",                                             # Empty
-        "text_30vzyv": surcharges_text,                                # ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ (surcharges/discounts)
-        "text_31mdpf": "",                                             # Empty
-        "text_32crsg": "",                                             # Empty
+        "text_30vzyv": surcharges_text,                                # ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ (surcharges/discounts - breed surcharges only)
+        "text_31mdpf": addon_poisoning,  # Add-on: Poisoning coverage (field beneath)
+        "text_32crsg": addon_blood,  # Add-on: Blood checkup (field beneath)
         "text_33tjdu": f"{correct_net_premium:.2f}€",                  # Net Premium from pricing table
         "text_34k": f"{correct_management_fee:.2f}€",               # Management Fee from pricing table
         "text_35poeh": f"{auxiliary_fund:.2f}€",                     # Επικουρικό (ΤΕΑ-ΕΑΠΑΕΕ 0.8%) from pricing table - for display only (already included in final price)
