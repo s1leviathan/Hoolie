@@ -1023,10 +1023,11 @@ function setupFormValidation() {
                 'payment_frequency': paymentFrequency,
                 'payment_amount': paymentAmount,
                 // Include questionnaire fields from context/session
-                'additional_poisoning_coverage': hasPoisoningCoverage ? 'true' : 'false',
-                'additional_blood_checkup': hasBloodCheckup ? 'true' : 'false',
-                'special_breed_5_percent': hasBreed5Percent ? 'true' : 'false',
-                'special_breed_20_percent': hasBreed20Percent ? 'true' : 'false'
+                // Use window variables as fallback if local consts are undefined
+                'additional_poisoning_coverage': (hasPoisoningCoverage || window.hasPoisoningCoverage) ? 'true' : 'false',
+                'additional_blood_checkup': (hasBloodCheckup || window.hasBloodCheckup) ? 'true' : 'false',
+                'special_breed_5_percent': (hasBreed5Percent || window.hasBreed5Percent) ? 'true' : 'false',
+                'special_breed_20_percent': (hasBreed20Percent || window.hasBreed20Percent) ? 'true' : 'false'
             };
             
             // Add second pet data if exists
