@@ -1224,29 +1224,20 @@ def upload_pet_document(request):
             from django.utils import timezone
             from django.core.files.storage import default_storage
             
-            # Check table structure for NOT NULL columns (database-agnostic)
+            # Check table structure for NOT NULL columns (only needed for SQLite legacy columns)
+            # PostgreSQL doesn't have legacy NOT NULL columns, so skip check entirely
             notnull_cols = {}
-            try:
-                with connection.cursor() as cursor:
-                    vendor = connection.vendor
-                    if vendor == 'sqlite':
+            vendor = connection.vendor
+            if vendor == 'sqlite':
+                try:
+                    with connection.cursor() as cursor:
                         cursor.execute("PRAGMA table_info(main_petdocument)")
                         table_info = cursor.fetchall()
                         notnull_cols = {row[1]: row[3] == 1 for row in table_info}
-                    elif vendor == 'postgresql':
-                        cursor.execute("""
-                            SELECT column_name, is_nullable
-                            FROM information_schema.columns
-                            WHERE table_name = 'main_petdocument'
-                        """)
-                        table_info = cursor.fetchall()
-                        notnull_cols = {row[0]: row[1] == 'NO' for row in table_info}
-                    else:
-                        # Fallback: assume no legacy columns
-                        notnull_cols = {}
-            except Exception as e:
-                logger.warning(f"Could not check table structure: {e}")
-                notnull_cols = {}
+                except Exception as e:
+                    logger.warning(f"Could not check SQLite table structure: {e}")
+                    notnull_cols = {}
+            # For PostgreSQL, assume no legacy columns (they don't exist in production)
             
             # Check if we have legacy NOT NULL columns that aren't in model
             has_legacy_notnull = (
@@ -1400,29 +1391,23 @@ def upload_pet_photo(request):
             from django.utils import timezone
             from django.core.files.storage import default_storage
             
-            # Check if PetPhoto table exists and has legacy NOT NULL columns (database-agnostic)
+            # Check if PetPhoto table exists and has legacy NOT NULL columns (only needed for SQLite)
+            # PostgreSQL doesn't have legacy NOT NULL columns, so skip check entirely
             has_legacy = False
             notnull_cols = {}
-            try:
-                with connection.cursor() as cursor:
-                    vendor = connection.vendor
-                    if vendor == 'sqlite':
+            vendor = connection.vendor
+            if vendor == 'sqlite':
+                try:
+                    with connection.cursor() as cursor:
                         cursor.execute("PRAGMA table_info(main_petphoto)")
                         table_info = cursor.fetchall()
                         notnull_cols = {row[1]: row[3] == 1 for row in table_info}
-                    elif vendor == 'postgresql':
-                        cursor.execute("""
-                            SELECT column_name, is_nullable
-                            FROM information_schema.columns
-                            WHERE table_name = 'main_petphoto'
-                        """)
-                        table_info = cursor.fetchall()
-                        notnull_cols = {row[0]: row[1] == 'NO' for row in table_info}
-                    has_legacy = any(col in notnull_cols and notnull_cols[col] for col in ['document_type', 'is_verified', 'user_id'])
-            except Exception as e:
-                logger.warning(f"Could not check PetPhoto table structure: {e}")
-                has_legacy = False
-                notnull_cols = {}
+                        has_legacy = any(col in notnull_cols and notnull_cols[col] for col in ['document_type', 'is_verified', 'user_id'])
+                except Exception as e:
+                    logger.warning(f"Could not check SQLite PetPhoto table structure: {e}")
+                    has_legacy = False
+                    notnull_cols = {}
+            # For PostgreSQL, assume no legacy columns (they don't exist in production)
             
             if has_legacy:
                 # Use raw SQL for photo upload too if needed
