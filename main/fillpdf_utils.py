@@ -66,12 +66,77 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         # Fill the PDF using fillpdf
         logger.info(f"  [FILL] Filling PDF form with {len(data)} fields...")
         
+        # First, fill without flattening so we can modify fonts
+        temp_output = output_path.replace('.pdf', '_temp.pdf')
         fillpdfs.write_fillable_pdf(
             template_path,
-            output_path,
+            temp_output,
             data_dict=data,
-            flatten=True,  # Make fields non-editable (baked into PDF)
+            flatten=False,  # Don't flatten yet - we need to modify fonts first
         )
+        
+        # Normalize fonts using PyMuPDF
+        try:
+            import fitz  # PyMuPDF
+            logger.info(f"  [FONT] Normalizing font sizes and families...")
+            
+            doc = fitz.open(temp_output)
+            
+            # Standardize font properties
+            STANDARD_FONT = "helv"  # Helvetica (standard PDF font)
+            STANDARD_FONT_SIZE = 10  # Standard font size
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                
+                # Get all form fields/widgets
+                for widget in page.widgets():
+                    # Set default appearance for text fields
+                    if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
+                        # Create default appearance string
+                        # Format: "/FontName FontSize Tf color"
+                        default_appearance = f"/{STANDARD_FONT} {STANDARD_FONT_SIZE} Tf 0 g"
+                        widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                        widget.text_fontsize = STANDARD_FONT_SIZE
+                        widget.text_font = STANDARD_FONT
+                        widget.update()
+            
+            # Save the modified PDF
+            doc.save(output_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
+            
+            # Remove temp file
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
+            
+            logger.info(f"  [FONT] Font normalization completed")
+            
+        except ImportError:
+            logger.warning(f"  [WARNING] PyMuPDF (fitz) not available, skipping font normalization")
+            # If PyMuPDF not available, just use the filled PDF as-is
+            if os.path.exists(temp_output):
+                import shutil
+                shutil.move(temp_output, output_path)
+        except Exception as font_error:
+            logger.warning(f"  [WARNING] Error normalizing fonts: {font_error}, using filled PDF as-is")
+            # If font normalization fails, use the filled PDF
+            if os.path.exists(temp_output):
+                import shutil
+                shutil.move(temp_output, output_path)
+        
+        # Flatten the final PDF to make it non-editable
+        try:
+            import fitz  # PyMuPDF
+            doc = fitz.open(output_path)
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                # Flatten form fields (make them non-editable)
+                page.flatten()
+            doc.save(output_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
+            logger.info(f"  [FLATTEN] PDF flattened successfully")
+        except Exception as flatten_error:
+            logger.warning(f"  [WARNING] Could not flatten PDF: {flatten_error}")
         
         logger.info(f"  [OK] Contract generated successfully: {output_path}")
         return output_path
