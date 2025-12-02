@@ -1208,10 +1208,20 @@ def upload_pet_document(request):
         from .models import PetDocument
         
         try:
-            logger.info(f"POST data keys: {list(request.POST.keys())}")
-            logger.info(f"FILES keys: {list(request.FILES.keys())}")
+            # Safely access POST and FILES - client may disconnect during upload
+            try:
+                post_keys = list(request.POST.keys()) if request.POST else []
+                files_keys = list(request.FILES.keys()) if request.FILES else []
+                logger.info(f"POST data keys: {post_keys}")
+                logger.info(f"FILES keys: {files_keys}")
+            except (SystemExit, KeyboardInterrupt, ConnectionError) as e:
+                logger.warning(f"Client disconnected during request parsing: {e}")
+                return JsonResponse({'success': False, 'message': 'Upload interrupted'})
+            except Exception as e:
+                logger.warning(f"Error accessing request data: {e}")
+                # Continue anyway - might still have file data
             
-            uploaded_file = request.FILES.get('file')
+            uploaded_file = request.FILES.get('file') if request.FILES else None
             if not uploaded_file:
                 logger.warning("No file provided in request")
                 return JsonResponse({'success': False, 'message': 'No file provided'})
