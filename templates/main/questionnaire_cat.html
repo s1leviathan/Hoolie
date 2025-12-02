@@ -120,7 +120,7 @@
                         {% else %}
                             <input type="text" id="pet_weight" name="pet_weight" placeholder="π.χ. 4 κιλά">
                         {% endif %}
-                        {% if breed and ("έως 10 κιλά" in breed or "11-20 κιλά" in breed) %}
+                        {% if breed and "έως 10 κιλά" in breed or breed and "11-20 κιλά" in breed %}
                             <small class="form-hint" style="color: #666;">Συμπληρώθηκε από την επιλογή ράτσας</small>
                         {% endif %}
                     </div>
