@@ -82,8 +82,8 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             
             doc = fitz.open(temp_output)
             
-            # Standardize font properties
-            STANDARD_FONT = "helv"  # Helvetica (standard PDF font)
+            # Standardize font properties - Use Calibri for both English and Greek
+            STANDARD_FONT = "Calibri"  # Calibri font (supports both English and Greek)
             STANDARD_FONT_SIZE = 10  # Standard font size
             
             for page_num in range(len(doc)):
@@ -93,12 +93,20 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                 for widget in page.widgets():
                     # Set default appearance for text fields
                     if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
-                        # Create default appearance string
-                        # Format: "/FontName FontSize Tf color"
-                        default_appearance = f"/{STANDARD_FONT} {STANDARD_FONT_SIZE} Tf 0 g"
+                        # Set font properties for Calibri
                         widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
                         widget.text_fontsize = STANDARD_FONT_SIZE
-                        widget.text_font = STANDARD_FONT
+                        # Try to set Calibri font - PyMuPDF will use it if available
+                        try:
+                            widget.text_font = STANDARD_FONT
+                        except:
+                            # If Calibri not available, try alternative approach
+                            # Use default appearance string with Calibri
+                            try:
+                                # Set default appearance with Calibri
+                                widget.set_text_value(widget.field_value, fontname=STANDARD_FONT, fontsize=STANDARD_FONT_SIZE)
+                            except:
+                                logger.warning(f"  [WARNING] Could not set Calibri font for field, using default")
                         widget.update()
             
             # Save the modified PDF
