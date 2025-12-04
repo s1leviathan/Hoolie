@@ -107,7 +107,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -236,5 +235,15 @@ COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'info@hoolie.gr')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://app.pet-insurance.gr",
+    "https://*.herokuapp.com",  # fallback for Heroku's internal domain
+]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
