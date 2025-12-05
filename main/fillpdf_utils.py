@@ -329,10 +329,13 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     logger.info(f"  [INFO] Surcharges/Discounts text: '{surcharges_text}'")
     logger.info(f"  [INFO] Number of surcharges: {len(surcharges_discounts)}")
     
-    # Use EXACT IPT from the official pricing table (proportionally adjusted if price changed)
-    # If actual price differs from base, adjust IPT proportionally
+    # Adjust ALL breakdown components based on actual final price (payment frequency)
+    # If actual price differs from base (e.g., 6-month or 3-month payment), adjust all components proportionally
     if actual_final_price != base_final_price and base_final_price > 0:
         price_multiplier = actual_final_price / base_final_price
+        correct_net_premium = correct_net_premium * price_multiplier
+        correct_management_fee = correct_management_fee * price_multiplier
+        auxiliary_fund = auxiliary_fund * price_multiplier
         ipt_amount = correct_ipt * price_multiplier
     else:
         ipt_amount = correct_ipt
