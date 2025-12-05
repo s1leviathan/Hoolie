@@ -556,17 +556,23 @@ class Questionnaire(models.Model):
         verbose_name_plural = 'Questionnaires'
     
     def save(self, *args, **kwargs):
-        """Override save to update application contract dates when payment frequency changes"""
+        """Override save to update application contract dates and premiums when payment frequency changes"""
         super().save(*args, **kwargs)
         
-        # Update contract dates if payment frequency is set
-        if self.application and self.payment_frequency:
+        # Update contract dates and recalculate premiums if application exists
+        if self.application:
             try:
-                self.application.update_contract_dates_for_frequency()
+                # Update contract dates if payment frequency is set
+                if self.payment_frequency:
+                    self.application.update_contract_dates_for_frequency()
+                
+                # Recalculate premiums to ensure six_month_premium and three_month_premium are set
+                from .utils import recalculate_application_premium
+                recalculate_application_premium(self.application)
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Could not update contract dates for application {self.application.id}: {e}")
+                logger.warning(f"Could not update contract dates/premiums for application {self.application.id}: {e}")
     
     def __str__(self):
         try:

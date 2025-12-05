@@ -89,26 +89,19 @@ def recalculate_application_premium(application):
         # Round to 2 decimal places
         base_premium = round(base_premium, 2)
         
-        # Calculate other payment frequencies (proportional)
-        # Get original ratios if they exist
-        if application.annual_premium and application.annual_premium > 0:
-            original_annual = float(application.annual_premium)
-            multiplier = base_premium / original_annual if original_annual > 0 else 1.0
-        else:
-            # Estimate ratios (typical: annual = 1.0, six_month = 0.55, three_month = 0.30)
-            multiplier = 1.0
+        # Calculate other payment frequencies using correct multipliers
+        # 6-month: 52.5% of annual (0.525)
+        # 3-month: 27.5% of annual (0.275)
+        six_month_premium = round(base_premium * 0.525, 2)
+        three_month_premium = round(base_premium * 0.275, 2)
         
-        # Update premiums
+        # Update ALL premiums (always set them, even if they were None before)
         application.annual_premium = Decimal(str(base_premium))
-        
-        if application.six_month_premium:
-            application.six_month_premium = Decimal(str(round(float(application.six_month_premium) * multiplier, 2)))
-        
-        if application.three_month_premium:
-            application.three_month_premium = Decimal(str(round(float(application.three_month_premium) * multiplier, 2)))
+        application.six_month_premium = Decimal(str(six_month_premium))
+        application.three_month_premium = Decimal(str(three_month_premium))
         
         application.save(update_fields=['annual_premium', 'six_month_premium', 'three_month_premium'])
-        logger.info(f"Updated premiums for application {application.id}: annual={base_premium}")
+        logger.info(f"Updated premiums for application {application.id}: annual={base_premium}, 6-month={six_month_premium}, 3-month={three_month_premium}")
         
     except Exception as e:
         import logging
