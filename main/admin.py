@@ -15,7 +15,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'pet_type_display',
         'program_display', 
         'status_display',
-        'annual_premium',
+        'premium_display',
         'affiliate_code_display',
         'questionnaire_link',
         'created_at',
@@ -176,6 +176,29 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         except Exception:
             return '-'
     program_display.short_description = 'Πρόγραμμα & Συχνότητα'
+    
+    def premium_display(self, obj):
+        """Display premium amount based on selected payment frequency"""
+        try:
+            if not obj:
+                return '-'
+            
+            premium = obj.get_premium_for_frequency()
+            frequency = obj.get_payment_frequency_display_greek()
+            
+            if frequency:
+                return format_html(
+                    '<span style="font-weight: bold;">{:.2f}€</span><br><small style="color: #666;">{}</small>',
+                    premium,
+                    frequency
+                )
+            else:
+                # Fallback to annual
+                annual = float(obj.annual_premium) if obj.annual_premium else 0
+                return format_html('<span style="font-weight: bold;">{:.2f}€</span>', annual)
+        except Exception:
+            return '-'
+    premium_display.short_description = 'Ασφάλιστρο'
     
     def status_display(self, obj):
         """Display status with color coding"""

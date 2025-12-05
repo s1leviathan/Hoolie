@@ -249,8 +249,10 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     # Get EXACT pricing values from the official pricing table (includes auxiliary fund)
     correct_net_premium, correct_management_fee, auxiliary_fund, correct_ipt, base_final_price = get_pricing_values(application, pet_type_code, weight_category, program)
     
-    # Use the ACTUAL final price from application (includes surcharges and extra features)
-    actual_final_price = float(application.annual_premium) if application.annual_premium else base_final_price
+    # Use the ACTUAL final price from application based on payment frequency
+    actual_final_price = application.get_premium_for_frequency()
+    if actual_final_price == 0:
+        actual_final_price = float(application.annual_premium) if application.annual_premium else base_final_price
     
     # Calculate surcharges/discounts for display in ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ section
     surcharges_discounts = []

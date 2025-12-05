@@ -133,6 +133,20 @@ class InsuranceApplication(models.Model):
         if frequency:
             return f"{program} {frequency}"
         return program
+    
+    def get_premium_for_frequency(self):
+        """Get the premium amount based on selected payment frequency"""
+        try:
+            if hasattr(self, 'questionnaire') and self.questionnaire:
+                frequency = self.questionnaire.payment_frequency
+                if frequency == 'six_month' and self.six_month_premium:
+                    return float(self.six_month_premium)
+                elif frequency == 'three_month' and self.three_month_premium:
+                    return float(self.three_month_premium)
+        except Exception:
+            pass
+        # Default to annual premium
+        return float(self.annual_premium) if self.annual_premium else 0.0
 
     def get_weight_display(self, weight_category):
         weight_map = {
