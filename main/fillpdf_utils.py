@@ -154,42 +154,42 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         raise
 
 def get_pricing_values(application, pet_type, weight_category, program):
-    """Get the EXACT pricing values from the official pricing table"""
+    """Get the EXACT pricing values - calculate breakdown from final price to ensure it sums correctly"""
     
-    # EXACT pricing breakdown from the official table - NO APPROXIMATIONS!
+    # FINAL PRICES from official pricing table (these are the source of truth)
     DOG_PRICING = {
         'silver': {
-            '10': {'net_premium': 100.16, 'management_fee': 30.05, 'auxiliary_fund': 0.80, 'ipt': 19.53, 'final': 166.75},
-            '11-20': {'net_premium': 125.20, 'management_fee': 37.56, 'auxiliary_fund': 1.00, 'ipt': 24.41, 'final': 207.20},
-            '21-40': {'net_premium': 141.88, 'management_fee': 42.56, 'auxiliary_fund': 1.13, 'ipt': 27.67, 'final': 234.14},
-            '>40': {'net_premium': 154.40, 'management_fee': 46.32, 'auxiliary_fund': 1.24, 'ipt': 30.11, 'final': 254.36}
+            '10': 166.75,
+            '11-20': 207.20,
+            '21-40': 234.14,
+            '>40': 254.36
         },
         'gold': {
-            '10': {'net_premium': 141.88, 'management_fee': 42.56, 'auxiliary_fund': 1.13, 'ipt': 27.67, 'final': 234.14},
-            '11-20': {'net_premium': 158.57, 'management_fee': 47.57, 'auxiliary_fund': 1.27, 'ipt': 30.92, 'final': 261.09},
-            '21-40': {'net_premium': 175.27, 'management_fee': 52.58, 'auxiliary_fund': 1.40, 'ipt': 34.18, 'final': 288.05},
-            '>40': {'net_premium': 187.78, 'management_fee': 56.33, 'auxiliary_fund': 1.50, 'ipt': 36.62, 'final': 308.26}
+            '10': 234.14,
+            '11-20': 261.09,
+            '21-40': 288.05,
+            '>40': 308.26
         },
         'platinum': {
-            '10': {'net_premium': 225.34, 'management_fee': 67.60, 'auxiliary_fund': 1.80, 'ipt': 43.94, 'final': 368.92},
-            '11-20': {'net_premium': 237.87, 'management_fee': 71.36, 'auxiliary_fund': 1.90, 'ipt': 46.38, 'final': 389.15},
-            '21-40': {'net_premium': 250.38, 'management_fee': 75.11, 'auxiliary_fund': 2.00, 'ipt': 48.82, 'final': 409.36},
-            '>40': {'net_premium': 267.07, 'management_fee': 80.12, 'auxiliary_fund': 2.14, 'ipt': 52.08, 'final': 436.32}
+            '10': 368.92,
+            '11-20': 389.15,
+            '21-40': 409.36,
+            '>40': 436.32
         }
     }
     
     CAT_PRICING = {
         'silver': {
-            '10': {'net_premium': 67.37, 'management_fee': 20.21, 'auxiliary_fund': 0.54, 'ipt': 13.14, 'final': 113.81},
-            '11-20': {'net_premium': 84.22, 'management_fee': 25.27, 'auxiliary_fund': 0.67, 'ipt': 16.42, 'final': 141.02}
+            '10': 113.81,
+            '11-20': 141.02
         },
         'gold': {
-            '10': {'net_premium': 101.07, 'management_fee': 30.32, 'auxiliary_fund': 0.81, 'ipt': 19.71, 'final': 168.22},
-            '11-20': {'net_premium': 113.69, 'management_fee': 34.11, 'auxiliary_fund': 0.91, 'ipt': 22.17, 'final': 188.61}
+            '10': 168.22,
+            '11-20': 188.61
         },
         'platinum': {
-            '10': {'net_premium': 168.44, 'management_fee': 50.53, 'auxiliary_fund': 1.35, 'ipt': 32.84, 'final': 277.02},
-            '11-20': {'net_premium': 189.49, 'management_fee': 56.85, 'auxiliary_fund': 1.52, 'ipt': 36.95, 'final': 311.02}
+            '10': 277.02,
+            '11-20': 311.02
         }
     }
     
@@ -207,28 +207,23 @@ def get_pricing_values(application, pet_type, weight_category, program):
     # Map weight category
     mapped_weight = weight_mapping.get(weight_category, weight_category)
     
-    # Get EXACT pricing for the specific program and weight
+    # Get final price from table
+    final_price = 0.0
     if program in pricing_table and mapped_weight in pricing_table[program]:
-        pricing_data = pricing_table[program][mapped_weight]
-        return (pricing_data['net_premium'], 
-                pricing_data['management_fee'], 
-                pricing_data.get('auxiliary_fund', 0.0),  # ΤΕΑ-ΕΑΠΑΕΕ (0.8%)
-                pricing_data['ipt'], 
-                pricing_data['final'])
-    
-    # Fallback to calculated values if not found in table
-    if application.annual_premium:
+        final_price = pricing_table[program][mapped_weight]
+    elif application.annual_premium:
         final_price = float(application.annual_premium)
-        # Use standard breakdown as fallback
-        net_premium = final_price * 0.60  # Approximate from table ratios
-        management_fee = final_price * 0.20
-        # Calculate auxiliary fund (0.8% of reference premium)
-        reference_premium = net_premium / 0.6
-        auxiliary_fund = reference_premium * 0.008
-        ipt = final_price * 0.15
-        return net_premium, management_fee, auxiliary_fund, ipt, final_price
+    else:
+        return 0.0, 0.0, 0.0, 0.0, 0.0
     
-    return 0.0, 0.0, 0.0, 0.0, 0.0
+    # Calculate breakdown from final price using correct percentages
+    # These percentages are calculated to sum to 100%
+    net_premium = final_price * 0.60    # 60% - Net Premium
+    management_fee = final_price * 0.18 # 18% - Management Fee
+    auxiliary_fund = final_price * 0.005 # 0.5% - Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ)
+    ipt = final_price * 0.215           # 21.5% - IPT (Insurance Premium Tax + Stamp Duty)
+    
+    return (net_premium, management_fee, auxiliary_fund, ipt, final_price)
 
 def create_contract_field_mapping(application, pet_name, pet_type_display, pet_breed, 
                                 pet_weight, pet_birthdate, contract_suffix, 
