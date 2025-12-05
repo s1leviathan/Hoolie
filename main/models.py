@@ -110,6 +110,30 @@ class InsuranceApplication(models.Model):
         }
         return program_map.get(self.program, self.program)
 
+    def get_payment_frequency_display_greek(self):
+        """Get Greek display for payment frequency from questionnaire"""
+        try:
+            if hasattr(self, 'questionnaire') and self.questionnaire:
+                questionnaire = self.questionnaire
+                frequency_map = {
+                    'annual': 'Ετήσιο',
+                    'six_month': 'Εξαμηνιαίο',
+                    'three_month': 'Τριμηνιαίο'
+                }
+                return frequency_map.get(questionnaire.payment_frequency, '')
+        except Exception:
+            pass
+        return ''
+
+    def get_program_with_frequency_display(self):
+        """Get combined program and payment frequency display in Greek"""
+        program = self.get_program_display_greek()
+        frequency = self.get_payment_frequency_display_greek()
+        
+        if frequency:
+            return f"{program} {frequency}"
+        return program
+
     def get_weight_display(self, weight_category):
         weight_map = {
             '10': 'έως 10 κιλά',

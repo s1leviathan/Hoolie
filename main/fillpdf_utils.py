@@ -350,7 +350,7 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         "text_4yiws": '',                                              # Payment code - not used (no active payment system)
         "text_5fgpc": application.contract_start_date.strftime('%d/%m/%Y') if application.contract_start_date else '',  # Start date
         "text_6zqkn": application.contract_end_date.strftime('%d/%m/%Y') if application.contract_end_date else '',     # End date
-        "text_7tbbt": application.get_program_display_greek() or '',    # Program name
+        "text_7tbbt": application.get_program_with_frequency_display() or '',    # Program name with payment frequency (e.g., "Ασημένιο Ετήσιο")
         
         # Client information section
         "text_8safe": application.full_name or '',                       # Client Full Name
@@ -404,7 +404,7 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     print(f"  [*] Contract: {data.get('text_1bwie', 'N/A')}")
     print(f"  [*] Client: {data.get('text_8safe', 'N/A')}")
     print(f"  [*] Pet: {data.get('text_14rclu', 'N/A')} ({data.get('text_15vsin', 'N/A')})")
-    print(f"  [*] Program: {data.get('text_7tbbt', 'N/A')}")
+    print(f"  [*] Program + Frequency: {data.get('text_7tbbt', 'N/A')}")
     print(f"  [*] Net Premium: {data.get('text_33tjdu', 'N/A')}")
     print(f"  [*] Management Fee: {data.get('text_34k', 'N/A')}")
     print(f"  [*] Auxiliary Fund (ΤΕΑ-ΕΑΠΑΕΕ): {data.get('text_35poeh', 'N/A')}")
