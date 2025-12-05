@@ -147,6 +147,35 @@ class InsuranceApplication(models.Model):
             pass
         # Default to annual premium
         return float(self.annual_premium) if self.annual_premium else 0.0
+    
+    def calculate_contract_end_date(self):
+        """Calculate correct contract end date based on payment frequency"""
+        if not self.contract_start_date:
+            return None
+        
+        try:
+            if hasattr(self, 'questionnaire') and self.questionnaire:
+                frequency = self.questionnaire.payment_frequency
+                if frequency == 'six_month':
+                    # 6 months = 182 days (6 * 30.4 average days)
+                    return self.contract_start_date + timedelta(days=182)
+                elif frequency == 'three_month':
+                    # 3 months = 91 days (3 * 30.4 average days)
+                    return self.contract_start_date + timedelta(days=91)
+        except Exception:
+            pass
+        
+        # Default to annual (364 days)
+        return self.contract_start_date + timedelta(days=364)
+    
+    def update_contract_dates_for_frequency(self):
+        """Update contract end date based on payment frequency from questionnaire"""
+        new_end_date = self.calculate_contract_end_date()
+        if new_end_date and new_end_date != self.contract_end_date:
+            self.contract_end_date = new_end_date
+            self.save(update_fields=['contract_end_date'])
+            return True
+        return False
 
     def get_weight_display(self, weight_category):
         weight_map = {
@@ -525,6 +554,19 @@ class Questionnaire(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Questionnaire'
         verbose_name_plural = 'Questionnaires'
+    
+    def save(self, *args, **kwargs):
+        """Override save to update application contract dates when payment frequency changes"""
+        super().save(*args, **kwargs)
+        
+        # Update contract dates if payment frequency is set
+        if self.application and self.payment_frequency:
+            try:
+                self.application.update_contract_dates_for_frequency()
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not update contract dates for application {self.application.id}: {e}")
     
     def __str__(self):
         try:
