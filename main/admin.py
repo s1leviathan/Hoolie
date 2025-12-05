@@ -167,19 +167,15 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'platinum': '#E5E4E2'
             }
             color = colors.get(obj.program, '#000')
-            program_names = {
-                'silver': 'Ασημένιο',
-                'gold': 'Χρυσό',
-                'platinum': 'Πλατινένιο'
-            }
-            name = program_names.get(obj.program, obj.program or '-')
+            # Use the new combined method that includes payment frequency
+            name = obj.get_program_with_frequency_display()
             return format_html(
                 '<span style="color: {}; font-weight: bold;">🏆 {}</span>',
                 color, name
             )
         except Exception:
             return '-'
-    program_display.short_description = 'Πρόγραμμα'
+    program_display.short_description = 'Πρόγραμμα & Συχνότητα'
     
     def status_display(self, obj):
         """Display status with color coding"""
