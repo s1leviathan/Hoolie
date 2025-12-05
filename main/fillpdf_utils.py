@@ -236,6 +236,10 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     import logging
     logger = logging.getLogger(__name__)
     
+    # CRITICAL: Refresh application from database to ensure we have latest premiums and questionnaire
+    from .models import InsuranceApplication
+    application = InsuranceApplication.objects.select_related('questionnaire').get(pk=application.pk)
+    
     # Get the correct pricing values based on weight category and program
     pet_type_code = 'dog' if 'Σκύλος' in pet_type_display else 'cat'
     weight_category = application.pet_weight_category if contract_suffix != "-PET2" else application.second_pet_weight_category
@@ -246,8 +250,14 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     
     # Use the ACTUAL final price from application based on payment frequency
     actual_final_price = application.get_premium_for_frequency()
+    logger.info(f"  [PRICE] get_premium_for_frequency() returned: {actual_final_price:.2f}€")
+    
     if actual_final_price == 0:
+        logger.warning(f"  [WARNING] get_premium_for_frequency() returned 0, falling back to annual_premium")
         actual_final_price = float(application.annual_premium) if application.annual_premium else base_final_price
+        logger.info(f"  [PRICE] Using fallback price: {actual_final_price:.2f}€")
+    
+    logger.info(f"  [PRICE] Final price for PDF: {actual_final_price:.2f}€ (base: {base_final_price:.2f}€)")
     
     # Calculate surcharges/discounts for display in ΕΚΠΤΩΣΕΙΣ | ΕΠΙΒΑΡΥΝΣΕΙΣ section
     surcharges_discounts = []

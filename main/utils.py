@@ -120,12 +120,21 @@ def generate_contract_pdf(application):
     logger.info(f"Generating contract for application {application.id} (contract: {application.contract_number})")
     application = InsuranceApplication.objects.select_related('questionnaire').get(pk=application.pk)
     
+    # CRITICAL: Ensure premiums are calculated before generating PDF
+    # This is especially important for existing applications that might not have premiums set
+    if not application.annual_premium or not application.six_month_premium or not application.three_month_premium:
+        logger.info(f"Premiums missing for application {application.id}, recalculating...")
+        recalculate_application_premium(application)
+        # Refresh again to get updated premiums
+        application.refresh_from_db()
+        logger.info(f"Premiums recalculated: annual={application.annual_premium}, 6-month={application.six_month_premium}, 3-month={application.three_month_premium}")
+    
     # Check if questionnaire exists
     try:
         if hasattr(application, 'questionnaire'):
             questionnaire = application.questionnaire
             if questionnaire:
-                logger.info(f"Questionnaire found for application {application.id}: ID={questionnaire.id}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
+                logger.info(f"Questionnaire found for application {application.id}: ID={questionnaire.id}, payment_frequency={questionnaire.payment_frequency}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
             else:
                 logger.warning(f"No questionnaire object found for application {application.id}")
         else:
