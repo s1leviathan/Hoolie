@@ -191,3 +191,4 @@ class Command(BaseCommand):
                 InsuranceApplication.objects.filter(full_name__startswith='TEST-').delete()
                 self.stdout.write(self.style.SUCCESS("✅ Test data cleaned up"))
 
+
