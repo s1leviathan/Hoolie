@@ -359,13 +359,58 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             input_pdf_path=template_path,
             output_pdf_path=output_path,
             data_dict=data,
-            flatten=True  # Flatten form fields to regular text for uniform font rendering
+            flatten=False  # We'll manually flatten after filling
         )
         
-        # Font normalization: PDF is already flattened by fillpdf (flatten=True above)
-        # Flattened PDFs convert form fields to regular text, ensuring uniform font rendering
-        # This eliminates font size inconsistencies between Greek and English characters
-        logger.info(f"[PDF] Font normalization: PDF flattened by fillpdf for uniform font rendering in {output_path}")
+        # Manually flatten all form fields using PyMuPDF to ensure uniform font rendering
+        try:
+            import fitz  # PyMuPDF
+            
+            doc = fitz.open(output_path)
+            
+            # Flatten all form fields by converting them to regular text with uniform font
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                widgets = list(page.widgets())
+                
+                for widget in widgets:
+                    try:
+                        # Get the field value
+                        field_value = widget.field_value
+                        if field_value:
+                            # Get the field rectangle
+                            rect = widget.rect
+                            
+                            # Insert text at the field location with uniform font
+                            # Use Helvetica at 10pt to match template design
+                            point = fitz.Point(rect.x0 + 2, rect.y1 - 2)  # Slight offset for alignment
+                            
+                            # Insert text with uniform font properties
+                            page.insert_text(
+                                point,
+                                str(field_value),
+                                fontsize=10,
+                                fontname="helv",  # Helvetica
+                                color=(0, 0, 0)  # Black
+                            )
+                            
+                            # Delete the widget to remove the form field
+                            page.delete_widget(widget)
+                    except Exception as widget_error:
+                        logger.warning(f"[PDF] Could not flatten widget: {widget_error}")
+                        continue
+            
+            # Save the flattened PDF
+            doc.save(output_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
+            
+            logger.info(f"[PDF] Font normalization: PDF manually flattened with uniform 10pt Helvetica font in {output_path}")
+            
+        except ImportError:
+            logger.warning("[PDF] PyMuPDF not available, cannot manually flatten PDF. Font sizes may vary.")
+        except Exception as flatten_error:
+            logger.error(f"[PDF] Error during manual flattening: {flatten_error}")
+            # Continue anyway - at least the PDF was filled
         
         return output_path
         
