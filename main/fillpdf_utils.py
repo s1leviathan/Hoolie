@@ -375,12 +375,13 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                 
                 for widget in widgets:
                     try:
-                        # Get the field value
-                        field_value = widget.field_value
+                        # Get the field value (even if empty, we want to flatten it)
+                        field_value = widget.field_value or ""
+                        # Get the field rectangle
+                        rect = widget.rect
+                        
+                        # Only insert text if there's a value
                         if field_value:
-                            # Get the field rectangle
-                            rect = widget.rect
-                            
                             # Insert text at the field location with uniform font
                             # Use Helvetica at 10pt to match template design
                             point = fitz.Point(rect.x0 + 2, rect.y1 - 2)  # Slight offset for alignment
@@ -393,11 +394,11 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                                 fontname="helv",  # Helvetica
                                 color=(0, 0, 0)  # Black
                             )
-                            
-                            # Delete the widget to remove the form field
-                            page.delete_widget(widget)
+                        
+                        # Always delete the widget to remove the form field (even if empty)
+                        page.delete_widget(widget)
                     except Exception as widget_error:
-                        logger.warning(f"[PDF] Could not flatten widget: {widget_error}")
+                        logger.warning(f"[PDF] Could not flatten widget {widget.field_name if hasattr(widget, 'field_name') else 'unknown'}: {widget_error}")
                         continue
             
             # Save the flattened PDF to a temporary file, then replace the original
