@@ -1737,54 +1737,76 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                         estimated_base = estimated_base / 1.05
                     base_final_price = estimated_base
             
-            # Calculate breakdown
-            breakdown = []
-            breakdown.append(f"Βασική Τιμή: {base_final_price:.2f}€")
-            
-            total = base_final_price
+            # Calculate breakdown - first calculate annual values
+            total_annual = base_final_price
             
             # Breed surcharges (20% is applied on price AFTER 5% surcharge, not on base)
+            surcharge_5_annual = 0
+            surcharge_20_annual = 0
             if questionnaire.special_breed_5_percent:
-                surcharge_5 = base_final_price * 0.05
-                breakdown.append(f"+ Επασφάλιστρο 5%: {surcharge_5:.2f}€")
-                total = total * 1.05  # Apply 5% surcharge
+                surcharge_5_annual = base_final_price * 0.05
+                total_annual = total_annual * 1.05  # Apply 5% surcharge
             
             if questionnaire.special_breed_20_percent:
                 # 20% is applied on the price after 5% surcharge (if applicable)
-                surcharge_20 = total * 0.20
-                breakdown.append(f"+ Επασφάλιστρο 20%: {surcharge_20:.2f}€")
-                total = total * 1.20  # Apply 20% surcharge
+                surcharge_20_annual = total_annual * 0.20
+                total_annual = total_annual * 1.20  # Apply 20% surcharge
             
-            # Add-ons (fixed prices)
-            # Note: Always use annual price in breakdown calculation, payment frequency is applied to total at the end
+            # Add-ons (annual values)
+            annual_poisoning = 0
+            annual_blood_checkup = 0
+            
             if questionnaire.additional_poisoning_coverage:
-                poisoning_price_annual = get_poisoning_price(
-                    program=program,
-                    payment_frequency="annual"  # Always use annual for breakdown calculation
-                )
-
-                breakdown.append(f"+ Δηλητηρίαση: {poisoning_price_annual:.2f}€")
-                total += poisoning_price_annual
-
+                annual_poisoning = get_poisoning_price(program=program, payment_frequency="annual")
+                total_annual += annual_poisoning
             
             if questionnaire.additional_blood_checkup:
-                breakdown.append(f"+ Αιματολογικό Check Up: 28.00€")
-                total += 28.00
+                annual_blood_checkup = 28.00
+                total_annual += annual_blood_checkup
             
-            # Round total (annual) before applying payment frequency
-            total = round(total, 2)
-            # APPLY PAYMENT FREQUENCY
-            frequency_label = "Ετήσια"
-
-            if questionnaire.payment_frequency == "six_month":
-                total = float(app.six_month_premium)
+            # Now apply payment frequency to get display values
+            payment_freq = questionnaire.payment_frequency or "annual"
+            
+            if payment_freq == "six_month":
+                # Scale everything proportionally for 6-month (52.5% of annual)
+                multiplier = 0.525
+                base_display = base_final_price * multiplier
+                surcharge_5_display = surcharge_5_annual * multiplier
+                surcharge_20_display = surcharge_20_annual * multiplier
+                poisoning_display = annual_poisoning * multiplier
+                blood_checkup_display = annual_blood_checkup * multiplier
                 frequency_label = "Εξάμηνη"
-            elif questionnaire.payment_frequency == "three_month":
-                total = float(app.three_month_premium)
+                total = float(app.six_month_premium or 0)
+            elif payment_freq == "three_month":
+                # Scale everything proportionally for 3-month (27.5% of annual)
+                multiplier = 0.275
+                base_display = base_final_price * multiplier
+                surcharge_5_display = surcharge_5_annual * multiplier
+                surcharge_20_display = surcharge_20_annual * multiplier
+                poisoning_display = annual_poisoning * multiplier
+                blood_checkup_display = annual_blood_checkup * multiplier
                 frequency_label = "Τριμηνιαία"
+                total = float(app.three_month_premium or 0)
             else:
-                total = float(app.annual_premium)
+                # Annual - no scaling needed
+                base_display = base_final_price
+                surcharge_5_display = surcharge_5_annual
+                surcharge_20_display = surcharge_20_annual
+                poisoning_display = annual_poisoning
+                blood_checkup_display = annual_blood_checkup
                 frequency_label = "Ετήσια"
+                total = float(app.annual_premium or 0)
+            
+            # Build breakdown with frequency-adjusted display values
+            breakdown = [f"Βασική Τιμή: {base_display:.2f}€"]
+            if questionnaire.special_breed_5_percent:
+                breakdown.append(f"+ Επασφάλιστρο 5%: {surcharge_5_display:.2f}€")
+            if questionnaire.special_breed_20_percent:
+                breakdown.append(f"+ Επασφάλιστρο 20%: {surcharge_20_display:.2f}€")
+            if questionnaire.additional_poisoning_coverage:
+                breakdown.append(f"+ Δηλητηρίαση: {poisoning_display:.2f}€")
+            if questionnaire.additional_blood_checkup:
+                breakdown.append(f"+ Αιματολογικό Check Up: {blood_checkup_display:.2f}€")
 
 
             
