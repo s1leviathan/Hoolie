@@ -364,38 +364,41 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         
         # Normalize fonts to ensure consistent font size for Greek and English characters
         # This addresses the issue where PDF form fields render Greek and English at different sizes
-        # Strategy: Flatten the PDF form fields to convert them to regular text with consistent rendering
+        # Strategy: Force widget appearance regeneration to normalize font rendering
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
+            font_normalized_count = 0
             
-            # Flatten all form fields - this converts form fields to regular text
-            # This ensures consistent font rendering across all characters (Greek and English)
-            # by removing form field appearance variations
+            # Iterate through all pages and widgets to normalize font sizes
             for page_num in range(len(doc)):
                 page = doc[page_num]
-                # Flatten the page - converts form fields to regular text annotations
-                try:
-                    page.flatten()
-                except AttributeError:
-                    # Fallback: if flatten() is not available, try alternative approach
-                    try:
-                        widgets = page.widgets()
-                        for widget in widgets:
-                            if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
-                                # Force regeneration by clearing and re-setting
-                                current_value = widget.field_value
-                                if current_value:
-                                    widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                                    widget.field_value = current_value
-                                    widget.update()
-                    except Exception:
-                        pass
+                widgets = page.widgets()
+                
+                for widget in widgets:
+                    if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
+                        try:
+                            # Get current field value
+                            current_value = widget.field_value
+                            
+                            if current_value and str(current_value).strip():
+                                # Force widget to regenerate its appearance by:
+                                # 1. Setting display mode to visible
+                                widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                                
+                                # 2. Re-setting the field value to force appearance regeneration
+                                # This should regenerate the appearance stream with consistent font rendering
+                                widget.field_value = current_value
+                                widget.update()
+                                
+                                font_normalized_count += 1
+                        except Exception as widget_error:
+                            logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
-            # Save the flattened PDF
+            # Save with incremental update to preserve other PDF structure
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
-            logger.info(f"[PDF] Font normalization: PDF flattened to ensure consistent Greek/English character sizes in {output_path}")
+            logger.info(f"[PDF] Font normalization applied to {font_normalized_count} fields in {output_path}")
         except ImportError:
             logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
         except Exception as norm_error:
