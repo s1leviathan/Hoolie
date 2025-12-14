@@ -363,14 +363,14 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         )
         
         # Normalize fonts to ensure consistent font size for Greek and English characters
-        # This addresses the issue where PDF form fields render Greek and English at different sizes
-        # Strategy: Force widget appearance regeneration to normalize font rendering
+        # SET a uniform font size (10pt) for ALL text fields to eliminate inconsistencies
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
             font_normalized_count = 0
+            uniform_font_size = 10  # Set all fields to 10pt font
             
-            # Iterate through all pages and widgets to normalize font sizes
+            # Iterate through all pages and widgets to set uniform font size
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 widgets = page.widgets()
@@ -381,29 +381,42 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                             # Get current field value
                             current_value = widget.field_value
                             
-                            if current_value and str(current_value).strip():
-                                # Force widget to regenerate its appearance by:
-                                # 1. Setting display mode to visible
-                                widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                                
-                                # 2. Re-setting the field value to force appearance regeneration
-                                # This should regenerate the appearance stream with consistent font rendering
-                                widget.field_value = current_value
-                                widget.update()
-                                
-                                font_normalized_count += 1
+                            if current_value:
+                                # Access the annotation object to modify font properties
+                                annot = widget._annot
+                                if annot:
+                                    # Get annotation dictionary
+                                    annot_dict = annot.get_dict()
+                                    
+                                    # Set DA (default appearance) with uniform font size
+                                    # Format: "/FontName Size Tf"
+                                    # Use Helvetica which supports both Greek and English well
+                                    da_string = f"/Helvetica {uniform_font_size} Tf 0 g"
+                                    
+                                    # Update the annotation's DA
+                                    annot_dict["DA"] = da_string
+                                    annot.update()
+                                    
+                                    # Force widget to regenerate appearance with new font size
+                                    widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                                    widget.field_value = current_value
+                                    widget.update()
+                                    
+                                    font_normalized_count += 1
                         except Exception as widget_error:
                             logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
-            # Save with incremental update to preserve other PDF structure
+            # Save the PDF with updated font sizes
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
-            logger.info(f"[PDF] Font normalization applied to {font_normalized_count} fields in {output_path}")
+            logger.info(f"[PDF] Font normalization: Set uniform {uniform_font_size}pt font for {font_normalized_count} fields in {output_path}")
         except ImportError:
             logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
         except Exception as norm_error:
-            logger.warning(f"[PDF] Font normalization failed (non-critical): {norm_error}")
-            # Don't fail PDF generation if normalization fails
+            logger.error(f"[PDF] Font normalization failed: {norm_error}")
+            import traceback
+            logger.error(traceback.format_exc())
+            # Don't fail PDF generation if normalization fails, but log the error
         
         return output_path
         
