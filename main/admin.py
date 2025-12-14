@@ -1767,23 +1767,27 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             payment_freq = questionnaire.payment_frequency or "annual"
             
             if payment_freq == "six_month":
-                # Scale everything proportionally for 6-month (52.5% of annual)
-                multiplier = 0.525
-                base_display = base_final_price * multiplier
-                surcharge_5_display = surcharge_5_annual * multiplier
-                surcharge_20_display = surcharge_20_annual * multiplier
-                poisoning_display = annual_poisoning * multiplier
-                blood_checkup_display = annual_blood_checkup * multiplier
+                # Scale base and surcharges with premium multiplier (52.5% of annual)
+                premium_multiplier = 0.525
+                # Scale add-ons with add-on multiplier (50% of annual)
+                addon_multiplier = 0.5
+                base_display = base_final_price * premium_multiplier
+                surcharge_5_display = surcharge_5_annual * premium_multiplier
+                surcharge_20_display = surcharge_20_annual * premium_multiplier
+                poisoning_display = annual_poisoning * addon_multiplier
+                blood_checkup_display = annual_blood_checkup * addon_multiplier
                 frequency_label = "Εξάμηνη"
                 total = float(app.six_month_premium or 0)
             elif payment_freq == "three_month":
-                # Scale everything proportionally for 3-month (27.5% of annual)
-                multiplier = 0.275
-                base_display = base_final_price * multiplier
-                surcharge_5_display = surcharge_5_annual * multiplier
-                surcharge_20_display = surcharge_20_annual * multiplier
-                poisoning_display = annual_poisoning * multiplier
-                blood_checkup_display = annual_blood_checkup * multiplier
+                # Scale base and surcharges with premium multiplier (27.5% of annual)
+                premium_multiplier = 0.275
+                # Scale add-ons with add-on multiplier (25% of annual)
+                addon_multiplier = 0.25
+                base_display = base_final_price * premium_multiplier
+                surcharge_5_display = surcharge_5_annual * premium_multiplier
+                surcharge_20_display = surcharge_20_annual * premium_multiplier
+                poisoning_display = annual_poisoning * addon_multiplier
+                blood_checkup_display = annual_blood_checkup * addon_multiplier
                 frequency_label = "Τριμηνιαία"
                 total = float(app.three_month_premium or 0)
             else:

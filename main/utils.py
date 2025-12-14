@@ -123,11 +123,11 @@ def recalculate_application_premium(application):
             three_month_final += get_poisoning_price(program, "three_month")
             logger.info(f"Added poisoning coverage: {poisoning_annual}€ annual")
         
-        # Add blood checkup (28€ annual, scaled proportionally like premiums)
+        # Add blood checkup (28€ annual, scaled with add-on factors: 50% for 6-month, 25% for 3-month)
         if questionnaire and questionnaire.additional_blood_checkup:
             annual_final += 28.00
-            six_month_final += round(28.00 * 0.525, 2)  # 52.5% of annual
-            three_month_final += round(28.00 * 0.275, 2)  # 27.5% of annual
+            six_month_final += round(28.00 * 0.5, 2)  # 50% of annual (add-on scaling)
+            three_month_final += round(28.00 * 0.25, 2)  # 25% of annual (add-on scaling)
             logger.info(f"Added blood checkup: 28€ annual")
         
         # Round to 2 decimal places
@@ -171,7 +171,7 @@ def recalculate_application_premium(application):
 def get_poisoning_price(program, payment_frequency):
     """
     Get poisoning coverage price based on program and payment frequency.
-    Uses same scaling factors as premiums: 52.5% for 6-month, 27.5% for 3-month.
+    Uses add-on scaling factors: 50% for 6-month, 25% for 3-month.
     """
     prices = {
         'silver': 18,
@@ -183,11 +183,11 @@ def get_poisoning_price(program, payment_frequency):
     annual_price = prices.get(program, 0)
 
     if payment_frequency == "six_month":
-        # Use 52.5% multiplier (same as premium scaling)
-        return round(annual_price * 0.525, 2)
+        # Use 50% multiplier for add-ons
+        return round(annual_price * 0.5, 2)
     elif payment_frequency == "three_month":
-        # Use 27.5% multiplier (same as premium scaling)
-        return round(annual_price * 0.275, 2)
+        # Use 25% multiplier for add-ons
+        return round(annual_price * 0.25, 2)
 
     return annual_price  # annual
 

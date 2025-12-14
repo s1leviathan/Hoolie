@@ -409,9 +409,9 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         
         if questionnaire.additional_blood_checkup:
             if payment_frequency == "six_month":
-                addon_blood_price = round(28.00 * 0.525, 2)  # 52.5% of annual
+                addon_blood_price = round(28.00 * 0.5, 2)  # 50% of annual (add-on scaling)
             elif payment_frequency == "three_month":
-                addon_blood_price = round(28.00 * 0.275, 2)  # 27.5% of annual
+                addon_blood_price = round(28.00 * 0.25, 2)  # 25% of annual (add-on scaling)
             else:
                 addon_blood_price = 28.00
             addon_blood = f"Αιματολογικό Check Up: {addon_blood_price:.2f}€"
