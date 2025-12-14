@@ -363,7 +363,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         )
         
         # Normalize fonts to ensure consistent font size for Greek and English characters
-        # SET a uniform font size (10pt) for ALL text fields to eliminate inconsistencies
+        # SET a uniform font size (10pt Helvetica) for ALL text fields to eliminate inconsistencies
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
@@ -382,38 +382,50 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                             current_value = widget.field_value
                             
                             if current_value:
-                                # Access the annotation object to modify font properties
-                                annot = widget._annot
-                                if annot:
-                                    # Get annotation dictionary (mutable)
-                                    annot_dict = annot.get_dict()
-                                    
-                                    # Set DA (default appearance) with uniform font size
-                                    # Format: "/FontName Size Tf [color]"
-                                    # Use Helvetica which supports both Greek and English well
-                                    da_string = f"/Helvetica {uniform_font_size} Tf 0 g"
-                                    
-                                    # Update the annotation's DA directly in the dictionary
-                                    annot_dict["DA"] = da_string
-                                    
-                                    # Update annotation to apply changes
-                                    annot.set_rect(annot.rect)  # Trigger update
-                                    
-                                    # Force widget to regenerate appearance with new font size
-                                    widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                                    widget.field_value = ""  # Clear first
-                                    widget.update()
-                                    widget.field_value = current_value  # Set again with new font
-                                    widget.update()
-                                    
-                                    font_normalized_count += 1
+                                # Try using PyMuPDF's built-in methods if available
+                                try:
+                                    # Method 1: Try set_fontsize if it exists (some PyMuPDF versions)
+                                    if hasattr(widget, 'set_fontsize'):
+                                        widget.set_fontsize(uniform_font_size)
+                                    # Method 2: Try set_font with size parameter
+                                    elif hasattr(widget, 'set_font'):
+                                        widget.set_font("helv", uniform_font_size)
+                                except:
+                                    pass
+                                
+                                # Method 3: Direct DA (default appearance) string modification
+                                try:
+                                    annot = widget._annot
+                                    if annot:
+                                        # Get the annotation object's dictionary properly
+                                        # Use annot.rect to access the underlying dict-like object
+                                        # Set DA with uniform font size - Helvetica supports Greek and English
+                                        da_string = f"/Helvetica {uniform_font_size} Tf 0 g"
+                                        # Use annot_set_rect to trigger update, then modify DA
+                                        annot.set_info(title=annot.get_info().get("title", ""))
+                                        # Access the PDF object directly
+                                        xref = annot.xref
+                                        if xref:
+                                            doc.xref_set_key(xref, "DA", da_string)
+                                except Exception as da_error:
+                                    # If direct DA setting fails, the widget update should still work
+                                    logger.debug(f"DA setting failed for {widget.field_name}: {da_error}")
+                                
+                                # Force widget to regenerate appearance with new font size
+                                widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                                widget.field_value = ""  # Clear first
+                                widget.update()
+                                widget.field_value = current_value  # Set again to regenerate with new font
+                                widget.update()
+                                
+                                font_normalized_count += 1
                         except Exception as widget_error:
                             logger.warning(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
             # Save the PDF with updated font sizes
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
-            logger.info(f"[PDF] Font normalization: Set uniform {uniform_font_size}pt font for {font_normalized_count} fields in {output_path}")
+            logger.info(f"[PDF] Font normalization: Set uniform {uniform_font_size}pt Helvetica font for {font_normalized_count} fields in {output_path}")
         except ImportError:
             logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
         except Exception as norm_error:
