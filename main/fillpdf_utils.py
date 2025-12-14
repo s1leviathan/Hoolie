@@ -364,6 +364,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         
         # Normalize fonts to ensure consistent font size for Greek and English characters
         # This addresses the issue where PDF form fields render Greek and English at different sizes
+        # Strategy: Force regeneration of form field appearances by re-setting values
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
@@ -377,41 +378,24 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                 for widget in widgets:
                     if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
                         try:
-                            # Access the form field dictionary directly
-                            field = widget.field
-                            if field:
-                                # Get the field's dictionary
-                                field_dict = field.get_dictionary()
-                                
-                                # Access the DA (default appearance) string which contains font info
-                                # Format: "/FontName FontSize Tf"
-                                da_string = field_dict.get("DA", "")
-                                
-                                if da_string:
-                                    # Try to normalize the font size in the DA string
-                                    # The DA string format is like: "/Helvetica 10 Tf" or "/Arial 12 Tf 0.0 0.0 0.0 rg"
-                                    import re
-                                    # Match font size pattern: number followed by " Tf"
-                                    da_normalized = re.sub(r'(\d+(?:\.\d+)?)\s+Tf', r'\1 Tf', da_string)
-                                    
-                                    # If we found and potentially modified the font size, update it
-                                    if da_normalized != da_string:
-                                        try:
-                                            field_dict["DA"] = da_normalized
-                                            font_normalized_count += 1
-                                        except:
-                                            pass
-                            
-                            # Force widget update to regenerate appearance
-                            widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                            
-                            # Re-read the field value to force appearance regeneration
+                            # Get current field value
                             current_value = widget.field_value
-                            if current_value:
-                                # Setting the value again forces the appearance to regenerate
-                                widget.field_value = current_value
+                            
+                            if current_value and str(current_value).strip():
+                                # Force widget to regenerate its appearance by:
+                                # 1. Setting display mode to visible
+                                widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                                
+                                # 2. Re-setting the field value to force appearance regeneration
+                                # This should regenerate the appearance stream with consistent font rendering
+                                widget.field_value = ""  # Clear first
                                 widget.update()
+                                
+                                widget.field_value = current_value  # Set again
+                                widget.update()
+                                
                                 font_normalized_count += 1
+                                logger.debug(f"Normalized font for field: {widget.field_name}")
                         except Exception as widget_error:
                             logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
