@@ -588,30 +588,55 @@ def user_data(request):
             base_annual = base_annual * 1.20
             base_price_breakdown['breed_surcharge_20_percent'] = round(surcharge_20, 2)
         
-        # Calculate add-on prices based on program
+        # Calculate add-on prices based on program (annual prices)
+        addon_poisoning_annual = 0
+        addon_blood_annual = 0
+        
         if additional_poisoning_coverage:
             from .utils import get_poisoning_price
-
-            base_price_breakdown['poisoning_coverage'] = get_poisoning_price(
+            addon_poisoning_annual = get_poisoning_price(
                 program=program,
                 payment_frequency="annual"
             )
-
-            base_annual += base_price_breakdown['poisoning_coverage']
+            base_price_breakdown['poisoning_coverage'] = addon_poisoning_annual
         
         if additional_blood_checkup:
-            base_price_breakdown['blood_checkup'] = 28  # Same for all programs
-            base_annual += base_price_breakdown['blood_checkup']
+            addon_blood_annual = 28  # Same for all programs
+            base_price_breakdown['blood_checkup'] = addon_blood_annual
         
-        # Update all pricing fields with surcharges and add-ons applied
-        if base_annual != original_base:
-            surcharge_multiplier = base_annual / original_base
-            pricing_data['annual'] = round(base_annual, 2)
+        # Apply surcharges to base prices (if any)
+        if special_breed_5_percent or special_breed_20_percent:
+            surcharge_multiplier = 1.0
+            if special_breed_5_percent:
+                surcharge_multiplier *= 1.05
+            if special_breed_20_percent:
+                surcharge_multiplier *= 1.20
+            
+            pricing_data['annual'] = round(original_base * surcharge_multiplier, 2)
             if 'six_month' in pricing_data:
                 pricing_data['six_month'] = round(pricing_data['six_month'] * surcharge_multiplier, 2)
             if 'three_month' in pricing_data:
                 pricing_data['three_month'] = round(pricing_data['three_month'] * surcharge_multiplier, 2)
-            pricing_data['final'] = pricing_data['annual']
+        else:
+            pricing_data['annual'] = round(original_base, 2)
+        
+        # Add add-ons separately with correct scaling (50% for 6-month, 25% for 3-month)
+        base_annual = pricing_data['annual'] + addon_poisoning_annual + addon_blood_annual
+        pricing_data['annual'] = round(base_annual, 2)
+        
+        if 'six_month' in pricing_data:
+            # Add add-ons with 50% scaling for 6-month
+            addon_poisoning_6m = round(addon_poisoning_annual * 0.5, 2)
+            addon_blood_6m = round(addon_blood_annual * 0.5, 2)
+            pricing_data['six_month'] = round(pricing_data['six_month'] + addon_poisoning_6m + addon_blood_6m, 2)
+        
+        if 'three_month' in pricing_data:
+            # Add add-ons with 25% scaling for 3-month
+            addon_poisoning_3m = round(addon_poisoning_annual * 0.25, 2)
+            addon_blood_3m = round(addon_blood_annual * 0.25, 2)
+            pricing_data['three_month'] = round(pricing_data['three_month'] + addon_poisoning_3m + addon_blood_3m, 2)
+        
+        pricing_data['final'] = pricing_data['annual']
         
         base_price_breakdown['total'] = pricing_data['annual']
     
