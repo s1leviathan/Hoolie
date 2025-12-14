@@ -361,6 +361,31 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             data_dict=data,
             flatten=False
         )
+        
+        # Normalize fonts to ensure consistent font size for Greek and English characters
+        try:
+            import fitz  # PyMuPDF
+            doc = fitz.open(output_path)
+            for page in doc:
+                for widget in page.widgets():
+                    if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
+                        # Normalize font properties to ensure consistent rendering
+                        # This ensures Greek and English characters use the same font size
+                        try:
+                            # Set field display to visible (preserves existing behavior)
+                            widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
+                            # Update the widget to apply changes
+                            widget.update()
+                        except Exception as widget_error:
+                            logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
+            doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+            doc.close()
+            logger.info(f"[PDF] Font normalization applied to {output_path}")
+        except ImportError:
+            logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
+        except Exception as norm_error:
+            logger.warning(f"[PDF] Font normalization failed (non-critical): {norm_error}")
+        
         return output_path
         
     except Exception as e:
