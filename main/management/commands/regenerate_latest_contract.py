@@ -47,10 +47,20 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f'Generated {len(result)} contract(s)'))
                 for path in result:
                     self.stdout.write(f"  - {path}")
+                # Update database with the first (or only) PDF path
+                if result:
+                    app.contract_pdf_path = result[0]
+                    app.contract_generated = True
+                    app.save(update_fields=['contract_pdf_path', 'contract_generated'])
             else:
                 self.stdout.write(self.style.SUCCESS(f'Contract generated: {result}'))
+                if result:
+                    app.contract_pdf_path = result
+                    app.contract_generated = True
+                    app.save(update_fields=['contract_pdf_path', 'contract_generated'])
             
-            self.stdout.write(f"\nContract PDF path: {app.contract_pdf_path}")
+            app.refresh_from_db()
+            self.stdout.write(f"\nContract PDF path (updated): {app.contract_pdf_path}")
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error: {e}'))
             import traceback
