@@ -1817,16 +1817,26 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             # Round calculated total
             calculated_total = round(calculated_total, 2)
 
+            # Check if stored premium matches calculated total
+            stored_premium = total
+            if abs(stored_premium - calculated_total) > 0.01 and stored_premium > 0:
+                # Stored premium is outdated - automatically recalculate and update
+                from .utils import recalculate_application_premium
+                try:
+                    recalculate_application_premium(app)
+                    app.refresh_from_db()
+                    # Get updated stored premium
+                    if questionnaire.payment_frequency == "six_month":
+                        stored_premium = float(app.six_month_premium or 0)
+                    elif questionnaire.payment_frequency == "three_month":
+                        stored_premium = float(app.three_month_premium or 0)
+                    else:
+                        stored_premium = float(app.annual_premium or 0)
+                except Exception as e:
+                    logger.warning(f"Could not auto-recalculate premium: {e}")
             
             breakdown.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             breakdown.append(f"ΣΥΝΟΛΟ ({frequency_label}): {calculated_total:.2f}€")
-            
-            # Also show stored premium if it differs (for debugging)
-            stored_premium = total
-            if abs(stored_premium - calculated_total) > 0.01 and stored_premium > 0:
-                breakdown.append(
-                    f"<br><small style='color: #6c757d;'>(Αποθηκευμένη τιμή: {stored_premium:.2f}€)</small>"
-                )
 
             
             return format_html('<br>'.join(breakdown))
