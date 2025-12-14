@@ -1756,14 +1756,15 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                 total = total * 1.20  # Apply 20% surcharge
             
             # Add-ons (fixed prices)
+            # Note: Always use annual price in breakdown calculation, payment frequency is applied to total at the end
             if questionnaire.additional_poisoning_coverage:
-                poisoning_price = get_poisoning_price(
+                poisoning_price_annual = get_poisoning_price(
                     program=program,
-                    payment_frequency=questionnaire.payment_frequency
+                    payment_frequency="annual"  # Always use annual for breakdown calculation
                 )
 
-                breakdown.append(f"+ Δηλητηρίαση: {poisoning_price:.2f}€")
-                total += poisoning_price
+                breakdown.append(f"+ Δηλητηρίαση: {poisoning_price_annual:.2f}€")
+                total += poisoning_price_annual
 
             
             if questionnaire.additional_blood_checkup:
