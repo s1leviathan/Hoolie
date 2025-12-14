@@ -377,29 +377,33 @@ def safe_truncate_text(text, max_length=100):
     Safely truncate text at word boundaries to prevent cut words.
     Ensures proper UTF-8 encoding.
     """
-    if not text:
+    if text is None:
         return ""
     
-    # Ensure string and encode/decode to handle any encoding issues
-    text_str = str(text)
     try:
+        # Ensure string and encode/decode to handle any encoding issues
+        text_str = str(text)
         # Ensure UTF-8 encoding
         text_str = text_str.encode('utf-8', errors='ignore').decode('utf-8')
-    except:
-        pass
-    
-    # If text is within limit, return as is
-    if len(text_str) <= max_length:
-        return text_str
-    
-    # Truncate at word boundary
-    truncated = text_str[:max_length]
-    # Find last space to avoid cutting words
-    last_space = truncated.rfind(' ')
-    if last_space > max_length * 0.7:  # Only use word boundary if it's not too early
-        truncated = truncated[:last_space]
-    
-    return truncated
+        
+        # If text is within limit, return as is
+        if len(text_str) <= max_length:
+            return text_str
+        
+        # Truncate at word boundary
+        truncated = text_str[:max_length]
+        # Find last space to avoid cutting words
+        last_space = truncated.rfind(' ')
+        if last_space > max_length * 0.7:  # Only use word boundary if it's not too early
+            truncated = truncated[:last_space]
+        
+        return truncated
+    except Exception:
+        # If anything goes wrong, return empty string or original text as string
+        try:
+            return str(text)[:max_length] if text else ""
+        except:
+            return ""
 
 
 def create_contract_field_mapping(application, pet_name, pet_type_display, pet_breed, 
