@@ -1726,7 +1726,6 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                     # Estimate base by subtracting known add-ons
                     estimated_base = stored_premium
                     if questionnaire.additional_poisoning_coverage:
-                        # poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
                         estimated_base -= get_poisoning_price(program, "annual")
                     if questionnaire.additional_blood_checkup:
                         estimated_base -= 28.00

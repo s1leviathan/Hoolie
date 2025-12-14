@@ -15,6 +15,13 @@ AGE_ERROR_MESSAGE = """
 άλλα προγράμματα ασφάλισης που ενδεχομένως μπορούν να καλύψουν τον μικρό σας συνοδοιπόρο,
 θα χαρούμε να σας εξυπηρετήσουμε.
 """
+def redirect_to_birthdate(request):
+    pet_type = request.GET.get('type', '')
+    gender = request.GET.get('gender', '')
+    return render(request, "main/age_error.html", {
+        "message": AGE_ERROR_MESSAGE,
+        "restart_url": f"/pet-birthdate/?type={pet_type}&gender={gender}"
+    })
 
 def index(request):
     """Main introduction page with beautiful animations"""
@@ -69,9 +76,8 @@ def pet_breed(request):
     birthdate = request.GET.get("birthdate", "")
 
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
+
 
     # Common dog breeds for dropdown (20 breeds)
     dog_breeds = [
@@ -137,9 +143,8 @@ def cat_breed(request):
     birthdate = request.GET.get("birthdate", "")
 
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
+
 
     # Common cat breeds for dropdown (20 breeds)
     cat_breeds = [
@@ -198,7 +203,7 @@ def pet_birthdate(request):
 
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {"message": AGE_ERROR_MESSAGE})
+        return redirect_to_birthdate(request)
 
     context = {
         'pet_type': pet_type,
@@ -217,9 +222,7 @@ def health_status(request):
     name = request.GET.get('name', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     if request.method == 'POST':
         # Store questionnaire data in session
@@ -283,9 +286,7 @@ def insurance_programs(request):
     is_healthy = request.GET.get('is_healthy', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     context = {
         'pet_type': pet_type,
@@ -308,9 +309,7 @@ def non_covered(request):
     is_healthy = request.GET.get('is_healthy', '')
      # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     context = {
         'pet_type': pet_type,
@@ -332,9 +331,7 @@ def dog_health_conditions(request):
     name = request.GET.get('name', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     # List of dog health conditions
     conditions = [
@@ -378,9 +375,7 @@ def cat_health_conditions(request):
     name = request.GET.get('name', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     # List of cat health conditions
     conditions = [
@@ -429,9 +424,7 @@ def user_data(request):
     second_pet_breed = request.GET.get('second_pet_breed', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     # Extract weight from breed string (e.g., "Λαμπραντόρ (έως 10 κιλά)")
     weight_category = None
@@ -597,12 +590,13 @@ def user_data(request):
         
         # Calculate add-on prices based on program
         if additional_poisoning_coverage:
-            # poisoning_prices = {
-            #     'silver': 18,
-            #     'gold': 20,
-            #     'platinum': 25
-            # }
-            base_price_breakdown['poisoning_coverage'] = poisoning_prices.get(program, 18)
+            from .utils import get_poisoning_price
+
+            base_price_breakdown['poisoning_coverage'] = get_poisoning_price(
+                program=program,
+                payment_frequency="annual"
+            )
+
             base_annual += base_price_breakdown['poisoning_coverage']
         
         if additional_blood_checkup:
@@ -859,13 +853,13 @@ def handle_application_submission(request):
         additional_blood_checkup = request.POST.get('additional_blood_checkup') == 'true'
         
         if additional_poisoning:
-            # Poisoning coverage prices by program
-            # poisoning_prices = {
-            #     'silver': 18,
-            #     'gold': 20,
-            #     'platinum': 25
-            # }
-            poisoning_price = poisoning_prices.get(program, 18)
+            from .utils import get_poisoning_price
+
+            poisoning_price = get_poisoning_price(
+                program=program,
+                payment_frequency="annual"
+            )
+
             extra_features_total += poisoning_price
             logger.info(f"Added poisoning coverage: +{poisoning_price}€")
         
@@ -1288,9 +1282,7 @@ def pet_documents(request):
     name = request.GET.get('name', '')
     # AGE RESTRICTION CHECK
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
     
     context = {
         'pet_type': pet_type,
@@ -1313,9 +1305,7 @@ def contact_info(request):
 
     # AGE RESTRICTION CHECK (now works correctly)
     if is_above_age_limit(birthdate):
-        return render(request, "main/age_error.html", {
-            "message": AGE_ERROR_MESSAGE
-        })
+        return redirect_to_birthdate(request)
 
     try:
         context = {
