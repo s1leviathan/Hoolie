@@ -359,65 +359,13 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             input_pdf_path=template_path,
             output_pdf_path=output_path,
             data_dict=data,
-            flatten=False
+            flatten=True  # Flatten form fields to regular text for uniform font rendering
         )
         
-        # Normalize fonts to ensure consistent font size for Greek and English characters
-        # FLATTEN the PDF - convert all form fields to regular text for uniform rendering
-        # This is the most reliable way to ensure consistent font sizes
-        try:
-            import fitz  # PyMuPDF
-            doc = fitz.open(output_path)
-            
-            # Flatten all pages - this converts form fields to regular text annotations
-            # This ensures uniform font rendering across all characters (Greek and English)
-            flattened_count = 0
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                try:
-                    # Try to flatten the page using PyMuPDF's built-in method
-                    # This converts form fields to text and ensures consistent rendering
-                    annots = page.annots()
-                    if annots:
-                        # Delete annotations and replace with text
-                        # Actually, we'll use a simpler approach: delete form field annotations
-                        # and let the appearance streams (which are already rendered) remain
-                        page.clean_contents()  # Clean up any inconsistencies
-                        flattened_count += 1
-                except Exception as page_error:
-                    logger.debug(f"Could not process page {page_num}: {page_error}")
-            
-            # Alternative: Delete form field structure but keep appearance
-            # This forces PDF viewers to use the appearance streams which should be uniform
-            try:
-                # Get all form fields and ensure they're displayed as appearance streams
-                for page_num in range(len(doc)):
-                    page = doc[page_num]
-                    widgets = page.widgets()
-                    for widget in widgets:
-                        if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
-                            # Force widget to use its appearance stream
-                            # By ensuring field_display is set correctly
-                            try:
-                                # Set field to read-only and visible to force appearance usage
-                                widget.field_flags = widget.field_flags | 0x01  # Read-only
-                                widget.update()
-                            except:
-                                pass
-            except Exception:
-                pass
-            
-            # Save the PDF
-            doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
-            doc.close()
-            logger.info(f"[PDF] Font normalization: Processed {flattened_count} pages to ensure uniform font rendering in {output_path}")
-        except ImportError:
-            logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
-        except Exception as norm_error:
-            logger.error(f"[PDF] Font normalization failed: {norm_error}")
-            import traceback
-            logger.error(traceback.format_exc())
-            # Don't fail PDF generation if normalization fails, but log the error
+        # Font normalization: PDF is already flattened by fillpdf (flatten=True above)
+        # Flattened PDFs convert form fields to regular text, ensuring uniform font rendering
+        # This eliminates font size inconsistencies between Greek and English characters
+        logger.info(f"[PDF] Font normalization: PDF flattened by fillpdf for uniform font rendering in {output_path}")
         
         return output_path
         
