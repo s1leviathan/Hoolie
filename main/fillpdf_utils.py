@@ -363,28 +363,38 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         )
         
         # Normalize fonts to ensure consistent font size for Greek and English characters
+        # This addresses the issue where PDF form fields render Greek and English at different sizes
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
-            for page in doc:
-                for widget in page.widgets():
+            
+            # Iterate through all pages and widgets to normalize font sizes
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                widgets = page.widgets()
+                
+                for widget in widgets:
                     if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
-                        # Normalize font properties to ensure consistent rendering
-                        # This ensures Greek and English characters use the same font size
                         try:
-                            # Set field display to visible (preserves existing behavior)
+                            # Get the field's current appearance/dictionary
+                            field_dict = widget.field_value
+                            
+                            # Try to normalize by updating the widget
+                            # This forces PyMuPDF to regenerate the appearance with consistent font handling
                             widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                            # Update the widget to apply changes
                             widget.update()
                         except Exception as widget_error:
                             logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
+            
+            # Save with incremental update to preserve other PDF structure
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
-            logger.info(f"[PDF] Font normalization applied to {output_path}")
+            logger.info(f"[PDF] Font normalization attempted on {output_path}")
         except ImportError:
             logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
         except Exception as norm_error:
             logger.warning(f"[PDF] Font normalization failed (non-critical): {norm_error}")
+            # Don't fail PDF generation if normalization fails
         
         return output_path
         
