@@ -385,26 +385,30 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                                 # Access the annotation object to modify font properties
                                 annot = widget._annot
                                 if annot:
-                                    # Get annotation dictionary
+                                    # Get annotation dictionary (mutable)
                                     annot_dict = annot.get_dict()
                                     
                                     # Set DA (default appearance) with uniform font size
-                                    # Format: "/FontName Size Tf"
+                                    # Format: "/FontName Size Tf [color]"
                                     # Use Helvetica which supports both Greek and English well
                                     da_string = f"/Helvetica {uniform_font_size} Tf 0 g"
                                     
-                                    # Update the annotation's DA
+                                    # Update the annotation's DA directly in the dictionary
                                     annot_dict["DA"] = da_string
-                                    annot.update()
+                                    
+                                    # Update annotation to apply changes
+                                    annot.set_rect(annot.rect)  # Trigger update
                                     
                                     # Force widget to regenerate appearance with new font size
                                     widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                                    widget.field_value = current_value
+                                    widget.field_value = ""  # Clear first
+                                    widget.update()
+                                    widget.field_value = current_value  # Set again with new font
                                     widget.update()
                                     
                                     font_normalized_count += 1
                         except Exception as widget_error:
-                            logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
+                            logger.warning(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
             # Save the PDF with updated font sizes
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
