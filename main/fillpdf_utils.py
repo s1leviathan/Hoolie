@@ -265,7 +265,7 @@ def get_pricing_values(application, pet_type, weight_category, program, frequenc
 
 def generate_contract_with_fillpdf(application, output_path, pet_number=1):
     """Generate contract using fillpdf (simple & stable version)."""
-
+    
     import logging
     logger = logging.getLogger(__name__)
 
@@ -287,10 +287,10 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         settings.BASE_DIR,
         'ΑΣΦΑΛΙΣΤΗΡΙΟ ΣΥΜΒΟΛΑΙΟ ΤΕΛΙΚΟ PET (1) (2).pdf'
     )
-
+    
     if not os.path.exists(template_path):
         raise FileNotFoundError(f"Fillable contract template not found: {template_path}")
-
+    
     # -----------------------------
     # PET SELECTION LOGIC
     # -----------------------------
@@ -349,11 +349,11 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
     )
 
     data = create_contract_field_mapping(
-        application, pet_name, pet_type_display, pet_breed,
+        application, pet_name, pet_type_display, pet_breed, 
         pet_weight, pet_birthdate, "",
         net, fee, ipt, gross
     )
-
+    
     try:
         fillpdfs.write_fillable_pdf(
             input_pdf_path=template_path,
@@ -362,7 +362,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             flatten=False
         )
         return output_path
-
+        
     except Exception as e:
         logger.error(f"[PDF ERROR] {e}")
         raise
@@ -372,13 +372,43 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
 #  PDF FIELD MAPPING
 # ----------------------------------------------------
 
-def create_contract_field_mapping(application, pet_name, pet_type_display, pet_breed,
-                                  pet_weight, pet_birthdate, contract_suffix,
-                                  net_premium, fee, ipt, gross):
+def safe_truncate_text(text, max_length=100):
+    """
+    Safely truncate text at word boundaries to prevent cut words.
+    Ensures proper UTF-8 encoding.
+    """
+    if not text:
+        return ""
+    
+    # Ensure string and encode/decode to handle any encoding issues
+    text_str = str(text)
+    try:
+        # Ensure UTF-8 encoding
+        text_str = text_str.encode('utf-8', errors='ignore').decode('utf-8')
+    except:
+        pass
+    
+    # If text is within limit, return as is
+    if len(text_str) <= max_length:
+        return text_str
+    
+    # Truncate at word boundary
+    truncated = text_str[:max_length]
+    # Find last space to avoid cutting words
+    last_space = truncated.rfind(' ')
+    if last_space > max_length * 0.7:  # Only use word boundary if it's not too early
+        truncated = truncated[:last_space]
+    
+    return truncated
 
+
+def create_contract_field_mapping(application, pet_name, pet_type_display, pet_breed, 
+                                pet_weight, pet_birthdate, contract_suffix, 
+                                  net_premium, fee, ipt, gross):
+    
     import logging
     logger = logging.getLogger(__name__)
-
+    
     from .models import InsuranceApplication, Questionnaire
     from .utils import get_poisoning_price
     application = InsuranceApplication.objects.select_related("questionnaire").get(pk=application.pk)
@@ -412,7 +442,7 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
                 addon_blood_price = round(28.00 * 0.5, 2)  # 50% of annual (add-on scaling)
             elif payment_frequency == "three_month":
                 addon_blood_price = round(28.00 * 0.25, 2)  # 25% of annual (add-on scaling)
-            else:
+        else:
                 addon_blood_price = 28.00
             addon_blood = f"Αιματολογικό Check Up: {addon_blood_price:.2f}€"
     
@@ -452,34 +482,35 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         else:
             final_gross = round(final_gross, 2)
     
-    # Prepare PDF mapping
+    # Prepare PDF mapping with safe text truncation
+    # Field length limits based on typical PDF form field sizes
     data = {
-        "text_1bwie": application.contract_number or "",
-        "text_3ksjz": application.full_name or "",
-
+        "text_1bwie": safe_truncate_text(application.contract_number or "", max_length=50),
+        "text_3ksjz": safe_truncate_text(application.full_name or "", max_length=80),
+        
         "text_5fgpc": application.contract_start_date.strftime("%d/%m/%Y"),
         "text_6zqkn": application.contract_end_date.strftime("%d/%m/%Y"),
-
-        "text_7tbbt": application.get_program_with_frequency_display(),
-
-        "text_8safe": application.full_name,
-        "text_9vyoe": application.afm or "",
-        "text_10eqtr": application.phone or "",
-        "text_11qthp": application.address or "",
-        "text_12ul": application.postal_code or "",
-        "text_13liqu": application.email or "",
-
-        "text_14rclu": pet_name,
-        "text_15vsin": pet_type_display,
-        "text_16jfkm": pet_breed,
-        "text_17ltlp": pet_weight,
-        "text_18yuy": pet_birthdate,
-        "text_19nqjo": application.microchip_number or "",
-
+        
+        "text_7tbbt": safe_truncate_text(application.get_program_with_frequency_display(), max_length=50),
+        
+        "text_8safe": safe_truncate_text(application.full_name, max_length=80),
+        "text_9vyoe": safe_truncate_text(application.afm or "", max_length=20),
+        "text_10eqtr": safe_truncate_text(application.phone or "", max_length=30),
+        "text_11qthp": safe_truncate_text(application.address or "", max_length=100),
+        "text_12ul": safe_truncate_text(application.postal_code or "", max_length=10),
+        "text_13liqu": safe_truncate_text(application.email or "", max_length=80),
+        
+        "text_14rclu": safe_truncate_text(pet_name, max_length=50),
+        "text_15vsin": safe_truncate_text(pet_type_display, max_length=20),
+        "text_16jfkm": safe_truncate_text(pet_breed, max_length=80),
+        "text_17ltlp": safe_truncate_text(pet_weight, max_length=30),
+        "text_18yuy": pet_birthdate,  # Date format is fixed length
+        "text_19nqjo": safe_truncate_text(application.microchip_number or "", max_length=30),
+        
         "text_29bsjj": "",
-        "text_30vzyv": surcharges_text,
-        "text_31mdpf": addon_poisoning,
-        "text_32crsg": addon_blood,
+        "text_30vzyv": safe_truncate_text(surcharges_text, max_length=100),
+        "text_31mdpf": safe_truncate_text(addon_poisoning, max_length=50),
+        "text_32crsg": safe_truncate_text(addon_blood, max_length=50),
 
         # PRICING DISPLAY
         "text_33tjdu": f"{net_premium:.2f}€",
@@ -496,5 +527,5 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         "checkbox_26wldx", "checkbox_27sj", "checkbox_28okyh"
     ]:
         data[cb] = "Yes_sexk"
-
+    
     return data
