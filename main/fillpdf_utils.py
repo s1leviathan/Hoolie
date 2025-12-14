@@ -380,12 +380,78 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
     logger = logging.getLogger(__name__)
 
     from .models import InsuranceApplication, Questionnaire
+    from .utils import get_poisoning_price
     application = InsuranceApplication.objects.select_related("questionnaire").get(pk=application.pk)
 
-    surcharges_text = ""
+    # Get questionnaire and payment frequency
+    questionnaire = getattr(application, "questionnaire", None)
+    payment_frequency = questionnaire.payment_frequency if questionnaire else "annual"
+    
+    # Build surcharges text (breed surcharges)
+    surcharges_parts = []
+    if questionnaire:
+        if questionnaire.special_breed_5_percent:
+            surcharges_parts.append("Επασφάλιστρο 5%")
+        if questionnaire.special_breed_20_percent:
+            surcharges_parts.append("Επασφάλιστρο 20%")
+    surcharges_text = " | ".join(surcharges_parts) if surcharges_parts else ""
+    
+    # Calculate add-on prices based on payment frequency
     addon_poisoning = ""
     addon_blood = ""
-
+    addon_poisoning_price = 0
+    addon_blood_price = 0
+    
+    if questionnaire:
+        if questionnaire.additional_poisoning_coverage:
+            addon_poisoning_price = get_poisoning_price(application.program, payment_frequency)
+            addon_poisoning = f"Δηλητηρίαση: {addon_poisoning_price:.2f}€"
+        
+        if questionnaire.additional_blood_checkup:
+            if payment_frequency == "six_month":
+                addon_blood_price = round(28.00 * 0.525, 2)  # 52.5% of annual
+            elif payment_frequency == "three_month":
+                addon_blood_price = round(28.00 * 0.275, 2)  # 27.5% of annual
+            else:
+                addon_blood_price = 28.00
+            addon_blood = f"Αιματολογικό Check Up: {addon_blood_price:.2f}€"
+    
+    # Use stored premium which includes surcharges and add-ons
+    # Get the correct premium based on payment frequency
+    if payment_frequency == "six_month":
+        stored_gross = float(application.six_month_premium or 0)
+    elif payment_frequency == "three_month":
+        stored_gross = float(application.three_month_premium or 0)
+    else:
+        stored_gross = float(application.annual_premium or 0)
+    
+    # Use stored premium if available (includes add-ons), otherwise calculate from base
+    if stored_gross > 0:
+        final_gross = stored_gross
+        # Scale breakdown components proportionally to match the stored gross
+        base_gross = float(gross)
+        if base_gross > 0:
+            multiplier = final_gross / base_gross
+            net_premium = round(float(net_premium) * multiplier, 2)
+            fee = round(float(fee) * multiplier, 2)
+            ipt = round(float(ipt) * multiplier, 2)
+        else:
+            # Fallback: use percentage breakdown
+            net_premium = round(final_gross * 0.60, 2)
+            fee = round(final_gross * 0.18, 2)
+            ipt = round(final_gross * 0.215, 2)
+    else:
+        # Fallback: calculate from base + add-ons
+        final_gross = float(gross) + addon_poisoning_price + addon_blood_price
+        base_gross = float(gross)
+        if base_gross > 0:
+            multiplier = final_gross / base_gross
+            net_premium = round(float(net_premium) * multiplier, 2)
+            fee = round(float(fee) * multiplier, 2)
+            ipt = round(float(ipt) * multiplier, 2)
+        else:
+            final_gross = round(final_gross, 2)
+    
     # Prepare PDF mapping
     data = {
         "text_1bwie": application.contract_number or "",
@@ -416,11 +482,11 @@ def create_contract_field_mapping(application, pet_name, pet_type_display, pet_b
         "text_32crsg": addon_blood,
 
         # PRICING DISPLAY
-        "text_33tjdu": f"{net_premium}€",
-        "text_34k": f"{fee}€",
+        "text_33tjdu": f"{net_premium:.2f}€",
+        "text_34k": f"{fee:.2f}€",
         "text_35poeh": "–",            # Always dash now
-        "text_36sfw": f"{ipt}€",
-        "text_37rpnu": f"{gross}€",
+        "text_36sfw": f"{ipt:.2f}€",
+        "text_37rpnu": f"{final_gross:.2f}€",
     }
 
     # Coverage checkboxes
