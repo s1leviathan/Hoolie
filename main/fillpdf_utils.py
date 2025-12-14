@@ -359,67 +359,10 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             input_pdf_path=template_path,
             output_pdf_path=output_path,
             data_dict=data,
-            flatten=False  # We'll manually flatten after filling
+            flatten=True  # Use fillpdf's built-in flattening to preserve correct positioning
         )
         
-        # Manually flatten all form fields using PyMuPDF to ensure uniform font rendering
-        try:
-            import fitz  # PyMuPDF
-            
-            doc = fitz.open(output_path)
-            
-            # Flatten all form fields by converting them to regular text with uniform font
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                widgets = list(page.widgets())
-                
-                for widget in widgets:
-                    try:
-                        # Get the field value (even if empty, we want to flatten it)
-                        field_value = widget.field_value or ""
-                        # Get the field rectangle
-                        rect = widget.rect
-                        
-                        # Only insert text if there's a value
-                        if field_value:
-                            # Insert text at the field location with uniform font
-                            # Use Helvetica at 10pt to match template design
-                            point = fitz.Point(rect.x0 + 2, rect.y1 - 2)  # Slight offset for alignment
-                            
-                            # Insert text with uniform font properties
-                            page.insert_text(
-                                point,
-                                str(field_value),
-                                fontsize=10,
-                                fontname="helv",  # Helvetica
-                                color=(0, 0, 0)  # Black
-                            )
-                        
-                        # Always delete the widget to remove the form field (even if empty)
-                        page.delete_widget(widget)
-                    except Exception as widget_error:
-                        logger.warning(f"[PDF] Could not flatten widget {widget.field_name if hasattr(widget, 'field_name') else 'unknown'}: {widget_error}")
-                        continue
-            
-            # Save the flattened PDF to a temporary file, then replace the original
-            import tempfile
-            import shutil
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                tmp_path = tmp_file.name
-            
-            doc.save(tmp_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
-            doc.close()
-            
-            # Replace the original with the flattened version
-            shutil.move(tmp_path, output_path)
-            
-            logger.info(f"[PDF] Font normalization: PDF manually flattened with uniform 10pt Helvetica font in {output_path}")
-            
-        except ImportError:
-            logger.warning("[PDF] PyMuPDF not available, cannot manually flatten PDF. Font sizes may vary.")
-        except Exception as flatten_error:
-            logger.error(f"[PDF] Error during manual flattening: {flatten_error}")
-            # Continue anyway - at least the PDF was filled
+        logger.info(f"[PDF] PDF filled and flattened by fillpdf in {output_path}")
         
         return output_path
         
