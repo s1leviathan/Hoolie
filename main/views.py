@@ -475,15 +475,15 @@ def user_data(request):
     CAT_PRICING = {
         'silver': {
             '10': {'annual': 113.81, 'six_month': 59.75, 'three_month': 31.30},
-            '11-20': {'annual': 141.02, 'six_month': 74.03, 'three_month': 38.78}
+            '11-20': {'annual': 141.02, 'six_month': 74.04, 'three_month': 38.78}
         },
         'gold': {
-            '10': {'annual': 168.22, 'six_month': 88.32, 'three_month': 46.26},
+            '10': {'annual': 168.22, 'six_month': 88.31, 'three_month': 46.26},
             '11-20': {'annual': 188.61, 'six_month': 99.02, 'three_month': 51.87}
         },
         'platinum': {
             '10': {'annual': 277.02, 'six_month': 145.44, 'three_month': 76.18},
-            '11-20': {'annual': 311.02, 'six_month': 163.28, 'three_month': 85.53}
+            '11-20': {'annual': 311.02, 'six_month': 163.29, 'three_month': 85.53}
         }
     }
     
