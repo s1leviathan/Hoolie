@@ -400,9 +400,17 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                         logger.warning(f"[PDF] Could not flatten widget: {widget_error}")
                         continue
             
-            # Save the flattened PDF
-            doc.save(output_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
+            # Save the flattened PDF to a temporary file, then replace the original
+            import tempfile
+            import shutil
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                tmp_path = tmp_file.name
+            
+            doc.save(tmp_path, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
+            
+            # Replace the original with the flattened version
+            shutil.move(tmp_path, output_path)
             
             logger.info(f"[PDF] Font normalization: PDF manually flattened with uniform 10pt Helvetica font in {output_path}")
             
