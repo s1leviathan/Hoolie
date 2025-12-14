@@ -5,12 +5,16 @@
         <h2 style="color: #e53935; font-size: 2rem; margin-bottom: 1rem;">
             ❗ Μη Επιλέξιμη Ηλικία
         </h2>
-        <p style="font-size: 1.2rem; margin-bottom: 2rem;">{{ message }}</p>
 
-        <a href="{% url 'main:pet_birthdate' %}" 
-           class="btn btn-lg btn-primary" 
+        <p style="font-size: 1.2rem; margin-bottom: 2rem;">
+            {{ message }}
+        </p>
+
+        <!-- SAFE restart button (clears invalid birthdate from URL) -->
+        <a href="{{ restart_url }}" 
+           class="btn btn-lg btn-primary"
            style="padding: 1rem 2rem; border-radius: 15px;">
-            Επιστροφή
+            Επιστροφή & Διόρθωση Ημερομηνίας
         </a>
     </div>
 </section>
