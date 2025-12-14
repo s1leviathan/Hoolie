@@ -597,11 +597,12 @@ def user_data(request):
         
         # Calculate add-on prices based on program
         if additional_poisoning_coverage:
-            # poisoning_prices = {
-            #     'silver': 18,
-            #     'gold': 20,
-            #     'platinum': 25
-            # }
+            poisoning_prices = {
+                'silver': 18,
+                'gold': 20,
+                'platinum': 25,
+                'dynasty': 25
+            }
             base_price_breakdown['poisoning_coverage'] = poisoning_prices.get(program, 18)
             base_annual += base_price_breakdown['poisoning_coverage']
         
@@ -860,11 +861,12 @@ def handle_application_submission(request):
         
         if additional_poisoning:
             # Poisoning coverage prices by program
-            # poisoning_prices = {
-            #     'silver': 18,
-            #     'gold': 20,
-            #     'platinum': 25
-            # }
+            poisoning_prices = {
+                'silver': 18,
+                'gold': 20,
+                'platinum': 25,
+                'dynasty': 25
+            }
             poisoning_price = poisoning_prices.get(program, 18)
             extra_features_total += poisoning_price
             logger.info(f"Added poisoning coverage: +{poisoning_price}€")
