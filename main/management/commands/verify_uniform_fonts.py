@@ -74,7 +74,7 @@ class Command(BaseCommand):
             
             for page_num in range(len(doc)):
                 page = doc[page_num]
-                widgets = page.widgets()
+                widgets = list(page.widgets())  # Convert generator to list
                 if widgets:
                     has_form_fields = True
                     total_widgets += len(widgets)
