@@ -232,7 +232,10 @@ function submitBirthDate() {
         }
         
         const monthNames = ['', 'Ιανουάριος', 'Φεβρουάριος', 'Μάρτιος', 'Απρίλιος', 'Μάιος', 'Ιούνιος', 'Ιούλιος', 'Αύγουστος', 'Σεπτέμβριος', 'Οκτώβριος', 'Νοέμβριος', 'Δεκέμβριος'];
-        birthDate = `${monthNames[month]} ${year} (περίπου)`;
+        // birthDate = `${monthNames[month]} ${year} (περίπου)`;
+        // Convert approximate date into a real valid date: 01/MM/YYYY
+        birthDate = `01/${month}/${year}`;
+
     }
     
     // Add success animation

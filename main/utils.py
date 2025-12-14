@@ -1,210 +1,244 @@
 import os
 from datetime import datetime
-from django.conf import settings
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
 from decimal import Decimal
 
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
+from .fillpdf_utils import get_pricing_values, normalize_weight
+
+
 def recalculate_application_premium(application):
-    """Recalculate application premium based on current questionnaire values"""
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
-        # Get questionnaire
-        questionnaire = None
-        if hasattr(application, 'questionnaire'):
-            try:
-                questionnaire = application.questionnaire
-            except:
-                from .models import Questionnaire
-                try:
-                    questionnaire = Questionnaire.objects.get(application=application)
-                except Questionnaire.DoesNotExist:
-                    questionnaire = None
-        
+        # -------------------------------
+        # LOAD QUESTIONNAIRE
+        # -------------------------------
+        questionnaire = getattr(application, "questionnaire", None)
         if not questionnaire:
-            logger.warning(f"No questionnaire found for application {application.id}, cannot recalculate premium")
+            logger.info(
+                f"[INFO] No questionnaire yet for application {application.id}, "
+                f"continuing premium calculation"
+            )
+
+        # -------------------------------
+        # WEIGHT NORMALIZATION (FINAL)
+        # -------------------------------
+        raw_weight = str(application.pet_weight_category)
+
+        logger.info(
+            f"[WEIGHT RAW] App={application.id} pet_weight_category={raw_weight}"
+        )
+
+        mapped_weight = normalize_weight(raw_weight)
+
+        logger.info(
+            f"[WEIGHT MAPPED] App={application.id} mapped_weight={mapped_weight}"
+        )
+
+        if not mapped_weight:
+            logger.error(f"Invalid weight category: {raw_weight}")
             return
-        
-        # Get base price from pricing table
-        DOG_PRICING = {
-            'silver': {'10': 166.75, '11-20': 207.20, '21-40': 234.14, '>40': 254.36},
-            'gold': {'10': 234.14, '11-20': 261.09, '21-40': 288.05, '>40': 308.26},
-            'platinum': {'10': 368.92, '11-20': 389.15, '21-40': 409.36, '>40': 436.32}
-        }
-        CAT_PRICING = {
-            'silver': {'10': 113.81, '11-20': 141.02},
-            'gold': {'10': 168.22, '11-20': 188.61},
-            'platinum': {'10': 277.02, '11-20': 311.02}
-        }
-        
-        # Map weight categories
-        weight_mapping = {
-            'up_10': '10',
-            '10_25': '11-20',
-            '25_40': '21-40',
-            'over_40': '>40'
-        }
-        
-        pet_type = application.pet_type
-        weight_category = application.pet_weight_category or ''
+
         program = application.program
-        
-        mapped_weight = weight_mapping.get(weight_category, weight_category)
-        
-        # Get base premium
-        base_premium = 0
-        if pet_type == 'dog' and program in DOG_PRICING and mapped_weight in DOG_PRICING[program]:
-            base_premium = DOG_PRICING[program][mapped_weight]
-        elif pet_type == 'cat' and program in CAT_PRICING and mapped_weight in CAT_PRICING[program]:
-            base_premium = CAT_PRICING[program][mapped_weight]
-        
-        if base_premium == 0:
-            logger.warning(f"Could not find base premium for {pet_type}, {program}, {mapped_weight}")
+
+
+        logger.info(
+            f"[PRICING] App={application.id} "
+            f"pet_type={application.pet_type}, "
+            f"program={program}, "
+            f"mapped_weight={mapped_weight}"
+        )
+
+        # -------------------------------
+        # EXCEL PRICING (SINGLE SOURCE)
+        # -------------------------------
+        try:
+            _, _, _, annual_price = get_pricing_values(
+                application,
+                application.pet_type,
+                mapped_weight,
+                program,
+                "annual",
+            )
+
+            _, _, _, six_month_price = get_pricing_values(
+                application,
+                application.pet_type,
+                mapped_weight,
+                program,
+                "6m",
+            )
+
+            _, _, _, three_month_price = get_pricing_values(
+                application,
+                application.pet_type,
+                mapped_weight,
+                program,
+                "3m",
+            )
+
+
+
+            logger.info(
+                f"[EXCEL PRICES] App={application.id} | "
+                f"Annual={annual_price}€, "
+                f"6M={six_month_price}€, "
+                f"3M={three_month_price}€"
+            )
+
+        except Exception as e:
+            logger.error(f"Excel pricing missing: {e}")
             return
-        
-        logger.info(f"Recalculating premium for application {application.id}: base={base_premium}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
-        
-        # Apply breed surcharges (cumulative)
-        if questionnaire.special_breed_5_percent:
-            base_premium = base_premium * 1.05
-            logger.info(f"Applied 5% surcharge: {base_premium:.2f}")
-        
-        if questionnaire.special_breed_20_percent:
-            base_premium = base_premium * 1.20
-            logger.info(f"Applied 20% surcharge: {base_premium:.2f}")
-        
-        # Add add-ons
-        if questionnaire.additional_poisoning_coverage:
-            poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
-            poisoning_price = poisoning_prices.get(program, 18)
-            base_premium += poisoning_price
-            logger.info(f"Added poisoning coverage: +{poisoning_price}€")
-        
-        if questionnaire.additional_blood_checkup:
-            base_premium += 28
-            logger.info(f"Added blood checkup: +28€")
-        
-        # Round to 2 decimal places
-        base_premium = round(base_premium, 2)
-        
-        # Calculate other payment frequencies using correct multipliers
-        # 6-month: 52.5% of annual (0.525)
-        # 3-month: 27.5% of annual (0.275)
-        six_month_premium = round(base_premium * 0.525, 2)
-        three_month_premium = round(base_premium * 0.275, 2)
-        
-        # Update ALL premiums (always set them, even if they were None before)
-        application.annual_premium = Decimal(str(base_premium))
-        application.six_month_premium = Decimal(str(six_month_premium))
-        application.three_month_premium = Decimal(str(three_month_premium))
-        
-        application.save(update_fields=['annual_premium', 'six_month_premium', 'three_month_premium'])
-        logger.info(f"Updated premiums for application {application.id}: annual={base_premium}, 6-month={six_month_premium}, 3-month={three_month_premium}")
-        
+
+        # -------------------------------
+        # SAVE TO DB
+        # -------------------------------
+        application.annual_premium = Decimal(str(annual_price))
+        application.six_month_premium = Decimal(str(six_month_price))
+        application.three_month_premium = Decimal(str(three_month_price))
+
+        application.save(
+            update_fields=[
+                "annual_premium",
+                "six_month_premium",
+                "three_month_premium",
+            ]
+        )
+
+        logger.info(
+            f"[DB SAVED] App={application.id} "
+            f"annual={application.annual_premium}, "
+            f"six_month={application.six_month_premium}, "
+            f"three_month={application.three_month_premium}"
+        )
+
+        # -------------------------------
+        # BREAKDOWN (USED BY PDF)
+        # -------------------------------
+        return
+
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error recalculating premium for application {application.id}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(
+            f"Premium calculation error for application {application.id}: {e}"
+        )
+
+
+def get_poisoning_price(program, payment_frequency):
+    prices = {
+        'silver': 18,
+        'gold': 20,
+        'platinum': 25,
+        'dynasty': 25,
+    }
+
+    annual_price = prices.get(program, 0)
+
+    if payment_frequency == "six_month":
+        return round(annual_price / 2, 2)
+    elif payment_frequency == "three_month":
+        return round(annual_price / 4, 2)
+
+    return annual_price  # annual
+
 
 def generate_contract_pdf(application):
-    """Generate insurance contract PDF(s) using fillpdf library and save to S3/local storage"""
+    # ALWAYS recalc before PDF
+    recalculate_application_premium(application)
+    application.refresh_from_db()
+
+    """
+    Generate contract PDF with full price breakdown included.
+    """
     import logging
     logger = logging.getLogger(__name__)
-    
-    # Refresh application from database to ensure questionnaire relationship is loaded
+    logger.info(f"Generating contract PDF for {application.id}")
+
     from .models import InsuranceApplication
-    logger.info(f"Generating contract for application {application.id} (contract: {application.contract_number})")
-    application = InsuranceApplication.objects.select_related('questionnaire').get(pk=application.pk)
-    
-    # CRITICAL: Ensure premiums are calculated before generating PDF
-    # This is especially important for existing applications that might not have premiums set
-    if not application.annual_premium or not application.six_month_premium or not application.three_month_premium:
-        logger.info(f"Premiums missing for application {application.id}, recalculating...")
+    application = InsuranceApplication.objects.select_related(
+        "questionnaire"
+    ).get(pk=application.pk)
+
+    # Ensure premiums exist
+    if application.annual_premium is None:
         recalculate_application_premium(application)
-        # Refresh again to get updated premiums
         application.refresh_from_db()
-        logger.info(f"Premiums recalculated: annual={application.annual_premium}, 6-month={application.six_month_premium}, 3-month={application.three_month_premium}")
-    
-    # Check if questionnaire exists
-    try:
-        if hasattr(application, 'questionnaire'):
-            questionnaire = application.questionnaire
-            if questionnaire:
-                logger.info(f"Questionnaire found for application {application.id}: ID={questionnaire.id}, payment_frequency={questionnaire.payment_frequency}, 5%={questionnaire.special_breed_5_percent}, 20%={questionnaire.special_breed_20_percent}, poisoning={questionnaire.additional_poisoning_coverage}, blood={questionnaire.additional_blood_checkup}")
-            else:
-                logger.warning(f"No questionnaire object found for application {application.id}")
-        else:
-            logger.warning(f"Application {application.id} has no questionnaire attribute")
-    except Exception as e:
-        logger.error(f"Error checking questionnaire for application {application.id}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-    
-    # Use temporary directory for PDF generation (will be uploaded to S3)
+
+
+
     import tempfile
     temp_dir = tempfile.mkdtemp()
-    
+
     try:
-        # If there are two pets, generate separate contracts
+        from .fillpdf_utils import generate_contract_with_fillpdf
+
+        # MULTI PET
         if application.has_second_pet and application.second_pet_name:
-            logger.info(f"[PET] Generating separate contracts for two pets for application {application.id}")
-            
-            # Generate contract for first pet
-            filename1 = f"contract_{application.contract_number}_pet1_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            temp_filepath1 = os.path.join(temp_dir, filename1)
-            
-            # Generate contract for second pet  
-            filename2 = f"contract_{application.contract_number}_pet2_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            temp_filepath2 = os.path.join(temp_dir, filename2)
-            
-            # Use fillpdf library to generate PDFs
-            from .fillpdf_utils import generate_contract_with_fillpdf
-            logger.info(f"Generating contract 1 for application {application.id}")
-            contract1_path = generate_contract_with_fillpdf(application, temp_filepath1, pet_number=1)
-            logger.info(f"Generating contract 2 for application {application.id}")
-            contract2_path = generate_contract_with_fillpdf(application, temp_filepath2, pet_number=2)
-            
-            # Upload to S3/local storage
-            s3_paths = []
-            for temp_path, filename in [(contract1_path, filename1), (contract2_path, filename2)]:
-                if os.path.exists(temp_path):
-                    s3_key = f'contracts/{filename}'
-                    with open(temp_path, 'rb') as f:
-                        saved_path = default_storage.save(s3_key, ContentFile(f.read()))
-                        s3_paths.append(saved_path)
-            
-            return s3_paths
-        
-        else:
-            # Single pet contract
-            logger.info(f"[PET] Generating contract for single pet for application {application.id}")
-            filename = f"contract_{application.contract_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            temp_filepath = os.path.join(temp_dir, filename)
-            
-            # Use fillpdf library to generate PDF
-            from .fillpdf_utils import generate_contract_with_fillpdf
-            logger.info(f"Calling generate_contract_with_fillpdf for application {application.id}")
-            contract_path = generate_contract_with_fillpdf(application, temp_filepath, pet_number=1)
-            logger.info(f"Contract generation completed for application {application.id}: {contract_path}")
-            
-            # Upload to S3/local storage
-            if os.path.exists(contract_path):
-                s3_key = f'contracts/{filename}'
-                with open(contract_path, 'rb') as f:
-                    saved_path = default_storage.save(s3_key, ContentFile(f.read()))
-                    return [saved_path]
-            
-            return []
+            pdf_paths = []
+
+            for pet_number in [1, 2]:
+                filename = (
+                    f"contract_{application.contract_number}_pet{pet_number}_"
+                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                )
+                temp_path = os.path.join(temp_dir, filename)
+
+                generated = generate_contract_with_fillpdf(
+                    application,
+                    temp_path,
+                    pet_number=pet_number,
+                )
+
+                logger.info(
+                    f"[PDF INPUT] App={application.id} "
+                    f"premium_used={application.get_premium_for_frequency()} "
+                    f"frequency={application.questionnaire.payment_frequency}"
+                )
+
+                if os.path.exists(generated):
+                    s3_key = f"contracts/{filename}"
+                    with open(generated, "rb") as f:
+                        saved = default_storage.save(
+                            s3_key, ContentFile(f.read())
+                        )
+                        pdf_paths.append(saved)
+
+                        logger.info(
+                            f"[PDF GENERATED] App={application.id} path={generated}"
+                        )
+
+            return pdf_paths
+
+        # SINGLE PET
+        filename = (
+            f"contract_{application.contract_number}_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        )
+        temp_path = os.path.join(temp_dir, filename)
+
+        generated = generate_contract_with_fillpdf(
+            application,
+            temp_path,
+            pet_number=1,
+        )
+
+        if os.path.exists(generated):
+            s3_key = f"contracts/{filename}"
+            with open(generated, "rb") as f:
+                saved_path = default_storage.save(
+                    s3_key, ContentFile(f.read())
+                )
+                return [saved_path]
+
+        return []
+
     finally:
-        # Clean up temporary directory
         import shutil
         try:
             shutil.rmtree(temp_dir)
-        except:
+        except Exception:
             pass
-
 

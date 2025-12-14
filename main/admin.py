@@ -3,10 +3,22 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import InsuranceApplication, PaymentTransaction, PaymentPlan, AmbassadorCode, PetDocument, PetPhoto, Questionnaire
+from django.contrib import messages
+from django.utils import timezone
+from django.contrib import messages
+from django.urls import path, reverse
+from django.shortcuts import redirect
+from django.utils.html import format_html
+import logging
+from .utils import get_poisoning_price
+logger = logging.getLogger(__name__)
+
+
 
 @admin.register(InsuranceApplication)
 class InsuranceApplicationAdmin(admin.ModelAdmin):
     """Admin interface for Insurance Applications"""
+    actions = ["export_today_contracts"]
     
     list_display = [
         'contract_number', 
@@ -19,7 +31,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'affiliate_code_display',
         'questionnaire_link',
         'created_at',
-        'contract_actions'
+        'contract_actions',
+        'approve_button'
     ]
     
     list_filter = [
@@ -46,18 +59,18 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'affiliate_code'
     ]
     
-    readonly_fields = [
-        'contract_number',
-        'created_at',
-        'updated_at',
-        'contract_start_date',
-        'contract_end_date',
-        'application_number',
-        'contract_pdf_link',
-        'documents_list',
-        'photos_list',
-        'questionnaire_link'
-    ]
+    # readonly_fields = [
+    #     'contract_number',
+    #     'created_at',
+    #     'updated_at',
+    #     'contract_start_date',
+    #     'contract_end_date',
+    #     'application_number',
+    #     'contract_pdf_link',
+    #     'documents_list',
+    #     'photos_list',
+    #     'questionnaire_link'
+    # ]
     
     fieldsets = (
         ('📋 Διοικητικά Στοιχεία', {
@@ -141,6 +154,26 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
+
+
+    readonly_fields = [
+        'contract_number',
+        'created_at',
+        'updated_at',
+        'contract_start_date',
+        'contract_end_date',
+        'application_number',
+        'contract_pdf_link',
+        'documents_list',
+        'photos_list',
+        'questionnaire_link',
+
+        # 🔒 LOCK PRICES
+        'annual_premium',
+        'six_month_premium',
+        'three_month_premium',
+    ]
+
     
     def pet_type_display(self, obj):
         """Display pet type with emoji"""
@@ -222,6 +255,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         except Exception:
             return '-'
     status_display.short_description = 'Κατάσταση'
+
+   
     
     def affiliate_code_display(self, obj):
         """Display affiliate code with ambassador/partner name and discount if applied"""
@@ -249,8 +284,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             
             return format_html(display_text)
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+            
             logger.error(f"Error in affiliate_code_display: {e}")
             return '-'
     affiliate_code_display.short_description = 'Κωδικός Συνεργάτη'
@@ -403,8 +437,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 except Questionnaire.DoesNotExist:
                     pass
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+         
             logger.error(f"Error getting questionnaire for application {obj.id}: {e}")
         return format_html('<span style="color: #dc3545; font-weight: bold;">⚠️ Δεν υπάρχει ερωτηματολόγιο</span>')
     questionnaire_link.short_description = 'Ερωτηματολόγιο'
@@ -427,10 +460,38 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         return format_html(' '.join(actions))
     contract_actions.short_description = 'Ενέργειες'
     contract_actions.allow_tags = True
-    
+
+    def export_today_contracts(self, request, queryset):
+        from django.core.management import call_command
+        from django.contrib import messages
+
+        try:
+            call_command("export_daily_contracts")
+            messages.success(
+                request,
+                "Το αρχείο με τα σημερινά συμβόλαια εξήχθη στο /media/exports/contracts/"
+            )
+        except Exception as e:
+            messages.error(request, f"Σφάλμα κατά την εξαγωγή: {str(e)}")
+
+    export_today_contracts.short_description = "Εξαγωγή σημερινών συμβολαίων"
+
+
+    def approve_button(self, obj):
+        if obj.status != 'approved':
+            url = reverse('admin:main_insuranceapplication_approve', args=[obj.pk])
+            return format_html(
+                '<a href="{}" class="button" '
+                'style="background:#28a745;color:white;padding:5px 10px;'
+                'text-decoration:none;border-radius:3px;">✔ Έγκριση</a>',
+                url
+            )
+        return format_html('<span style="color:#28a745;font-weight:bold;">✔ Εγκεκριμένο</span>')
+
+    approve_button.short_description = "Έγκριση"
+    approve_button.allow_tags = True
+
     def get_urls(self):
-        """Add custom URLs for contract actions"""
-        from django.urls import path
         urls = super().get_urls()
         custom_urls = [
             path(
@@ -443,8 +504,14 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.view_contract_view),
                 name='view_contract'
             ),
+            path(
+                '<int:application_id>/approve/',
+                self.admin_site.admin_view(self.approve_single_application),
+                name='main_insuranceapplication_approve'
+            ),
         ]
         return custom_urls + urls
+
     
     def generate_contract_view(self, request, application_id):
         """Generate contract PDF(s)"""
@@ -476,6 +543,18 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         
         return HttpResponseRedirect(reverse('admin:main_insuranceapplication_changelist'))
     
+    def approve_single_application(self, request, application_id):
+            try:
+                application = InsuranceApplication.objects.get(pk=application_id)
+                application.status = 'approved'
+                application.approved_at = timezone.now()
+                application.save(update_fields=['status', 'approved_at'])
+                messages.success(request, "Η αίτηση εγκρίθηκε επιτυχώς.")
+            except InsuranceApplication.DoesNotExist:
+                messages.error(request, "Η αίτηση δεν βρέθηκε.")
+            
+            return redirect('admin:main_insuranceapplication_changelist')
+
     def view_contract_view(self, request, application_id):
         """View generated contract(s) from S3 or local storage"""
         from django.http import FileResponse, Http404, HttpResponse
@@ -539,99 +618,31 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             raise Http404("Η αίτηση δεν βρέθηκε")
     
     def save_model(self, request, obj, form, change):
-        """Override save to automatically regenerate contract when relevant fields change"""
-        if change:  # Only check for changes on existing objects
-            # Get the original object from database
-            original_obj = InsuranceApplication.objects.get(pk=obj.pk)
-            
-            # Define contract-relevant fields that should trigger regeneration
-            contract_relevant_fields = [
-                # User information
-                'full_name', 'afm', 'phone', 'address', 'postal_code', 'email',
-                # Pet 1 information
-                'pet_name', 'pet_type', 'pet_breed', 'pet_birthdate', 
-                'pet_weight_category', 'microchip_number',
-                # Pet 2 information
-                'has_second_pet', 'second_pet_name', 'second_pet_type', 
-                'second_pet_breed', 'second_pet_birthdate', 'second_pet_weight_category',
-                # Insurance details
-                'program', 'annual_premium', 'six_month_premium', 'three_month_premium',
-                'contract_start_date', 'contract_end_date',
-                # Status (might affect contract validity)
-                'status'
-            ]
-            
-            # Check if any contract-relevant field has changed
-            fields_changed = False
-            for field_name in contract_relevant_fields:
-                original_value = getattr(original_obj, field_name, None)
-                new_value = getattr(obj, field_name, None)
-                if original_value != new_value:
-                    fields_changed = True
-                    break
-            
-            # Save the object first
-            super().save_model(request, obj, form, change)
-            
-            # Recalculate premium if pricing-related fields changed
-            pricing_fields = ['program', 'pet_weight_category', 'pet_type']
-            pricing_changed = any(
-                getattr(original_obj, field, None) != getattr(obj, field, None)
-                for field in pricing_fields
-            )
-            
-            if pricing_changed:
-                from .utils import recalculate_application_premium
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"Pricing fields changed in application, recalculating premium for application {obj.id}")
-                recalculate_application_premium(obj)
-                # Refresh object after recalculation
-                obj.refresh_from_db()
-            
-            # Regenerate contract if relevant fields changed and contract was previously generated
-            if fields_changed and original_obj.contract_generated:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"Contract-relevant fields changed for application {obj.id}, regenerating contract...")
-                
-                try:
-                    from .utils import generate_contract_pdf
-                    from django.contrib import messages
-                    
-                    # Generate new contract (will have unique timestamp in filename)
-                    pdf_paths = generate_contract_pdf(obj)
-                    
-                    if pdf_paths and len(pdf_paths) > 0:
-                        # Update with new contract path (always a list)
-                        obj.contract_pdf_path = pdf_paths[0]  # Store first contract path
-                        obj.contract_generated = True
-                        obj.save(update_fields=['contract_pdf_path', 'contract_generated'])
-                        
-                        logger.info(f"Contract regenerated successfully for application {obj.id}")
-                        try:
-                            messages.success(request, 'Το συμβόλαιο αναδημιουργήθηκε αυτόματα λόγω αλλαγών στα στοιχεία.')
-                        except:
-                            # Messages middleware not available (e.g., in tests)
-                            pass
-                except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Error regenerating contract for application {obj.id}: {e}")
-                    import traceback
-                    logger.error(traceback.format_exc())
-                    try:
-                        messages.error(request, f'Σφάλμα κατά την αναδημιουργία του συμβολαίου: {str(e)}')
-                    except:
-                        # Messages middleware not available (e.g., in tests)
-                        pass
-        else:
-            # New object - just save normally
-            super().save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
+
+        # Sync program to questionnaire
+        if hasattr(obj, "questionnaire") and obj.questionnaire:
+            obj.questionnaire.program = obj.program
+            obj.questionnaire.save(update_fields=["program"])
+
+        from .utils import recalculate_application_premium
+        recalculate_application_premium(obj)
+
+        obj.refresh_from_db()
+
+        
+
+        try:
+            obj.update_contract_dates_for_frequency()
+        except Exception:
+            pass
+
+
+
+
     
     def has_add_permission(self, request):
-        """Disable manual addition - only through the application flow"""
-        return False
+        return True
 
 
 @admin.register(PaymentTransaction)
@@ -770,8 +781,7 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
     refund_info.short_description = 'Επιστροφή'
     
     def has_add_permission(self, request):
-        """Disable manual addition - payments are created through the payment flow"""
-        return False
+        return True
 
 
 @admin.register(PaymentPlan)
@@ -940,7 +950,6 @@ class AmbassadorCodeAdmin(admin.ModelAdmin):
     
     def validity_display(self, obj):
         """Display validity period"""
-        from django.utils import timezone
         now = timezone.now()
         
         if obj.valid_from and obj.valid_until:
@@ -1239,6 +1248,10 @@ class PetPhotoAdmin(admin.ModelAdmin):
 @admin.register(Questionnaire)
 class QuestionnaireAdmin(admin.ModelAdmin):
     """Admin interface for Questionnaires"""
+
+    # Hide the 6th consent field
+    exclude = ('consent_pet_gov_platform',)
+
     
     list_display = [
         'application_link',
@@ -1407,7 +1420,6 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                 'consent_email_notifications',
                 'consent_marketing',
                 'consent_data_processing',
-                'consent_pet_gov_platform',
             )
         }),
         ('📅 Χρονοσήματα', {
@@ -1431,13 +1443,11 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                     app_number = obj.application.application_number or obj.application.contract_number or f'ID: {obj.application.pk}'
                     return format_html('<a href="{}">{}</a>', url, app_number)
                 except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
+                    
                     logger.error(f"Error creating application link: {e}")
                     return format_html('<span style="color: #dc3545;">Error: Application not found</span>')
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+           
             logger.error(f"Error in application_link: {e}")
             return format_html('<span style="color: #dc3545;">Error</span>')
         return '-'
@@ -1456,8 +1466,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             }
             return programs.get(obj.program, obj.program or '-')
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+            
             logger.error(f"Error in program_display: {e}")
             return '-'
     program_display.short_description = 'Πρόγραμμα'
@@ -1474,8 +1483,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             }
             return methods.get(obj.payment_method, obj.payment_method or '-')
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+   
             logger.error(f"Error in payment_method_display: {e}")
             return '-'
     payment_method_display.short_description = 'Τρόπος Πληρωμής'
@@ -1492,8 +1500,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             }
             return frequencies.get(obj.payment_frequency, obj.payment_frequency or '-')
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+       
             logger.error(f"Error in payment_frequency_display: {e}")
             return '-'
     payment_frequency_display.short_description = 'Συχνότητα'
@@ -1512,8 +1519,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                 return format_html('<span style="color: #dc3545; font-weight: bold;">{}</span>', ' + '.join(surcharges))
             return format_html('<span style="color: #6c757d;">-</span>')
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+ 
             logger.error(f"Error in breed_surcharge_display: {e}")
             return format_html('<span style="color: #dc3545;">Error</span>')
     breed_surcharge_display.short_description = 'Επασφάλιστρο Ράτσας'
@@ -1638,6 +1644,10 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             pass
         return '-'
     application_three_month_premium.short_description = 'Τριμηνιαία Πληρωμή'
+
+    # ⚠️ WARNING:
+    # This breakdown is for DISPLAY ONLY.
+    # Final totals MUST always come from stored premiums.
     
     def price_breakdown_display(self, obj):
         """Display detailed price breakdown with add-ons and surcharges"""
@@ -1716,8 +1726,8 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                     # Estimate base by subtracting known add-ons
                     estimated_base = stored_premium
                     if questionnaire.additional_poisoning_coverage:
-                        poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
-                        estimated_base -= poisoning_prices.get(program, 18)
+                        # poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
+                        estimated_base -= get_poisoning_price(program, "annual")
                     if questionnaire.additional_blood_checkup:
                         estimated_base -= 28.00
                     # Reverse calculate breed surcharges (20% is applied after 5%, so reverse in reverse order)
@@ -1747,31 +1757,55 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             
             # Add-ons (fixed prices)
             if questionnaire.additional_poisoning_coverage:
-                poisoning_prices = {'silver': 18, 'gold': 20, 'platinum': 25, 'dynasty': 25}
-                poisoning_price = poisoning_prices.get(program, 18)
+                poisoning_price = get_poisoning_price(
+                    program=program,
+                    payment_frequency=questionnaire.payment_frequency
+                )
+
                 breakdown.append(f"+ Δηλητηρίαση: {poisoning_price:.2f}€")
                 total += poisoning_price
+
             
             if questionnaire.additional_blood_checkup:
                 breakdown.append(f"+ Αιματολογικό Check Up: 28.00€")
                 total += 28.00
             
-            # Round total to 2 decimal places (matching views.py calculation)
+            # Round total (annual) before applying payment frequency
             total = round(total, 2)
+            # APPLY PAYMENT FREQUENCY
+            frequency_label = "Ετήσια"
+
+            if questionnaire.payment_frequency == "six_month":
+                total = float(app.six_month_premium)
+                frequency_label = "Εξάμηνη"
+            elif questionnaire.payment_frequency == "three_month":
+                total = float(app.three_month_premium)
+                frequency_label = "Τριμηνιαία"
+            else:
+                total = float(app.annual_premium)
+                frequency_label = "Ετήσια"
+
+
             
-            breakdown.append(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            breakdown.append(f"ΣΥΝΟΛΟ: {total:.2f}€")
+            breakdown.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            breakdown.append(f"ΣΥΝΟΛΟ ({frequency_label}): {total:.2f}€")
+
             
-            # Show stored annual_premium for comparison
-            if app.annual_premium:
-                stored_premium = float(app.annual_premium)
-                if abs(stored_premium - total) > 0.01:  # Allow small rounding differences
-                    breakdown.append(f"<br><small style='color: #6c757d;'>Αποθηκευμένη τιμή: {stored_premium:.2f}€</small>")
+            if questionnaire.payment_frequency == "six_month":
+                stored = float(app.six_month_premium or 0)
+            elif questionnaire.payment_frequency == "three_month":
+                stored = float(app.three_month_premium or 0)
+            else:
+                stored = float(app.annual_premium or 0)
+
+            if abs(stored - total) > 0.01:
+                breakdown.append(
+                    f"<br><small style='color: #6c757d;'>Αποθηκευμένη τιμή: {stored:.2f}€</small>"
+                )
             
             return format_html('<br>'.join(breakdown))
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
+     
             logger.error(f"Error in price_breakdown_display: {e}")
             import traceback
             logger.error(traceback.format_exc())
@@ -1884,8 +1918,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             
             # Regenerate contract if relevant fields changed and application has a contract
             if fields_changed and obj.application and hasattr(obj.application, 'contract_generated') and obj.application.contract_generated:
-                import logging
-                logger = logging.getLogger(__name__)
+              
                 logger.info(f"Questionnaire fields changed for application {obj.application.id}, regenerating contract...")
                 
                 try:
@@ -1909,10 +1942,18 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                         recalculate_application_premium(application)
                         # Refresh application after recalculation
                         application.refresh_from_db()
+
+                        application.save(update_fields=[
+                        'annual_premium',
+                        'six_month_premium',
+                        'three_month_premium'
+                    ])
+
                     
                     # Generate new contract (will have unique timestamp in filename)
                     pdf_paths = generate_contract_pdf(application)
-                    
+
+                                        
                     if pdf_paths and len(pdf_paths) > 0:
                         # Update with new contract path (always a list)
                         application.contract_pdf_path = pdf_paths[0]  # Store first contract path
@@ -1926,8 +1967,7 @@ class QuestionnaireAdmin(admin.ModelAdmin):
                             # Messages middleware not available (e.g., in tests)
                             pass
                 except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
+                
                     logger.error(f"Error regenerating contract for application {obj.application.id}: {e}")
                     import traceback
                     logger.error(traceback.format_exc())
@@ -1941,5 +1981,6 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             super().save_model(request, obj, form, change)
     
     def has_add_permission(self, request):
-        """Disable manual addition - questionnaires are created through the application flow"""
-        return False
+        return True
+    
+

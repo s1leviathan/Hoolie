@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero-section">
+    <div class="container text-center" style="padding: 3rem;">
+        <h2 style="color: #e53935; font-size: 2rem; margin-bottom: 1rem;">
+            ❗ Μη Επιλέξιμη Ηλικία
+        </h2>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem;">{{ message }}</p>
+
+        <a href="{% url 'main:pet_birthdate' %}" 
+           class="btn btn-lg btn-primary" 
+           style="padding: 1rem 2rem; border-radius: 15px;">
+            Επιστροφή
+        </a>
+    </div>
+</section>
+{% endblock %}

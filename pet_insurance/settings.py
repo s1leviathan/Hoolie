@@ -25,7 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-23szz8bfylk8!=cv+^h!l1l9+=%vj8+(15v+)dsuh*y-be4@z*')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']  # Will be restricted by Heroku app domain
 
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'main.middleware.SkipNgrokWarningMiddleware',
 ]
 
 ROOT_URLCONF = 'pet_insurance.urls'
@@ -241,14 +243,17 @@ COMPANY_EMAIL = os.environ.get('COMPANY_EMAIL', 'info@hoolie.gr')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Disable SSL only for local development
+if DEBUG:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+
 
 CSRF_TRUSTED_ORIGINS = [
     "https://app.pet-insurance.gr",
-    "https://*.herokuapp.com",  # fallback for Heroku's internal domain
+    "https://*.herokuapp.com",
+    "https://*.trycloudflare.com",
 ]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -65,6 +65,8 @@ class InsuranceApplication(models.Model):
         ('contact_form', 'Φόρμα Επικοινωνίας'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
+    approved_at = models.DateTimeField(null=True, blank=True)
+
 
     # Contract generation (PDF contains all application data for admin access)
     contract_generated = models.BooleanField(default=False)
@@ -95,9 +97,15 @@ class InsuranceApplication(models.Model):
             self.payment_code = str(uuid.uuid4()).replace('-', '')[:12].upper()
         if not self.contract_start_date:
             self.contract_start_date = timezone.now().date()
-        if not self.contract_end_date:
-            self.contract_end_date = self.contract_start_date + timedelta(days=364)
+        # Do NOT set contract_end_date here
+        # It must be controlled ONLY by payment frequency logic
+
         super().save(*args, **kwargs)
+
+    def get_payment_frequency(self):
+        if hasattr(self, 'questionnaire') and self.questionnaire:
+            return self.questionnaire.payment_frequency
+        return 'annual'       
 
     def get_pet_type_display_greek(self):
         return dict(self._meta.get_field('pet_type').choices).get(self.pet_type, self.pet_type)
@@ -135,18 +143,20 @@ class InsuranceApplication(models.Model):
         return program
     
     def get_premium_for_frequency(self):
-        """Get the premium amount based on selected payment frequency"""
         try:
             if hasattr(self, 'questionnaire') and self.questionnaire:
                 frequency = self.questionnaire.payment_frequency
-                if frequency == 'six_month' and self.six_month_premium:
-                    return float(self.six_month_premium)
-                elif frequency == 'three_month' and self.three_month_premium:
-                    return float(self.three_month_premium)
+
+                if frequency == 'six_month':
+                    return float(self.six_month_premium or 0)
+
+                if frequency == 'three_month':
+                    return float(self.three_month_premium or 0)
         except Exception:
             pass
-        # Default to annual premium
-        return float(self.annual_premium) if self.annual_premium else 0.0
+
+        return float(self.annual_premium or 0)
+
     
     def calculate_contract_end_date(self):
         """Calculate correct contract end date based on payment frequency"""
@@ -554,6 +564,8 @@ class Questionnaire(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Questionnaire'
         verbose_name_plural = 'Questionnaires'
+
+   
     
     def save(self, *args, **kwargs):
         """Override save to update application contract dates and premiums when payment frequency changes"""

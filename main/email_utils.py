@@ -90,73 +90,62 @@ def send_company_notification_email(application):
         # Don't raise - allow application to continue even if email fails
 
 def send_customer_confirmation_email(application):
-    """Send confirmation email to customer"""
+    """Send confirmation email to customer (with CC to company)."""
     try:
-        # Get customer's first name or last name for greeting
-        customer_name_parts = application.full_name.split() if application.full_name else []
-        if customer_name_parts:
-            customer_greeting = customer_name_parts[0]  # Use first name
-        else:
-            customer_greeting = 'Κύριε/Κυρία'  # Fallback if no name
-        
-        # Use the same number that admin sees (contract_number, or application_number as fallback)
+        # Determine greeting
+        name_parts = application.full_name.split() if application.full_name else []
+        customer_greeting = name_parts[0] if name_parts else "Κύριε/Κυρία"
+
+        # Use contract_number if exists, else fallback
         display_number = application.contract_number or application.application_number
-        
-        # Use proper Greek subject for customer confirmation
-        subject = f'Επιβεβαίωση Αίτησης Ασφάλισης - {display_number}'
-        
-        # Use the same number that admin sees (contract_number, or application_number as fallback)
-        display_number = application.contract_number or application.application_number
-        
-        # Prepare context for email template
+
+        subject = f"Επιβεβαίωση Αίτησης Ασφάλισης - {display_number}"
+
         context = {
             'application': application,
-            'application_number': display_number,  # Use contract_number (same as admin) or application_number
+            'application_number': display_number,
             'customer_greeting': customer_greeting,
             'pet_name': application.pet_name,
             'has_second_pet': application.has_second_pet,
             'second_pet_name': application.second_pet_name if application.has_second_pet else None,
         }
-        
-        # Render plain text email template
+
         plain_message = render_to_string('emails/customer_confirmation.txt', context)
-        
-        # Send using EXACT same method as verification email (smtplib directly)
-        # This bypasses Django's email backend which might format emails differently
-        logger.info(f"Attempting to send customer confirmation email to {application.email} for application {application.application_number}")
-        try:
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
-            
-            # Create message exactly like verification email
-            msg = MIMEMultipart()
-            msg['From'] = settings.DEFAULT_FROM_EMAIL
-            msg['To'] = application.email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(plain_message, 'plain'))
-            
-            # Connect and send exactly like verification email
-            if settings.EMAIL_USE_SSL:
-                server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT)
-            else:
-                server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-                if settings.EMAIL_USE_TLS:
-                    server.starttls()
-            
-            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-            text = msg.as_string()
-            result = server.sendmail(settings.DEFAULT_FROM_EMAIL, [application.email], text)
-            server.quit()
-            
-            logger.info(f"Customer confirmation email sent successfully to {application.email}. SMTP returned: {result}. Application: {application.application_number}")
-        except Exception as e:
-            logger.error(f"Failed to send customer confirmation email to {application.email}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            raise  # Re-raise to ensure we know if email fails
-        
+
+        # Prepare SMTP message
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart()
+        msg['From'] = settings.DEFAULT_FROM_EMAIL
+        msg['To'] = application.email
+        msg['Subject'] = subject
+
+        # ADD CC HERE
+        msg['Cc'] = settings.COMPANY_EMAIL
+
+        msg.attach(MIMEText(plain_message, 'plain'))
+
+        # Prepare SMTP server
+        if settings.EMAIL_USE_SSL:
+            server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT)
+        else:
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            if settings.EMAIL_USE_TLS:
+                server.starttls()
+
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+
+        # RECIPIENT LIST (TO + CC)
+        recipients = [application.email, settings.COMPANY_EMAIL]
+
+        result = server.sendmail(settings.DEFAULT_FROM_EMAIL, recipients, msg.as_string())
+        server.quit()
+
+        logger.info(f"Confirmation email sent to {application.email}, CC {settings.COMPANY_EMAIL}")
+
     except Exception as e:
         logger.error(f"Error sending customer confirmation email: {e}")
-        # Don't raise - allow application to continue even if email fails
+
 

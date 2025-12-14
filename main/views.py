@@ -3,10 +3,34 @@ from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
+from datetime import datetime
+from datetime import date
+from dateutil.relativedelta import relativedelta  
+
+AGE_ERROR_MESSAGE = """
+Σας ευχαριστούμε πολύ για το ενδιαφέρον σας να ασφαλίσετε το κατοικίδιό σας μέσω της Hoolie.
+Δυστυχώς, βάσει της ηλικίας του, δεν μπορούμε να προχωρήσουμε στην έκδοση νέου ασφαλιστηρίου,
+καθώς το πρόγραμμα καλύπτει μόνο κατοικίδια εντός συγκεκριμένου ηλικιακού ορίου κατά την
+έναρξη της ασφάλισης. Αν χρειάζεστε βοήθεια με οτιδήποτε άλλο ή θέλετε να ενημερωθείτε για
+άλλα προγράμματα ασφάλισης που ενδεχομένως μπορούν να καλύψουν τον μικρό σας συνοδοιπόρο,
+θα χαρούμε να σας εξυπηρετήσουμε.
+"""
 
 def index(request):
     """Main introduction page with beautiful animations"""
     return render(request, 'main/index.html')
+
+def calculate_age_days(birthdate_str):
+    """Return age in days from a birthdate string DD/MM/YYYY."""
+    if not birthdate_str:
+        return None
+    try:
+        birthdate = datetime.strptime(birthdate_str, "%d/%m/%Y").date()
+    except:
+        return None
+    
+    today = datetime.today().date()
+    return (today - birthdate).days
 
 def select_pet(request):
     """Pet selection page"""
@@ -20,20 +44,80 @@ def pet_gender(request):
     }
     return render(request, 'main/pet_gender.html', context)
 
+
+def is_above_age_limit(birthdate_str):
+    """Return True if age > 10 years 6 months 1 day."""
+    if not birthdate_str:
+        return False
+    try:
+        birthdate = datetime.strptime(birthdate_str, "%d/%m/%Y").date()
+    except:
+        return False
+
+    limit_date = birthdate + relativedelta(years=10, months=6, days=1)
+    return date.today() > limit_date
+
+
 def pet_breed(request):
     """Dog breed selection page"""
     pet_type = request.GET.get('type', 'dog')
     gender = request.GET.get('gender', '')
-    
+
+    # -------------------------
+    # AGE RESTRICTION CHECK
+    # -------------------------
+    birthdate = request.GET.get("birthdate", "")
+
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
+
     # Common dog breeds for dropdown (20 breeds)
     dog_breeds = [
-        'Λαμπραντόρ', 'Γκόλντεν Ρετρίβερ', 'Γερμανικός Ποιμενικός', 'Μπουλντόγκ',
-        'Πούντλ', 'Μπίγκλ', 'Ρότβαϊλερ', 'Γιόρκσαϊρ Τέριερ',
-        'Ντάξχουντ', 'Σιμπέριαν Χάσκι', 'Πομερανιάν', 'Σιτσού',
-        'Μπόξερ', 'Τσιουάουα', 'Μαλτέζ', 'Κοκέρ Σπάνιελ',
-        'Μπορντέρ Κόλι', 'Φρέντς Μπουλντόγκ', 'Αυστραλιανός Ποιμενικός', 'Μπασέτ Χάουντ'
+        "Airedale Terrier", "Alaskan Malamute", "Akita", "Australian Terrier",
+        "Australian Cattle Dog", "American Water Spaniel",
+        "American Staffordshire Terrier", "American English Coonhound",
+        "Afghan Hound", "Affenpinscher", "American Foxhound", "American Eskimo",
+        "Anatolian Shepherd", "Basset Hound", "Basset Griffon Vendeen", "Beagle",
+        "Berger Picard", "Belgian Tervuren", "Belgian Sheepdog", "Belgian Malinois",
+        "Bedlington Terrier", "Bearded Collie", "Bergamasco", "Beauceron",
+        "Black Russian Terrier", "Black and Tan Coonhound", "Bluetick Coonhound",
+        "Border Collie", "Borzoi", "Boxer", "Boerboel", "Bernese Mountain",
+        "Bichon Frise", "Border Terrier", "Boston Terrier", "Brittany",
+        "Brussels Griffon", "Bulldog", "Canaan Dog", "Cane Corso",
+        "Caniche Poodle", "Cavalier King Charles Spaniel", "Chihuahua",
+        "Chow Chow", "Clumber Spaniel", "Cockapoo", "Cocker Spaniel", "Collie",
+        "Dalmatian", "Doberman", "Dogue de Bordeaux", "Dachshund",
+        "English Bull Terrier", "English Setter", "Fox Terrier Wire Coat",
+        "French Bulldog", "Flat Coated Retriever", "German Shorthaired Pointer",
+        "German Shepherd", "Golden Retriever", "Great Dane", "Hungarian Vizsla",
+        "Irish Setter", "Irish Terrier", "Italian Greyhound",
+        "Jack Russell Terrier", "Labradoodle", "Labrador Retriever",
+        "Lhasa Apso", "Lurcher", "Maltese", "Miniature Schnauzer",
+        "Miniature Pinscher", "Newfoundland Breed",
+        "Nova Scotia Duck Tolling Retriever", "Old English Sheepdog", "Papillion",
+        "Patterdale", "Pomeranian", "Poodle", "Pointer", "Portuguese Water Dog",
+        "Pug", "Rhodesian Ridgeback", "Rottweiler", "Redbone Coonhound",
+        "Samoyed", "Shih Tzu", "Staffordshire Bull Terrier", "Shetland Sheepdog",
+        "Shiba Inu", "Silky Terrier", "Standard Schnauzer", "Swedish Vallhund",
+        "Siberian Husky", "Soft Coated Wheaten Terrier", "Springer Spaniel",
+        "Spanish Water Dog", "St Bernard", "Sussex Spaniel",
+        "Transylvanian Hound", "Tibetan Terrier", "Toy Fox Terrier", "Whippet",
+        "Welsh Terrier", "Welsh Springer Spaniel", "Weimaraner",
+        "Wirehaired Pointing Griffon", "West Highland Terrier", "Yorkshire Terrier",
+        "Xoloitzcuintli", "Greek Shepherd", "Kokoni",
+
+        # ADD DOGS THAT CARRY SURCHARGES (important)
+        "Cane Corso",           # 5%
+        "Dogo Argentino",       # 5%
+        "Rottweiler",           # 5%
+        "Pit Bull",             # 5%
+        "French Bulldog",       # 20%
+        "English Bulldog",      # 20%
+        "Chow Chow"             # 20%
     ]
-    
+
     context = {
         'pet_type': pet_type,
         'gender': gender,
@@ -41,20 +125,34 @@ def pet_breed(request):
     }
     return render(request, 'main/pet_breed.html', context)
 
+
 def cat_breed(request):
     """Cat breed selection page"""
     pet_type = request.GET.get('type', 'cat')
     gender = request.GET.get('gender', '')
-    
+
+    # -------------------------
+    # AGE RESTRICTION CHECK
+    # -------------------------
+    birthdate = request.GET.get("birthdate", "")
+
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
+
     # Common cat breeds for dropdown (20 breeds)
     cat_breeds = [
-        'Περσική', 'Μέιν Κουν', 'Σιαμέζα', 'Ραγκντόλ',
-        'Βρετανική Κοντότριχη', 'Αμπισίνια', 'Ρωσική Μπλε', 'Σκωτσέζικη Πτυχωτή',
-        'Σφίγκα', 'Βεγγαλική', 'Μάνξ', 'Νορβηγική Δασική',
-        'Τούρκικη Αγκυρα', 'Αμερικανική Κοντότριχη', 'Εξωτική Κοντότριχη', 'Ορμιέντλ',
-        'Σομαλί', 'Τονκινέζα', 'Μπομπέι', 'Κορνίς Ρεξ'
+        "Abyssinian", "Aegean Cat", "American Bobtail", "American Curl",
+        "American Shorthair", "Bengal", "Birman", "Bombay", "British Shorthair",
+        "Chartreux", "Devon Rex", "Domestic Shorthair", "European Burmese",
+        "Exotic Shorthair Cat", "Himalayan", "Lykos Cat", "Maine Coon",
+        "Munchkin", "Nebelung", "Norwegian Forest Cat", "Oriental Shorthair",
+        "Persian", "Ragdoll", "Russian Blue", "Savanah Cat", "Scottish Fold",
+        "Scottish Straight", "Siamese", "Selkirk Rex", "Somali Cat", "Siberian",
+        "Snowshoe", "Sphynx", "Tonkinese", "Turkish Angora", "Turkish Van"
     ]
-    
+
     context = {
         'pet_type': pet_type,
         'gender': gender,
@@ -96,20 +194,32 @@ def pet_birthdate(request):
     """Pet birthdate input page"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
-    
+    birthdate = request.GET.get('birthdate', '')
+
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {"message": AGE_ERROR_MESSAGE})
+
     context = {
         'pet_type': pet_type,
         'gender': gender
     }
     return render(request, 'main/pet_birthdate.html', context)
 
+
 def health_status(request):
+    
     """Health status selection page - now shows questionnaire"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     if request.method == 'POST':
         # Store questionnaire data in session
@@ -163,6 +273,7 @@ def health_status(request):
         return render(request, 'main/questionnaire_cat.html', context)
 
 def insurance_programs(request):
+    
     """Insurance program selection page"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
@@ -170,6 +281,11 @@ def insurance_programs(request):
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
     is_healthy = request.GET.get('is_healthy', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     context = {
         'pet_type': pet_type,
@@ -182,6 +298,7 @@ def insurance_programs(request):
     return render(request, 'main/insurance_programs.html', context)
 
 def non_covered(request):
+   
     """Non-covered conditions page"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
@@ -189,6 +306,11 @@ def non_covered(request):
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
     is_healthy = request.GET.get('is_healthy', '')
+     # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     context = {
         'pet_type': pet_type,
@@ -201,12 +323,18 @@ def non_covered(request):
     return render(request, 'main/non_covered.html', context)
 
 def dog_health_conditions(request):
+    
     """Dog health conditions page for underwriting"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     # List of dog health conditions
     conditions = [
@@ -241,12 +369,18 @@ def dog_health_conditions(request):
     return render(request, 'main/dog_health_conditions.html', context)
 
 def cat_health_conditions(request):
+    
     """Cat health conditions page for underwriting"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     # List of cat health conditions
     conditions = [
@@ -281,6 +415,7 @@ def cat_health_conditions(request):
     return render(request, 'main/cat_health_conditions.html', context)
 
 def user_data(request):
+    
     """User data and pricing page"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
@@ -292,6 +427,11 @@ def user_data(request):
     second_pet_gender = request.GET.get('secondPetGender', '')
     second_pet_birthdate = request.GET.get('secondPetBirthdate', '')
     second_pet_breed = request.GET.get('second_pet_breed', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     # Extract weight from breed string (e.g., "Λαμπραντόρ (έως 10 κιλά)")
     weight_category = None
@@ -374,6 +514,18 @@ def user_data(request):
     # Get breed surcharges and add-ons from session (stored when questionnaire was submitted)
     special_breed_5_percent = False
     special_breed_20_percent = False
+
+    # AUTO-DETECT SURCHARGES BASED ON BREED
+    breed_lower = (breed or "").lower()
+
+    # 5% surcharge
+    if any(b in breed_lower for b in ["cane corso", "dogo argentino", "rottweiler", "pit bull"]):
+        special_breed_5_percent = True
+
+    # 20% surcharge
+    if any(b in breed_lower for b in ["french bulldog", "english bulldog", "chow chow"]):
+        special_breed_20_percent = True
+
     additional_poisoning_coverage = False
     additional_blood_checkup = False
     
@@ -445,11 +597,11 @@ def user_data(request):
         
         # Calculate add-on prices based on program
         if additional_poisoning_coverage:
-            poisoning_prices = {
-                'silver': 18,
-                'gold': 20,
-                'platinum': 25
-            }
+            # poisoning_prices = {
+            #     'silver': 18,
+            #     'gold': 20,
+            #     'platinum': 25
+            # }
             base_price_breakdown['poisoning_coverage'] = poisoning_prices.get(program, 18)
             base_annual += base_price_breakdown['poisoning_coverage']
         
@@ -644,6 +796,17 @@ def handle_application_submission(request):
         # Multiple checkboxes with same name come as a list
         special_breed_5_percent = False
         special_breed_20_percent = False
+
+        breed_lower = pet_breed.lower()
+
+        # 5% surcharge
+        if any(b in breed_lower for b in ["cane corso", "dogo argentino", "rottweiler", "pit bull"]):
+            special_breed_5_percent = True
+
+        # 20% surcharge
+        if any(b in breed_lower for b in ["french bulldog", "english bulldog", "chow chow"]):
+            special_breed_20_percent = True
+
         
         # Check POST data
         post_5_percent = request.POST.getlist('special_breed_5_percent')
@@ -697,11 +860,11 @@ def handle_application_submission(request):
         
         if additional_poisoning:
             # Poisoning coverage prices by program
-            poisoning_prices = {
-                'silver': 18,
-                'gold': 20,
-                'platinum': 25
-            }
+            # poisoning_prices = {
+            #     'silver': 18,
+            #     'gold': 20,
+            #     'platinum': 25
+            # }
             poisoning_price = poisoning_prices.get(program, 18)
             extra_features_total += poisoning_price
             logger.info(f"Added poisoning coverage: +{poisoning_price}€")
@@ -1116,12 +1279,18 @@ def calculate_total_premium(post_data):
     return 0
 
 def pet_documents(request):
+    
     """Pet documents upload page"""
     pet_type = request.GET.get('type', '')
     gender = request.GET.get('gender', '')
     birthdate = request.GET.get('birthdate', '')
     breed = request.GET.get('breed', '')
     name = request.GET.get('name', '')
+    # AGE RESTRICTION CHECK
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
     
     context = {
         'pet_type': pet_type,
@@ -1134,13 +1303,21 @@ def pet_documents(request):
 
 def contact_info(request):
     """Contact information page"""
+
+    # Read GET parameters FIRST
+    pet_type = request.GET.get('type', '')
+    gender = request.GET.get('gender', '')
+    birthdate = request.GET.get('birthdate', '')
+    breed = request.GET.get('breed', '')
+    name = request.GET.get('name', '')
+
+    # AGE RESTRICTION CHECK (now works correctly)
+    if is_above_age_limit(birthdate):
+        return render(request, "main/age_error.html", {
+            "message": AGE_ERROR_MESSAGE
+        })
+
     try:
-        pet_type = request.GET.get('type', '')
-        gender = request.GET.get('gender', '')
-        birthdate = request.GET.get('birthdate', '')
-        breed = request.GET.get('breed', '')
-        name = request.GET.get('name', '')
-        
         context = {
             'pet_type': pet_type,
             'gender': gender,
@@ -1149,15 +1326,16 @@ def contact_info(request):
             'name': name
         }
         return render(request, 'main/contact_info.html', context)
+
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error in contact_info view: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        # Return a simple error page or redirect
         from django.http import HttpResponse
         return HttpResponse(f"Error loading page: {str(e)}", status=500)
+
 
 def thank_you(request):
     """Thank you page after successful submission"""
