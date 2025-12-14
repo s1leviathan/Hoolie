@@ -367,6 +367,7 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(output_path)
+            font_normalized_count = 0
             
             # Iterate through all pages and widgets to normalize font sizes
             for page_num in range(len(doc)):
@@ -376,20 +377,48 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
                 for widget in widgets:
                     if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
                         try:
-                            # Get the field's current appearance/dictionary
-                            field_dict = widget.field_value
+                            # Access the form field dictionary directly
+                            field = widget.field
+                            if field:
+                                # Get the field's dictionary
+                                field_dict = field.get_dictionary()
+                                
+                                # Access the DA (default appearance) string which contains font info
+                                # Format: "/FontName FontSize Tf"
+                                da_string = field_dict.get("DA", "")
+                                
+                                if da_string:
+                                    # Try to normalize the font size in the DA string
+                                    # The DA string format is like: "/Helvetica 10 Tf" or "/Arial 12 Tf 0.0 0.0 0.0 rg"
+                                    import re
+                                    # Match font size pattern: number followed by " Tf"
+                                    da_normalized = re.sub(r'(\d+(?:\.\d+)?)\s+Tf', r'\1 Tf', da_string)
+                                    
+                                    # If we found and potentially modified the font size, update it
+                                    if da_normalized != da_string:
+                                        try:
+                                            field_dict["DA"] = da_normalized
+                                            font_normalized_count += 1
+                                        except:
+                                            pass
                             
-                            # Try to normalize by updating the widget
-                            # This forces PyMuPDF to regenerate the appearance with consistent font handling
+                            # Force widget update to regenerate appearance
                             widget.field_display = fitz.PDF_FIELD_DISPLAY_VISIBLE
-                            widget.update()
+                            
+                            # Re-read the field value to force appearance regeneration
+                            current_value = widget.field_value
+                            if current_value:
+                                # Setting the value again forces the appearance to regenerate
+                                widget.field_value = current_value
+                                widget.update()
+                                font_normalized_count += 1
                         except Exception as widget_error:
                             logger.debug(f"Could not normalize widget {widget.field_name}: {widget_error}")
             
             # Save with incremental update to preserve other PDF structure
             doc.save(output_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
             doc.close()
-            logger.info(f"[PDF] Font normalization attempted on {output_path}")
+            logger.info(f"[PDF] Font normalization applied to {font_normalized_count} fields in {output_path}")
         except ImportError:
             logger.warning("[PDF] PyMuPDF (fitz) not available, skipping font normalization")
         except Exception as norm_error:
