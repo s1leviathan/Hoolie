@@ -1799,32 +1799,35 @@ class QuestionnaireAdmin(admin.ModelAdmin):
             
             # Build breakdown with frequency-adjusted display values
             breakdown = [f"Βασική Τιμή: {base_display:.2f}€"]
+            calculated_total = base_display
+            
             if questionnaire.special_breed_5_percent:
                 breakdown.append(f"+ Επασφάλιστρο 5%: {surcharge_5_display:.2f}€")
+                calculated_total += surcharge_5_display
             if questionnaire.special_breed_20_percent:
                 breakdown.append(f"+ Επασφάλιστρο 20%: {surcharge_20_display:.2f}€")
+                calculated_total += surcharge_20_display
             if questionnaire.additional_poisoning_coverage:
                 breakdown.append(f"+ Δηλητηρίαση: {poisoning_display:.2f}€")
+                calculated_total += poisoning_display
             if questionnaire.additional_blood_checkup:
                 breakdown.append(f"+ Αιματολογικό Check Up: {blood_checkup_display:.2f}€")
-
+                calculated_total += blood_checkup_display
+            
+            # Round calculated total
+            calculated_total = round(calculated_total, 2)
 
             
             breakdown.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            breakdown.append(f"ΣΥΝΟΛΟ ({frequency_label}): {total:.2f}€")
-
+            breakdown.append(f"ΣΥΝΟΛΟ ({frequency_label}): {calculated_total:.2f}€")
             
-            if questionnaire.payment_frequency == "six_month":
-                stored = float(app.six_month_premium or 0)
-            elif questionnaire.payment_frequency == "three_month":
-                stored = float(app.three_month_premium or 0)
-            else:
-                stored = float(app.annual_premium or 0)
-
-            if abs(stored - total) > 0.01:
+            # Also show stored premium if it differs (for debugging)
+            stored_premium = total
+            if abs(stored_premium - calculated_total) > 0.01 and stored_premium > 0:
                 breakdown.append(
-                    f"<br><small style='color: #6c757d;'>Αποθηκευμένη τιμή: {stored:.2f}€</small>"
+                    f"<br><small style='color: #6c757d;'>(Αποθηκευμένη τιμή: {stored_premium:.2f}€)</small>"
                 )
+
             
             return format_html('<br>'.join(breakdown))
         except Exception as e:
