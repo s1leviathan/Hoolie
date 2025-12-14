@@ -95,11 +95,52 @@ def recalculate_application_premium(application):
             return
 
         # -------------------------------
+        # APPLY SURCHARGES AND ADD-ONS
+        # -------------------------------
+        # Start with base prices
+        annual_final = float(annual_price)
+        six_month_final = float(six_month_price)
+        three_month_final = float(three_month_price)
+        
+        # Apply breed surcharges (cumulative - 5% first, then 20% on result)
+        if questionnaire and questionnaire.special_breed_5_percent:
+            annual_final = annual_final * 1.05
+            six_month_final = six_month_final * 1.05
+            three_month_final = three_month_final * 1.05
+            logger.info(f"Applied 5% breed surcharge")
+        
+        if questionnaire and questionnaire.special_breed_20_percent:
+            annual_final = annual_final * 1.20
+            six_month_final = six_month_final * 1.20
+            three_month_final = three_month_final * 1.20
+            logger.info(f"Applied 20% breed surcharge")
+        
+        # Add poisoning coverage (annual price, then scale for frequencies)
+        if questionnaire and questionnaire.additional_poisoning_coverage:
+            poisoning_annual = get_poisoning_price(program, "annual")
+            annual_final += poisoning_annual
+            six_month_final += get_poisoning_price(program, "six_month")
+            three_month_final += get_poisoning_price(program, "three_month")
+            logger.info(f"Added poisoning coverage: {poisoning_annual}€ annual")
+        
+        # Add blood checkup (28€ annual, scaled proportionally like premiums)
+        if questionnaire and questionnaire.additional_blood_checkup:
+            annual_final += 28.00
+            six_month_final += round(28.00 * 0.525, 2)  # 52.5% of annual
+            three_month_final += round(28.00 * 0.275, 2)  # 27.5% of annual
+            logger.info(f"Added blood checkup: 28€ annual")
+        
+        # Round to 2 decimal places
+        annual_final = round(annual_final, 2)
+        six_month_final = round(six_month_final, 2)
+        three_month_final = round(three_month_final, 2)
+        
+        # -------------------------------
         # SAVE TO DB
         # -------------------------------
-        application.annual_premium = Decimal(str(annual_price))
-        application.six_month_premium = Decimal(str(six_month_price))
-        application.three_month_premium = Decimal(str(three_month_price))
+        application.annual_premium = Decimal(str(annual_final))
+        application.six_month_premium = Decimal(str(six_month_final))
+        application.three_month_premium = Decimal(str(three_month_final))
 
         application.save(
             update_fields=[
@@ -111,9 +152,9 @@ def recalculate_application_premium(application):
 
         logger.info(
             f"[DB SAVED] App={application.id} "
-            f"annual={application.annual_premium}, "
-            f"six_month={application.six_month_premium}, "
-            f"three_month={application.three_month_premium}"
+            f"annual={application.annual_premium} (base: {annual_price} + surcharges/add-ons), "
+            f"six_month={application.six_month_premium} (base: {six_month_price} + surcharges/add-ons), "
+            f"three_month={application.three_month_premium} (base: {three_month_price} + surcharges/add-ons)"
         )
 
         # -------------------------------
