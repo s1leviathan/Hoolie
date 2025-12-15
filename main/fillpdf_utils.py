@@ -359,10 +359,10 @@ def generate_contract_with_fillpdf(application, output_path, pet_number=1):
             input_pdf_path=template_path,
             output_pdf_path=output_path,
             data_dict=data,
-            flatten=True  # Use fillpdf's built-in flattening to preserve correct positioning
+            flatten=False  # Don't flatten - keep form fields to preserve perfect text positioning
         )
         
-        logger.info(f"[PDF] PDF filled and flattened by fillpdf in {output_path}")
+        logger.info(f"[PDF] PDF filled with correct positioning (form fields preserved) in {output_path}")
         
         return output_path
         
