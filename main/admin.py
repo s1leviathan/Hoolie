@@ -512,66 +512,75 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     
     def assigned_admin_display(self, obj):
         """Display assigned admin prominently"""
-        if obj.assigned_to:
-            return format_html(
-                '<span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold;">👤 {}</span>',
-                obj.assigned_to.get_full_name() or obj.assigned_to.username
-            )
+        try:
+            if obj and obj.assigned_to:
+                name = obj.assigned_to.get_full_name() or obj.assigned_to.username or 'Unknown'
+                return format_html(
+                    '<span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold;">👤 {}</span>',
+                    name
+                )
+        except Exception:
+            pass
         return format_html('<span style="color: #6c757d;">Δεν έχει ανατεθεί</span>')
     assigned_admin_display.short_description = 'Ανατεθειμένος Διαχειριστής'
     
     def final_approval_buttons(self, obj):
         """Display final approval/rejection buttons"""
-        if not obj:
-            return '-'
-        
-        approve_url = reverse('admin:main_insuranceapplication_final_approve', args=[obj.pk])
-        reject_url = reverse('admin:main_insuranceapplication_final_reject', args=[obj.pk])
-        
-        buttons = []
-        
-        if obj.status != 'approved':
-            buttons.append(
-                format_html(
-                    '<a href="{}" class="button" '
-                    'style="background:#28a745;color:white;padding:10px 20px;'
-                    'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
-                    'margin-right:10px;display:inline-block;">'
-                    '✔ Τελική Έγκριση</a>',
-                    approve_url
+        try:
+            if not obj or not hasattr(obj, 'pk') or not obj.pk:
+                return '-'
+            
+            approve_url = reverse('admin:main_insuranceapplication_final_approve', args=[obj.pk])
+            reject_url = reverse('admin:main_insuranceapplication_final_reject', args=[obj.pk])
+            
+            buttons = []
+            status = getattr(obj, 'status', None) or 'submitted'
+            
+            if status != 'approved':
+                buttons.append(
+                    format_html(
+                        '<a href="{}" class="button" '
+                        'style="background:#28a745;color:white;padding:10px 20px;'
+                        'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
+                        'margin-right:10px;display:inline-block;">'
+                        '✔ Τελική Έγκριση</a>',
+                        approve_url
+                    )
                 )
-            )
-        
-        if obj.status != 'rejected':
-            buttons.append(
-                format_html(
-                    '<a href="{}" class="button" '
-                    'style="background:#dc3545;color:white;padding:10px 20px;'
-                    'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
-                    'display:inline-block;">'
-                    '✗ Τελική Απόρριψη</a>',
-                    reject_url
+            
+            if status != 'rejected':
+                buttons.append(
+                    format_html(
+                        '<a href="{}" class="button" '
+                        'style="background:#dc3545;color:white;padding:10px 20px;'
+                        'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
+                        'display:inline-block;">'
+                        '✗ Τελική Απόρριψη</a>',
+                        reject_url
+                    )
                 )
-            )
-        
-        if obj.status == 'approved':
-            buttons.append(
-                format_html(
-                    '<span style="background:#28a745;color:white;padding:10px 20px;'
-                    'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
-                    '✅ Εγκρίθηκε</span>'
+            
+            if status == 'approved':
+                buttons.append(
+                    format_html(
+                        '<span style="background:#28a745;color:white;padding:10px 20px;'
+                        'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
+                        '✅ Εγκρίθηκε</span>'
+                    )
                 )
-            )
-        elif obj.status == 'rejected':
-            buttons.append(
-                format_html(
-                    '<span style="background:#dc3545;color:white;padding:10px 20px;'
-                    'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
-                    '❌ Απορρίφθηκε</span>'
+            elif status == 'rejected':
+                buttons.append(
+                    format_html(
+                        '<span style="background:#dc3545;color:white;padding:10px 20px;'
+                        'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
+                        '❌ Απορρίφθηκε</span>'
+                    )
                 )
-            )
-        
-        return format_html(''.join(buttons)) if buttons else '-'
+            
+            return format_html(''.join(buttons)) if buttons else '-'
+        except Exception as e:
+            logger.error(f"Error in final_approval_buttons: {e}")
+            return format_html('<span style="color: #dc3545;">Error</span>')
     final_approval_buttons.short_description = 'Τελικές Ενέργειες'
     final_approval_buttons.allow_tags = True
 
@@ -659,6 +668,9 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             messages.success(request, "✅ Η αίτηση εγκρίθηκε τελικά.")
         except InsuranceApplication.DoesNotExist:
             messages.error(request, "Η αίτηση δεν βρέθηκε.")
+        except Exception as e:
+            logger.error(f"Error in final_approve_application: {e}")
+            messages.error(request, f"Σφάλμα κατά την έγκριση: {str(e)}")
         
         return redirect('admin:main_insuranceapplication_change', application_id)
     
@@ -671,6 +683,9 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             messages.success(request, "❌ Η αίτηση απορρίφθηκε τελικά.")
         except InsuranceApplication.DoesNotExist:
             messages.error(request, "Η αίτηση δεν βρέθηκε.")
+        except Exception as e:
+            logger.error(f"Error in final_reject_application: {e}")
+            messages.error(request, f"Σφάλμα κατά την απόρριψη: {str(e)}")
         
         return redirect('admin:main_insuranceapplication_change', application_id)
 
@@ -737,9 +752,13 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             raise Http404("Η αίτηση δεν βρέθηκε")
     
     def save_model(self, request, obj, form, change):
-        # Auto-assign to current admin if not already assigned
-        if not obj.assigned_to and request.user.is_authenticated:
-            obj.assigned_to = request.user
+        try:
+            # Auto-assign to current admin if not already assigned
+            if obj and hasattr(request, 'user') and request.user and request.user.is_authenticated:
+                if not obj.assigned_to:
+                    obj.assigned_to = request.user
+        except Exception as e:
+            logger.warning(f"Error auto-assigning admin: {e}")
         
         super().save_model(request, obj, form, change)
 
