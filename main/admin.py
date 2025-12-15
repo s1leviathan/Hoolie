@@ -23,6 +23,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     list_display = [
         'contract_number', 
         'full_name', 
+        'assigned_admin_display',
         'pet_name', 
         'pet_type_display',
         'program_display', 
@@ -32,11 +33,12 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'questionnaire_link',
         'created_at',
         'contract_actions',
-        'approve_button'
+        'final_approval_buttons',
     ]
     
     list_filter = [
         'status',
+        'assigned_to',
         'pet_type',
         'program',
         'has_second_pet',
@@ -73,15 +75,24 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
     # ]
     
     fieldsets = (
+        ('👤 Ανάθεση & Τελικές Ενέργειες', {
+            'fields': (
+                'assigned_to',
+                'final_approval_buttons',
+            ),
+            'classes': ('wide',),
+            'description': '👤 Ορίστε ποιος διαχειριστής εργάζεται σε αυτή την αίτηση. Χρησιμοποιήστε τα παρακάτω κουμπιά για τελική έγκριση ή απόρριψη.'
+        }),
         ('📋 Διοικητικά Στοιχεία', {
             'fields': (
                 'application_number',
                 'contract_number',
-                ('receipt_number', 'payment_code'),  # Editable fields - can be added manually
+                ('receipt_number', 'payment_code'),
                 'status',
                 'contract_generated',
                 'contract_pdf_link',
-                'contract_pdf_path'
+                'contract_pdf_path',
+                ('section_admin_approved', 'section_admin_rejected'),
             ),
             'description': '💡 Σημείωση: Οι κωδικοί πληρωμής και απόδειξης μπορούν να προστεθούν χειροκίνητα αργότερα.'
         }),
@@ -90,7 +101,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'created_at',
                 'updated_at',
                 'contract_start_date',
-                'contract_end_date'
+                'contract_end_date',
+                ('section_dates_approved', 'section_dates_rejected'),
             )
         }),
         ('👤 Στοιχεία Πελάτη', {
@@ -100,7 +112,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'phone',
                 'email',
                 'address',
-                'postal_code'
+                'postal_code',
+                ('section_customer_approved', 'section_customer_rejected'),
             )
         }),
         ('🐾 Στοιχεία 1ου Κατοικιδίου', {
@@ -115,7 +128,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'health_status',
                 'health_conditions',
                 'documents_list',
-                'photos_list'
+                'photos_list',
+                ('section_pet1_approved', 'section_pet1_rejected'),
             )
         }),
         ('🐕 Στοιχεία 2ου Κατοικιδίου', {
@@ -128,7 +142,8 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'second_pet_birthdate',
                 'second_pet_weight_category',
                 'second_pet_health_status',
-                'second_pet_health_conditions'
+                'second_pet_health_conditions',
+                ('section_pet2_approved', 'section_pet2_rejected'),
             ),
             'classes': ('collapse',)
         }),
@@ -137,19 +152,22 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 'program',
                 'annual_premium',
                 'six_month_premium',
-                'three_month_premium'
+                'three_month_premium',
+                ('section_insurance_approved', 'section_insurance_rejected'),
             )
         }),
         ('🎁 Κωδικός Συνεργάτη', {
             'fields': (
                 'affiliate_code',
-                'discount_applied'
+                'discount_applied',
+                ('section_affiliate_approved', 'section_affiliate_rejected'),
             ),
             'classes': ('collapse',)
         }),
         ('📋 Ερωτηματολόγιο', {
             'fields': (
                 'questionnaire_link',
+                ('section_questionnaire_approved', 'section_questionnaire_rejected'),
             ),
             'classes': ('collapse',)
         })
@@ -167,6 +185,7 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
         'documents_list',
         'photos_list',
         'questionnaire_link',
+        'final_approval_buttons',
 
         # 🔒 LOCK PRICES
         'annual_premium',
@@ -490,6 +509,71 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
 
     approve_button.short_description = "Έγκριση"
     approve_button.allow_tags = True
+    
+    def assigned_admin_display(self, obj):
+        """Display assigned admin prominently"""
+        if obj.assigned_to:
+            return format_html(
+                '<span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold;">👤 {}</span>',
+                obj.assigned_to.get_full_name() or obj.assigned_to.username
+            )
+        return format_html('<span style="color: #6c757d;">Δεν έχει ανατεθεί</span>')
+    assigned_admin_display.short_description = 'Ανατεθειμένος Διαχειριστής'
+    
+    def final_approval_buttons(self, obj):
+        """Display final approval/rejection buttons"""
+        if not obj:
+            return '-'
+        
+        approve_url = reverse('admin:main_insuranceapplication_final_approve', args=[obj.pk])
+        reject_url = reverse('admin:main_insuranceapplication_final_reject', args=[obj.pk])
+        
+        buttons = []
+        
+        if obj.status != 'approved':
+            buttons.append(
+                format_html(
+                    '<a href="{}" class="button" '
+                    'style="background:#28a745;color:white;padding:10px 20px;'
+                    'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
+                    'margin-right:10px;display:inline-block;">'
+                    '✔ Τελική Έγκριση</a>',
+                    approve_url
+                )
+            )
+        
+        if obj.status != 'rejected':
+            buttons.append(
+                format_html(
+                    '<a href="{}" class="button" '
+                    'style="background:#dc3545;color:white;padding:10px 20px;'
+                    'text-decoration:none;border-radius:5px;font-weight:bold;font-size:14px;'
+                    'display:inline-block;">'
+                    '✗ Τελική Απόρριψη</a>',
+                    reject_url
+                )
+            )
+        
+        if obj.status == 'approved':
+            buttons.append(
+                format_html(
+                    '<span style="background:#28a745;color:white;padding:10px 20px;'
+                    'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
+                    '✅ Εγκρίθηκε</span>'
+                )
+            )
+        elif obj.status == 'rejected':
+            buttons.append(
+                format_html(
+                    '<span style="background:#dc3545;color:white;padding:10px 20px;'
+                    'border-radius:5px;font-weight:bold;font-size:14px;display:inline-block;">'
+                    '❌ Απορρίφθηκε</span>'
+                )
+            )
+        
+        return format_html(''.join(buttons)) if buttons else '-'
+    final_approval_buttons.short_description = 'Τελικές Ενέργειες'
+    final_approval_buttons.allow_tags = True
 
     def get_urls(self):
         urls = super().get_urls()
@@ -508,6 +592,16 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 '<int:application_id>/approve/',
                 self.admin_site.admin_view(self.approve_single_application),
                 name='main_insuranceapplication_approve'
+            ),
+            path(
+                '<int:application_id>/final-approve/',
+                self.admin_site.admin_view(self.final_approve_application),
+                name='main_insuranceapplication_final_approve'
+            ),
+            path(
+                '<int:application_id>/final-reject/',
+                self.admin_site.admin_view(self.final_reject_application),
+                name='main_insuranceapplication_final_reject'
             ),
         ]
         return custom_urls + urls
@@ -554,6 +648,31 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
                 messages.error(request, "Η αίτηση δεν βρέθηκε.")
             
             return redirect('admin:main_insuranceapplication_changelist')
+    
+    def final_approve_application(self, request, application_id):
+        """Final approval action"""
+        try:
+            application = InsuranceApplication.objects.get(pk=application_id)
+            application.status = 'approved'
+            application.approved_at = timezone.now()
+            application.save(update_fields=['status', 'approved_at'])
+            messages.success(request, "✅ Η αίτηση εγκρίθηκε τελικά.")
+        except InsuranceApplication.DoesNotExist:
+            messages.error(request, "Η αίτηση δεν βρέθηκε.")
+        
+        return redirect('admin:main_insuranceapplication_change', application_id)
+    
+    def final_reject_application(self, request, application_id):
+        """Final rejection action"""
+        try:
+            application = InsuranceApplication.objects.get(pk=application_id)
+            application.status = 'rejected'
+            application.save(update_fields=['status'])
+            messages.success(request, "❌ Η αίτηση απορρίφθηκε τελικά.")
+        except InsuranceApplication.DoesNotExist:
+            messages.error(request, "Η αίτηση δεν βρέθηκε.")
+        
+        return redirect('admin:main_insuranceapplication_change', application_id)
 
     def view_contract_view(self, request, application_id):
         """View generated contract(s) from S3 or local storage"""
@@ -618,6 +737,10 @@ class InsuranceApplicationAdmin(admin.ModelAdmin):
             raise Http404("Η αίτηση δεν βρέθηκε")
     
     def save_model(self, request, obj, form, change):
+        # Auto-assign to current admin if not already assigned
+        if not obj.assigned_to and request.user.is_authenticated:
+            obj.assigned_to = request.user
+        
         super().save_model(request, obj, form, change)
 
         # Sync program to questionnaire

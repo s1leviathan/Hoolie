@@ -2,6 +2,7 @@ from django.db import models
 from datetime import date, timedelta
 import uuid
 from django.utils import timezone
+from django.conf import settings
 
 class InsuranceApplication(models.Model):
     # Administrative fields
@@ -66,6 +67,34 @@ class InsuranceApplication(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
     approved_at = models.DateTimeField(null=True, blank=True)
+    
+    # Admin workflow tracking
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_applications', help_text="Admin currently working on this application")
+    
+    # Section approval/rejection tracking
+    section_admin_approved = models.BooleanField(default=False, help_text="Διοικητικά Στοιχεία - Εγκρίθηκε")
+    section_admin_rejected = models.BooleanField(default=False, help_text="Διοικητικά Στοιχεία - Απορρίφθηκε")
+    
+    section_dates_approved = models.BooleanField(default=False, help_text="Ημερομηνίες - Εγκρίθηκε")
+    section_dates_rejected = models.BooleanField(default=False, help_text="Ημερομηνίες - Απορρίφθηκε")
+    
+    section_customer_approved = models.BooleanField(default=False, help_text="Στοιχεία Πελάτη - Εγκρίθηκε")
+    section_customer_rejected = models.BooleanField(default=False, help_text="Στοιχεία Πελάτη - Απορρίφθηκε")
+    
+    section_pet1_approved = models.BooleanField(default=False, help_text="Στοιχεία 1ου Κατοικιδίου - Εγκρίθηκε")
+    section_pet1_rejected = models.BooleanField(default=False, help_text="Στοιχεία 1ου Κατοικιδίου - Απορρίφθηκε")
+    
+    section_pet2_approved = models.BooleanField(default=False, help_text="Στοιχεία 2ου Κατοικιδίου - Εγκρίθηκε")
+    section_pet2_rejected = models.BooleanField(default=False, help_text="Στοιχεία 2ου Κατοικιδίου - Απορρίφθηκε")
+    
+    section_insurance_approved = models.BooleanField(default=False, help_text="Στοιχεία Ασφάλισης - Εγκρίθηκε")
+    section_insurance_rejected = models.BooleanField(default=False, help_text="Στοιχεία Ασφάλισης - Απορρίφθηκε")
+    
+    section_affiliate_approved = models.BooleanField(default=False, help_text="Κωδικός Συνεργάτη - Εγκρίθηκε")
+    section_affiliate_rejected = models.BooleanField(default=False, help_text="Κωδικός Συνεργάτη - Απορρίφθηκε")
+    
+    section_questionnaire_approved = models.BooleanField(default=False, help_text="Ερωτηματολόγιο - Εγκρίθηκε")
+    section_questionnaire_rejected = models.BooleanField(default=False, help_text="Ερωτηματολόγιο - Απορρίφθηκε")
 
 
     # Contract generation (PDF contains all application data for admin access)
